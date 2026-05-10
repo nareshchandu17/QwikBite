@@ -1,0 +1,64 @@
+/* Modern Admin Feedback Dashboard Styles */
+
+.glass-panel {
+  background: rgba(18, 18, 22, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.orange-line-gradient {
+  background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.5), transparent);
+  height: 1px;
+  width: 100%;
+}
+
+.glow-orange {
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.15);
+}
+
+.particle-effect {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #F97316;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Material Symbols Fallback */
+.material-icons-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Ensure proper icon sizing */
+.material-icons-outlined.text-xs {
+  font-size: 0.75rem;
+}
+
+.material-icons-outlined.text-sm {
+  font-size: 0.875rem;
+}
+
+.material-icons-outlined.text-3xl {
+  font-size: 1.875rem;
+}
+
+.material-icons-outlined.text-[10px] {
+  font-size: 0.625rem;
+}
+
+.material-icons-outlined.text-[14px] {
+  font-size: 0.875rem;
+}
