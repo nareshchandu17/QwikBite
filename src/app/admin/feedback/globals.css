@@ -1,0 +1,174 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons+Outlined');
+
+:root {
+  --primary: #F97316;
+  --background-light: #F9FAFB;
+  --background-dark: #0A0A0C;
+  --card-dark: #121216;
+}
+
+body { 
+  font-family: 'Inter', sans-serif; 
+}
+
+.glow-orange {
+  box-shadow: 0 0 20px rgba(249, 115, 22, 0.15);
+}
+
+.orange-line-gradient {
+  background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.5), transparent);
+  height: 1px;
+  width: 100%;
+}
+
+.particle-effect {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #F97316;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.glass-panel {
+  background: rgba(18, 18, 22, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.text-primary {
+  color: #F97316;
+}
+
+.bg-primary {
+  background-color: #F97316;
+}
+
+.bg-primary\/10 {
+  background-color: rgba(249, 115, 22, 0.1);
+}
+
+.border-primary\/20 {
+  border-color: rgba(249, 115, 22, 0.2);
+}
+
+.border-primary\/30 {
+  border-color: rgba(249, 115, 22, 0.3);
+}
+
+.bg-background-light {
+  background-color: #050505;
+}
+
+.bg-background-dark {
+  background-color: #050505;
+}
+
+.bg-card-dark {
+  background-color: #121216;
+}
+
+.dark .bg-background-light {
+  background-color: #050505;
+}
+
+.dark .bg-background-dark {
+  background-color: #050505;
+}
+
+.dark .bg-card-dark {
+  background-color: #121216;
+}
+
+.dark .text-slate-900 {
+  color: rgb(255 255 255);
+}
+
+.dark .text-slate-100 {
+  color: rgb(255 255 255);
+}
+
+.dark .text-slate-300 {
+  color: rgb(255 255 255);
+}
+
+.dark .text-slate-400 {
+  color: rgb(255 255 255);
+}
+
+.dark .text-slate-500 {
+  color: rgb(255 255 255);
+}
+
+.dark .text-slate-600 {
+  color: rgb(255 255 255);
+}
+
+.dark .text-slate-700 {
+  color: rgb(255 255 255);
+}
+
+.dark .text-white {
+  color: rgb(255 255 255);
+}
+
+/* Material Icons */
+.material-icons-outlined {
+  font-family: 'Material Icons Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(249, 115, 22, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(249, 115, 22, 0.5);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Hover effects */
+.hover-lift {
+  transition: transform 0.2s ease-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+/* Focus styles */
+.focus-ring:focus {
+  outline: 2px solid rgba(249, 115, 22, 0.5);
+  outline-offset: 2px;
+}
