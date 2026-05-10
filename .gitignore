@@ -1,0 +1,76 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# ─────────────────────────────
+# Dependencies
+# ─────────────────────────────
+node_modules/
+.pnp/
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# ─────────────────────────────
+# Testing
+# ─────────────────────────────
+coverage/
+
+# ─────────────────────────────
+# Next.js
+# ─────────────────────────────
+.next/
+out/
+
+# ─────────────────────────────
+# Production Builds
+# ─────────────────────────────
+build/
+
+# ─────────────────────────────
+# Miscellaneous
+# ─────────────────────────────
+.DS_Store
+*.pem
+
+# ─────────────────────────────
+# Debug Logs
+# ─────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ─────────────────────────────
+# Environment Files
+# ─────────────────────────────
+.env
+.env*.local
+
+# ─────────────────────────────
+# Debug Output & Diagnostic Files
+# ─────────────────────────────
+debug_output.json
+debug_output_counts.json
+menu_api_output.json
+orders_debug.json
+timeslots_diag.json
+verify_orders.json
+*.diag.json
+*_debug.json
+debug-*.js
+check-*.js
+final-*.js
+verify-*.js
+
+# ─────────────────────────────
+# Vercel Deployment
+# ─────────────────────────────
+.vercel/
+
+# ─────────────────────────────
+# TypeScript
+# ─────────────────────────────
+*.tsbuildinfo
+next-env.d.ts
