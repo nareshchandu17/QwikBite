@@ -2,10 +2,11 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import Header from '@/components/home/Header';
+import { Header } from '@/components/home/Header';
 import { ThemeProvider } from '@/components/theme-provider';
 import { SearchProvider } from '@/context/SearchContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { AuthModalProvider } from '@/context/AuthModalContext';
 import { act } from 'react-dom/test-utils';
 import { useCartStore } from '@/stores/cartStore';
 
@@ -13,7 +14,9 @@ function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider attribute="class" defaultTheme="system">
       <AuthProvider>
-        <SearchProvider>{children}</SearchProvider>
+        <AuthModalProvider>
+          <SearchProvider>{children}</SearchProvider>
+        </AuthModalProvider>
       </AuthProvider>
     </ThemeProvider>
   );

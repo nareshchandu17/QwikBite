@@ -15,6 +15,6 @@ const mockOrder = {
 describe('OrderCard', () => {
   it('renders basic order info', () => {
     const { getByText } = render(<OrderCard order={mockOrder as any} />)
-    expect(getByText('Order ORD-TEST')).toBeTruthy()
+    expect(getByText('Order #ORD-TEST')).toBeTruthy()
   })
 })
