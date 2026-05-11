@@ -29,6 +29,19 @@ const icons = [
   { value: 'success', label: '✅ Success' }
 ];
 
+interface RecentNotification {
+  id: number;
+  title: string;
+  message: string;
+  type: string;
+  priority: string;
+  icon: string;
+  userId: string;
+  ctaLink?: string;
+  isBroadcast: boolean;
+  timestamp: string;
+}
+
 const AdminNotificationsPage = () => {
   const [notificationData, setNotificationData] = useState({
     title: '',
@@ -41,7 +54,7 @@ const AdminNotificationsPage = () => {
   });
   const [isBroadcast, setIsBroadcast] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [recentNotifications, setRecentNotifications] = useState<unknown[]>([]);
+  const [recentNotifications, setRecentNotifications] = useState<RecentNotification[]>([]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -128,7 +141,7 @@ const AdminNotificationsPage = () => {
       });
     } catch (error: unknown) {
       console.error('Failed to send notification:', error);
-      toast.error(error.message || 'Failed to send notification');
+      toast.error(error instanceof Error ? error.message : 'Failed to send notification');
     } finally {
       setIsLoading(false);
     }

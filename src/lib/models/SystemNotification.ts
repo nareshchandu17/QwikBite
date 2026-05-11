@@ -1,5 +1,4 @@
-import { Schema, Document } from 'mongoose';
-import mongoose from 'mongoose';
+import mongoose, { Schema, Document, Types, model } from 'mongoose';
 
 export interface ISystemNotification extends Document {
   userId: Types.ObjectId;
