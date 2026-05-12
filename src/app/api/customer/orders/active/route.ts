@@ -24,8 +24,8 @@ interface Order {
   paymentStatus: PaymentStatus;
   items: OrderItem[];
   total: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 interface ApiResponse {
@@ -68,11 +68,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ApiRespons
     if (activeOrder) {
       return NextResponse.json({
         success: true,
-        activeOrder: {
-          ...activeOrder,
-          createdAt: activeOrder.createdAt?.toISOString?.() || activeOrder.createdAt,
-          updatedAt: activeOrder.updatedAt?.toISOString?.() || activeOrder.updatedAt
-        }
+        activeOrder
       });
     } else {
       return NextResponse.json({

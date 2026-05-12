@@ -10,9 +10,9 @@ import { AuthRedirector, AuthModal } from '@/components/auth';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import GlobalStyles from '@/components/GlobalStyles';
 import { NextAuthErrorBoundary } from '@/components/NextAuthErrorBoundary';
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-
 export const metadata: Metadata = {
   title: 'qwikBite - Smart Campus Dining',
   description: 'Order from your canteen in seconds. Skip the queues. Enjoy your break.',
@@ -23,7 +23,6 @@ export const viewport: Viewport = {
   initialScale: 1,
   themeColor: '#050505',
 };
-
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -50,6 +49,7 @@ export default async function RootLayout({
                       {children}
                       <AuthModal />
                       <Toaster />
+                      <SpeedInsights />
                     </AuthRedirector>
                   </WebSocketProvider>
                 </AuthModalProvider>

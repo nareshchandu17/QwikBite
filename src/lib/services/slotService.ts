@@ -3,6 +3,12 @@ import { MenuItem } from '@/lib/models/MenuItem';
 import { connectDB } from '@/lib/db';
 import mongoose from 'mongoose';
 
+interface RawOrderItem {
+  id: string;
+  quantity: number;
+  [key: string]: any; // Allow other properties
+}
+
 export class SlotService {
   /**
    * Helper to parse slot string and date into a normalized Start Time Date object
@@ -30,7 +36,7 @@ export class SlotService {
   /**
    * Calculates the total load (prep time) for an order
    */
-  static async calculateOrderLoad(items: unknown[]): Promise<number> {
+  static async calculateOrderLoad(items: RawOrderItem[]): Promise<number> {
     await connectDB();
     let totalLoad = 0;
 
@@ -110,7 +116,7 @@ export class SlotService {
   /**
    * Validates if the slot is still in the future and accounts for prep time
    */
-  static validateSlotTiming(timeSlot: string, prepTime: number): { valid: boolean; _error?: string } {
+  static validateSlotTiming(timeSlot: string, prepTime: number): { valid: boolean; error?: string } {
     if (timeSlot === 'ASAP') return { valid: true };
 
     const istOffset = 330;
@@ -129,12 +135,12 @@ export class SlotService {
     slotStartTime.setHours(hours, minutes, 0, 0);
 
     if (slotStartTime < istNow) {
-      return { valid: false, _error: 'Cannot book a slot that has already passed.' };
+      return { valid: false, error: 'Cannot book a slot that has already passed.' };
     }
 
     const minutesUntilSlot = (slotStartTime.getTime() - istNow.getTime()) / 60000;
     if (minutesUntilSlot < prepTime) {
-      return { valid: false, _error: `Insufficient time to prepare your order for this slot (Needs ${prepTime} mins).` };
+      return { valid: false, error: `Insufficient time to prepare your order for this slot (Needs ${prepTime} mins).` };
     }
 
     return { valid: true };

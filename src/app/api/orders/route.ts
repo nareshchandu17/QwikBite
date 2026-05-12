@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     try {
       const order = await Order.create({
         user: session.user.id,
-        items: items.map((item: unknown) => ({
+        items: items.map((item: any) => ({
             menuItem: item.id || item.menuItem,
             name: item.name,
             quantity: item.quantity,
