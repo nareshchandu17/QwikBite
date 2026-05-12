@@ -10,6 +10,7 @@ import { AuthRedirector, AuthModal } from '@/components/auth';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import GlobalStyles from '@/components/GlobalStyles';
 import { NextAuthErrorBoundary } from '@/components/NextAuthErrorBoundary';
+import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -57,6 +58,7 @@ export default async function RootLayout({
             </SessionProvider>
           </NextAuthErrorBoundary>
         </ErrorBoundary>
+        <Analytics />
         <script
           dangerouslySetInnerHTML={{
             __html: `
