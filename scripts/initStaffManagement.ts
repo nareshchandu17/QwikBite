@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 import mongoose from 'mongoose';
-import { Staff } from '../src/models/staff.model';
+import { Staff, StaffRole } from '../src/models/staff.model';
 import { connectDB } from '../src/lib/db';
 
 declare module 'mongoose' {
@@ -44,12 +44,10 @@ async function initStaffManagement() {
       await Staff.create({
         name: 'Admin User',
         email: 'admin@example.com',
-        role: 'Manager',
-        status: 'Active',
+        role: StaffRole.MANAGER,
+        isActive: true,
         shift: 'Morning',
-        contact: '+1234567890',
-        performance: 95,
-        avatar: 'https://ui-avatars.com/api/?name=Admin+User&background=random'
+        phone: '9876543210'
       });
       console.log('✅ Added initial staff member');
     }
