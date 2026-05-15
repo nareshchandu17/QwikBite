@@ -2,9 +2,9 @@
 
 # 🍽️ QwikBite
 
-### **Smart Canteen Management System — Reimagined**
+### **Smart Slot-Based Campus Food Ordering System**
 
-> A production-grade, real-time canteen management platform built with Next.js 15, MongoDB, Socket.IO, and Stripe. Designed for scale, shipped with engineering excellence.
+> QwikBite is a real-time campus food ordering platform designed to eliminate long queues through intelligent slot scheduling, live queue tracking, and AI-assisted workflows.
 
 [![Next.js](https://img.shields.io/badge/Next.js-15.5-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.1-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
