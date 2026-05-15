@@ -117,7 +117,7 @@ export function sanitizeLLMOutput(output: unknown): unknown {
     }
 
     if (typeof output === 'object' && output !== null) {
-        const sanitized: unknown = Array.isArray(output) ? [] : {};
+        const sanitized: any = Array.isArray(output) ? [] : {};
         for (const [key, value] of Object.entries(output)) {
             sanitized[key] = sanitizeLLMOutput(value);
         }

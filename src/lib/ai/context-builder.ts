@@ -72,7 +72,7 @@ async function fetchMenuItems() {
             .lean()
             .limit(200);
 
-        const mapped = items.map((item: unknown) => ({
+        const mapped = items.map((item: any) => ({
             id: item._id.toString(),
             name: item.name,
             price: item.price,

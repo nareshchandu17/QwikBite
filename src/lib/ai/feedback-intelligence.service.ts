@@ -341,7 +341,7 @@ Feedback: "${feedbackText}"`;
     /**
      * Validate analysis result structure
      */
-    private validateAnalysisResult(result: unknown): void {
+    private validateAnalysisResult(result: any): void {
         const required = [
             'overallSentiment',
             'userIntent',

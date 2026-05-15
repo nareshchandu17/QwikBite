@@ -140,7 +140,7 @@ export async function orchestrateAssistant(
         // 8. RESPONSE FORMATTING
         const response: AssistantResponse = {
             type: actionResult.success ? 'action' : 'error',
-            message: sanitizeLLMOutput(actionResult.message),
+            message: sanitizeLLMOutput(actionResult.message) as string,
             data: sanitizeLLMOutput(actionResult.data),
             uiDirective: actionResult.uiDirective,
             buttons: actionResult.buttons,
