@@ -64,14 +64,14 @@ async function migrateData() {
     }
     
     // 3. Update existing orders to include userId if missing
-    const ordersWithoutUserId = await Order.find({ userId: { $exists: false } });
-    console.log(`Found ${ordersWithoutUserId.length} orders without userId`);
+    const ordersWithoutUserId = await Order.find({ user: { $exists: false } });
+    console.log(`Found ${ordersWithoutUserId.length} orders without user`);
     
     for (const order of ordersWithoutUserId) {
-      // For existing orders, set userId to "anonymous" or try to find matching user
-      order.userId = "anonymous";
+      // For existing orders, set user to "anonymous" or try to find matching user
+      order.user = "anonymous";
       await order.save();
-      console.log(`Updated order ${order.id} with userId`);
+      console.log(`Updated order ${order.id} with user`);
     }
     
     console.log('Data migration completed successfully!');
