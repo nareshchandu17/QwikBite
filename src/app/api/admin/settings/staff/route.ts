@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
@@ -10,7 +11,7 @@ const defaultStaffSettings = {
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('[DEBUG] Loading staff settings');
+    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
       data: defaultStaffSettings
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error loading staff settings:', error);
     return NextResponse.json({
       success: false,
@@ -39,7 +40,7 @@ export async function PUT(req: NextRequest) {
   try {
     const staffData = await req.json();
 
-    console.log('[DEBUG] Updating staff settings:', staffData);
+    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -62,7 +63,7 @@ export async function PUT(req: NextRequest) {
     // 4. Log the settings change
     // 5. Notify affected staff members of permission changes
 
-    console.log('[DEBUG] Staff settings validated:', validatedData);
+    // console.log(...);
 
     // Simulate database update
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -73,7 +74,7 @@ export async function PUT(req: NextRequest) {
       data: validatedData
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error updating staff settings:', error);
     return NextResponse.json({
       success: false,

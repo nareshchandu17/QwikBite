@@ -101,7 +101,7 @@ export async function PUT(req: Request) {
       );
     }
 
-    const updateData: unknown = {
+    const updateData: any = {
       $inc: { quantity },
       lastUpdated: new Date(),
     };

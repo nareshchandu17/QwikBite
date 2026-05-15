@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   try {
     const { action, confirmation } = await req.json();
 
-    console.log('[DEBUG] Danger zone action:', action, 'Confirmation:', confirmation);
+    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
         // 4. Log the reset action
         // 5. Notify administrators
         
-        console.log('[DEBUG] Resetting all settings to defaults...');
+        // console.log(...);
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         return NextResponse.json({
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
         // 5. Reset database to clean state
         // 6. Log the data clearing action
         
-        console.log('[DEBUG] Clearing all system data...');
+        // console.log(...);
         await new Promise(resolve => setTimeout(resolve, 2000));
         
         return NextResponse.json({
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
         // 5. Remove account from authentication system
         // 6. Log account deletion
         
-        console.log('[DEBUG] Deleting admin account...');
+        // console.log(...);
         await new Promise(resolve => setTimeout(resolve, 1500));
         
         return NextResponse.json({
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
         }, { status: 400 });
     }
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error in danger zone action:', error);
     return NextResponse.json({
       success: false,

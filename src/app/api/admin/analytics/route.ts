@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
 
     // Authorization check - only admin and canteen staff can access analytics
     const userRole = (session.user as { role?: string }).role;
-    if (!['admin', 'canteen_staff'].includes(userRole)) {
+    if (!['admin', 'canteen_staff'].includes(userRole as any)) {
       return NextResponse.json(
         { error: 'Forbidden - Insufficient permissions' },
         { status: 403 }

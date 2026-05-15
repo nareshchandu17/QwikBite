@@ -37,7 +37,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       success: true,
       data: staff
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching staff member:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch staff member' },
@@ -88,7 +88,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       );
     }
 
-    const sanitizedData = validation.sanitized!;
+    const sanitizedData: any = validation.sanitized!;
     
     // Check email uniqueness if email is being changed
     if (sanitizedData.email !== existingStaff.email) {
@@ -136,7 +136,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       data: updatedStaff
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating staff member:', error);
     
     // Handle validation errors
@@ -204,7 +204,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       message: 'Staff member removed successfully'
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error deleting staff member:', error);
     return NextResponse.json(
       { 

@@ -4,6 +4,8 @@ import Feedback from '@/models/feedback';
 import FeedbackClassification from '@/models/feedback-classification.model';
 import { parseCookies, verifyToken } from '@/lib/auth';
 
+export const dynamic = "force-dynamic";
+
 /**
  * GET /api/admin/feedback/classifications
  * 

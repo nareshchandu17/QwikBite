@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
@@ -13,7 +14,7 @@ const defaultNotificationSettings = {
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('[DEBUG] Loading notification settings');
+    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -29,7 +30,7 @@ export async function GET(req: NextRequest) {
       data: defaultNotificationSettings
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error loading notification settings:', error);
     return NextResponse.json({
       success: false,
@@ -42,7 +43,7 @@ export async function PUT(req: NextRequest) {
   try {
     const notificationData = await req.json();
 
-    console.log('[DEBUG] Updating notification settings:', notificationData);
+    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -68,7 +69,7 @@ export async function PUT(req: NextRequest) {
     // 4. Configure push notification services
     // 5. Test notification delivery
 
-    console.log('[DEBUG] Notification settings validated:', validatedData);
+    // console.log(...);
 
     // Simulate database update
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -79,7 +80,7 @@ export async function PUT(req: NextRequest) {
       data: validatedData
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error updating notification settings:', error);
     return NextResponse.json({
       success: false,

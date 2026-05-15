@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
@@ -12,7 +13,7 @@ const defaultWorkflowSettings = {
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('[DEBUG] Loading workflow settings');
+    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
       data: defaultWorkflowSettings
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error loading workflow settings:', error);
     return NextResponse.json({
       success: false,
@@ -41,7 +42,7 @@ export async function PUT(req: NextRequest) {
   try {
     const workflowData = await req.json();
 
-    console.log('[DEBUG] Updating workflow settings:', workflowData);
+    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -65,7 +66,7 @@ export async function PUT(req: NextRequest) {
     // 3. Update any active orders if needed
     // 4. Log the settings change
 
-    console.log('[DEBUG] Workflow settings validated:', validatedData);
+    // console.log(...);
 
     // Simulate database update
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -76,7 +77,7 @@ export async function PUT(req: NextRequest) {
       data: validatedData
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error updating workflow settings:', error);
     return NextResponse.json({
       success: false,

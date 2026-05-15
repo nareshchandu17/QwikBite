@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { Order, OrderStatus } from '@/models/order.model';
+import '@/models/menuItem.model';
+import '@/models/user.model';
 import { syncTimeSlotUsage } from '@/lib/slot-utils';
 import { socketManager } from '@/lib/websocket/server';
 import { AuditService } from '@/lib/services/auditService';
@@ -23,12 +25,21 @@ export async function GET(req: NextRequest) {
             .sort({ createdAt: -1 })
             .limit(50)
             .populate('user', 'name email')
+            // Removed .populate('items.menuItem') to prevent CastError on legacy string IDs
             .lean();
-            
-        return jsonResponse({ data: orders });
+
+        // Map MongoDB _id and orderId to the 'id' field expected by the frontend
+        const mappedOrders = orders.map((order: any) => ({
+            ...order,
+            id: order.orderId || order._id.toString(),
+            total: order.totalAmount,  // map totalAmount -> total for the frontend
+            customerName: order.user?.name || order.username || 'Guest',
+        }));
+
+        return jsonResponse({ data: mappedOrders });
     } catch (err) {
         console.error('Admin Orders GET Error:', err);
-        return jsonResponse({ error: 'Failed to fetch orders' }, 500);
+        return jsonResponse({ error: err instanceof Error ? err.message : 'Failed to fetch orders' }, 500);
     }
 }
 
@@ -57,9 +68,11 @@ export async function PATCH(req: NextRequest) {
         // Update status - this triggers the pre-save hook for statusHistory
         order.status = status as OrderStatus;
         await order.save();
+        
+        // Removed .populate('items.menuItem') to prevent CastError on legacy string IDs
 
         await syncTimeSlotUsage();
-        
+
         // 🚀 REAL-TIME: Emit update to specific order room and admin dashboard
         socketManager.emitToRoom(`order:${order._id}`, 'order:update', {
             status: order.status,
@@ -98,7 +111,7 @@ export async function POST(req: NextRequest) {
     try {
         await connectDB();
         const body = await req.json();
-        
+
         // Basic creation for admin testing/manual entry
         const order = await Order.create({
             ...body,
@@ -108,7 +121,7 @@ export async function POST(req: NextRequest) {
 
         await syncTimeSlotUsage();
         socketManager.emitToAll('admin:new_order', order);
-        
+
         return jsonResponse(order, 201);
 
     } catch (err) {

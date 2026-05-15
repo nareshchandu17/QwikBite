@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { MongoClient } from 'mongodb';
 
@@ -62,7 +63,7 @@ const defaultSettings = {
 // GET /api/admin/settings - Load settings
 export async function GET(req: NextRequest) {
   try {
-    console.log('[DEBUG] Loading admin settings...');
+    // console.log(...);
     
     // Get user session to fetch real profile data
     const { getServerSession } = await import('next-auth/next');
@@ -140,7 +141,7 @@ export async function GET(req: NextRequest) {
       }
     };
 
-    console.log('[DEBUG] Settings data structure:', JSON.stringify(settingsData, null, 2));
+    // console.log(...);
     
     return NextResponse.json(settingsData);
   } catch (error: unknown) {
@@ -157,8 +158,8 @@ export async function PUT(req: NextRequest) {
   try {
     const { section, data } = await req.json();
 
-    console.log('[DEBUG] Saving settings for section:', section);
-    console.log('[DEBUG] Settings data:', data);
+    // console.log(...);
+    // console.log(...);
 
     if (!section || !data) {
       return NextResponse.json({
@@ -170,7 +171,7 @@ export async function PUT(req: NextRequest) {
     // Handle profile updates specially
     if (section === 'profile') {
       // In a real app, you would update the user in the database
-      console.log('[DEBUG] Updating user profile:', data);
+      // console.log(...);
       
       // For demo purposes, just simulate the update
       // In production, you would:
@@ -183,7 +184,7 @@ export async function PUT(req: NextRequest) {
     // Handle workflow updates specially
     if (section === 'workflow') {
       // In a real app, you would update workflow settings in database
-      console.log('[DEBUG] Updating workflow settings:', data);
+      // console.log(...);
       
       // For demo purposes, just simulate the update
       // In production, you would:
@@ -195,7 +196,7 @@ export async function PUT(req: NextRequest) {
     // Handle inventory updates specially
     if (section === 'inventory') {
       // In a real app, you would update inventory settings in database
-      console.log('[DEBUG] Updating inventory settings:', data);
+      // console.log(...);
       
       // For demo purposes, just simulate the update
       // In production, you would:
@@ -208,7 +209,7 @@ export async function PUT(req: NextRequest) {
     // Handle staff updates specially
     if (section === 'staff') {
       // In a real app, you would update staff settings in database
-      console.log('[DEBUG] Updating staff settings:', data);
+      // console.log(...);
       
       // For demo purposes, just simulate the update
       // In production, you would:
@@ -221,7 +222,7 @@ export async function PUT(req: NextRequest) {
     // Handle notifications updates specially
     if (section === 'notifications') {
       // In a real app, you would update notification settings in database
-      console.log('[DEBUG] Updating notification settings:', data);
+      // console.log(...);
       
       // For demo purposes, just simulate the update
       // In production, you would:
@@ -234,7 +235,7 @@ export async function PUT(req: NextRequest) {
     // Handle security updates specially
     if (section === 'security') {
       // In a real app, you would update security settings in database
-      console.log('[DEBUG] Updating security settings:', data);
+      // console.log(...);
       
       // For demo purposes, just simulate the update
       // In production, you would:
@@ -248,7 +249,7 @@ export async function PUT(req: NextRequest) {
     // Handle system updates specially
     if (section === 'system') {
       // In a real app, you would update system settings in database
-      console.log('[DEBUG] Updating system settings:', data);
+      // console.log(...);
       
       // For demo purposes, just simulate the update
       // In production, you would:
@@ -262,7 +263,7 @@ export async function PUT(req: NextRequest) {
     // Handle data updates specially
     if (section === 'data') {
       // In a real app, you would update data settings in database
-      console.log('[DEBUG] Updating data settings:', data);
+      // console.log(...);
       
       // For demo purposes, just simulate the update
       // In production, you would:
@@ -290,7 +291,7 @@ export async function PUT(req: NextRequest) {
         timestamp: new Date().toISOString()
       }
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error saving settings:', error);
     return NextResponse.json({
       success: false,

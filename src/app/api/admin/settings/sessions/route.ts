@@ -26,7 +26,7 @@ const mockSessions = [
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('[DEBUG] Fetching active sessions');
+    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
       }
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error fetching sessions:', error);
     return NextResponse.json({
       success: false,
@@ -58,7 +58,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const { sessionId } = await req.json();
 
-    console.log('[DEBUG] Revoking session:', sessionId);
+    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -88,14 +88,14 @@ export async function DELETE(req: NextRequest) {
     // 2. Invalidate session token
     // 3. Log the session revocation
 
-    console.log('[DEBUG] Session revoked successfully:', sessionId);
+    // console.log(...);
 
     return NextResponse.json({
       success: true,
       message: 'Session revoked successfully'
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error revoking session:', error);
     return NextResponse.json({
       success: false,

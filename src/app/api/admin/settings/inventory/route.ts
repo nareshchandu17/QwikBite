@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
+export const dynamic = "force-dynamic";
+
 // Mock inventory settings data
 const defaultInventorySettings = {
   autoDeductOnOrder: false,
@@ -12,7 +14,7 @@ const defaultInventorySettings = {
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('[DEBUG] Loading inventory settings');
+    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -28,7 +30,7 @@ export async function GET(req: NextRequest) {
       data: defaultInventorySettings
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error loading inventory settings:', error);
     return NextResponse.json({
       success: false,
@@ -41,7 +43,7 @@ export async function PUT(req: NextRequest) {
   try {
     const inventoryData = await req.json();
 
-    console.log('[DEBUG] Updating inventory settings:', inventoryData);
+    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -73,7 +75,7 @@ export async function PUT(req: NextRequest) {
     // 3. Check current stock levels and update item availability if needed
     // 4. Log the settings change
 
-    console.log('[DEBUG] Inventory settings validated:', validatedData);
+    // console.log(...);
 
     // Simulate database update
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -84,7 +86,7 @@ export async function PUT(req: NextRequest) {
       data: validatedData
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error updating inventory settings:', error);
     return NextResponse.json({
       success: false,

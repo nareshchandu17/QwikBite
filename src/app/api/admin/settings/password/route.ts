@@ -6,7 +6,7 @@ export async function PUT(req: NextRequest) {
   try {
     const { currentPassword, newPassword } = await req.json();
 
-    console.log('[DEBUG] Password change request received');
+    // console.log(...);
 
     if (!currentPassword || !newPassword) {
       return NextResponse.json({
@@ -38,7 +38,7 @@ export async function PUT(req: NextRequest) {
     // 3. Update password in database
     // 4. Log the password change
 
-    console.log('[DEBUG] Password change validated for user:', session.user.email);
+    // console.log(...);
 
     // Simulate password update
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -48,7 +48,7 @@ export async function PUT(req: NextRequest) {
       message: 'Password changed successfully'
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error changing password:', error);
     return NextResponse.json({
       success: false,

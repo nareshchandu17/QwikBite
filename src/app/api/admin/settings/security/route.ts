@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
@@ -11,7 +12,7 @@ const defaultSecuritySettings = {
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('[DEBUG] Loading security settings');
+    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
       data: defaultSecuritySettings
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error loading security settings:', error);
     return NextResponse.json({
       success: false,
@@ -40,7 +41,7 @@ export async function PUT(req: NextRequest) {
   try {
     const securityData = await req.json();
 
-    console.log('[DEBUG] Updating security settings:', securityData);
+    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -73,7 +74,7 @@ export async function PUT(req: NextRequest) {
     // 5. Update session management
     // 6. Log security setting changes
 
-    console.log('[DEBUG] Security settings validated:', validatedData);
+    // console.log(...);
 
     // Simulate database update
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -84,7 +85,7 @@ export async function PUT(req: NextRequest) {
       data: validatedData
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error updating security settings:', error);
     return NextResponse.json({
       success: false,

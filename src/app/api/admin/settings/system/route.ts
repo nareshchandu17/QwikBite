@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
@@ -12,7 +13,7 @@ const defaultSystemSettings = {
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('[DEBUG] Loading system settings');
+    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -28,7 +29,7 @@ export async function GET(req: NextRequest) {
       data: defaultSystemSettings
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error loading system settings:', error);
     return NextResponse.json({
       success: false,
@@ -41,7 +42,7 @@ export async function PUT(req: NextRequest) {
   try {
     const systemData = await req.json();
 
-    console.log('[DEBUG] Updating system settings:', systemData);
+    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -76,7 +77,7 @@ export async function PUT(req: NextRequest) {
     // 6. Restart services if needed
     // 7. Log system setting changes
 
-    console.log('[DEBUG] System settings validated:', validatedData);
+    // console.log(...);
 
     // Simulate database update
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -87,7 +88,7 @@ export async function PUT(req: NextRequest) {
       data: validatedData
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error updating system settings:', error);
     return NextResponse.json({
       success: false,

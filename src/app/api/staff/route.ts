@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || '';
 
     // Check cache first
-    const cachedData = CacheService.getCachedStaffList(page, limit, search, role, status);
+    const cachedData: any = CacheService.getCachedStaffList(page, limit, search, role, status);
     if (cachedData) {
       return NextResponse.json({
         success: true,
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Build query
-    const query: unknown = {};
+    const query: any = {};
     
     if (search) {
       query.$or = [
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const sanitizedData = validation.sanitized!;
+    const sanitizedData: any = validation.sanitized!;
 
     // Check if staff with email already exists
     const existingStaff = await Staff.findOne({ 
@@ -228,7 +228,7 @@ export async function POST(request: NextRequest) {
       }
     }, { status: 201 });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Error creating staff:', error);
     
     // Handle duplicate key error (MongoDB E11000)

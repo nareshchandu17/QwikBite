@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
+export const dynamic = "force-dynamic";
+
 // Mock data settings
 const defaultDataSettings = {
   autoBackup: false,
@@ -11,7 +13,7 @@ const defaultDataSettings = {
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('[DEBUG] Loading data settings');
+    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -27,7 +29,7 @@ export async function GET(req: NextRequest) {
       data: defaultDataSettings
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error loading data settings:', error);
     return NextResponse.json({
       success: false,
@@ -40,7 +42,7 @@ export async function PUT(req: NextRequest) {
   try {
     const dataSettings = await req.json();
 
-    console.log('[DEBUG] Updating data settings:', dataSettings);
+    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -67,7 +69,7 @@ export async function PUT(req: NextRequest) {
     // 5. Test backup connectivity
     // 6. Log backup setting changes
 
-    console.log('[DEBUG] Data settings validated:', validatedData);
+    // console.log(...);
 
     // Simulate database update
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -78,7 +80,7 @@ export async function PUT(req: NextRequest) {
       data: validatedData
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[DEBUG] Error updating data settings:', error);
     return NextResponse.json({
       success: false,
