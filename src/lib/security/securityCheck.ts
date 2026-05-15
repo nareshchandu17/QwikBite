@@ -67,7 +67,7 @@ export function isValidRole(role: string): boolean {
 }
 
 // Function to sanitize user data before sending to client
-export function sanitizeUser(user: unknown) {
+export function sanitizeUser(user: any) {
   const { password: _password, __v: _v, ...sanitizedUser } = user.toObject ? user.toObject() : user;
   return sanitizedUser;
 }

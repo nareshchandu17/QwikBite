@@ -61,6 +61,7 @@ export async function syncTimeSlotUsage(targetDate?: string): Promise<void> {
     const slotStats: Record<string, number> = {};
     orders.forEach(order => {
         const slot = order.timeSlot;
+        if (!slot) return;
         if (!slotStats[slot]) slotStats[slot] = 0;
         slotStats[slot] += (order.loadValue || 0);
     });

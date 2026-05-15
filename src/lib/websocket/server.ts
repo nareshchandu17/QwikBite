@@ -59,7 +59,7 @@ export class SocketManager {
       },
       path: '/api/socket/io',
       addTrailingSlash: false,
-      transports: ['websocket'],
+      transports: ['websocket', 'polling'], // Allow polling as fallback for dev stability
       pingTimeout: 60000,
       pingInterval: 25000,
     });
@@ -155,7 +155,15 @@ export class SocketManager {
   }
 }
 
-export const socketManager = SocketManager.getInstance();
+declare global {
+  var socketManager: SocketManager | undefined;
+}
+
+export const socketManager = global.socketManager || SocketManager.getInstance();
+
+if (process.env.NODE_ENV !== 'production') {
+  global.socketManager = socketManager;
+}
 
 export function getIO() {
   return socketManager.getIO();

@@ -42,7 +42,7 @@ export function attachSocketLogging(io: WebSocketServer) {
   });
 }
 
-async function logEvent(entry: unknown) {
+async function logEvent(entry: any) {
   try {
     await connectDB();
     await EventLog.create(entry);

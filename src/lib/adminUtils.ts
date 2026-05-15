@@ -148,9 +148,9 @@ export const useAdminActions = () => {
       handleAction('update status', { id, status }),
     deleteItem: (id: string) => 
       handleAction('delete item', { id }),
-    updateItem: (id: string, data: unknown) => 
+    updateItem: (id: string, data: any) => 
       handleAction('update item', { id, ...data }),
-    createItem: (data: unknown) => 
+    createItem: (data: any) => 
       handleAction('create item', data)
   };
 };

@@ -42,6 +42,19 @@ export async function connectDB(): Promise<typeof mongoose> {
   try {
     globalCache.conn = await globalCache.promise;
     console.log("✅ MongoDB connected successfully");
+
+    // Fix legacy indexes if needed
+    try {
+      const db = globalCache.conn.connection.db;
+      if (db) {
+        const orders = db.collection('orders');
+        await orders.dropIndex('id_1');
+        console.log("🧹 Dropped legacy 'id_1' index from orders collection");
+      }
+    } catch (e) {
+      // Index doesn't exist or already dropped, ignore
+    }
+
     return globalCache.conn;
   } catch (error) {
     globalCache.promise = null;

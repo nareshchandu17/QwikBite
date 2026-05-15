@@ -50,7 +50,7 @@ export const initSocketIO = (req: NextApiRequest, res: NextApiResponseWithSocket
     });
     
     // Connection handling
-    io.on('connection', (socket) => {
+    _io.on('connection', (socket) => {
       console.log(`[Socket.IO] Client connected: ${socket.id}`);
       
       // Join user-specific room for personal orders
@@ -71,7 +71,7 @@ export const initSocketIO = (req: NextApiRequest, res: NextApiResponseWithSocket
       });
     });
     
-    res.socket.server.io = io;
+    res.socket.server.io = _io;
   }
   
   return res.socket.server.io;
