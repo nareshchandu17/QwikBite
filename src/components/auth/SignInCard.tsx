@@ -278,7 +278,7 @@ export function SignInCard({
   return (
     <motion.div
       className={cn(
-        "relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden",
+        "relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 flex flex-col",
         className
       )}
       initial={{ opacity: 0, scale: 0.95 }}
@@ -313,162 +313,164 @@ export function SignInCard({
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="px-8 py-4 space-y-6">
-        <div className="relative group">
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            value={form.email}
-            onChange={handleChange}
-            className={cn(
-              "floating-input peer w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-xl",
-              "focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm",
-              !isValid.email ? "border-red-500" : "border-gray-200 dark:border-gray-700"
-            )}
-            placeholder=" "
-            disabled={loading}
-          />
-          <span className="absolute left-3.5 top-3.5 text-gray-400 peer-focus:text-orange-500 transition-colors">
-            <Mail className="h-5 w-5" />
-          </span>
-          <label 
-            className={cn(
-              "floating-label absolute left-11 top-3.5 text-gray-500 dark:text-gray-400 text-sm",
-              "transition-all pointer-events-none bg-white dark:bg-gray-900 px-1",
-              "peer-focus:text-orange-500 peer-placeholder-shown:bg-transparent"
-            )}
-            htmlFor="email"
-          >
-            Student Email
-          </label>
-          {!isValid.email && (
-            <p className="mt-1 text-xs text-red-500">Please enter a valid email</p>
-          )}
-        </div>
-
-        <div className="relative group">
-          <input
-            id="password"
-            name="password"
-            type={showPassword ? "text" : "password"}
-            autoComplete="current-password"
-            value={form.password}
-            onChange={handleChange}
-            className={cn(
-              "floating-input peer w-full pl-11 pr-11 py-3 bg-gray-50 dark:bg-gray-800 border rounded-xl",
-              "focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm",
-              !isValid.password ? "border-red-500" : "border-gray-200 dark:border-gray-700"
-            )}
-            placeholder=" "
-            disabled={loading}
-          />
-          <span className="absolute left-3.5 top-3.5 text-gray-400 peer-focus:text-orange-500 transition-colors">
-            <Lock className="h-5 w-5" />
-          </span>
-          <label 
-            className={cn(
-              "floating-label absolute left-11 top-3.5 text-gray-500 dark:text-gray-400 text-sm",
-              "transition-all pointer-events-none bg-white dark:bg-gray-900 px-1",
-              "peer-focus:text-orange-500 peer-placeholder-shown:bg-transparent"
-            )}
-            htmlFor="password"
-          >
-            Password
-          </label>
-          <button
-            type="button"
-            onClick={togglePasswordVisibility}
-            className="absolute right-3.5 top-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none transition-colors"
-            tabIndex={-1}
-          >
-            {showPassword ? (
-              <EyeOff className="h-5 w-5" />
-            ) : (
-              <Eye className="h-5 w-5" />
-            )}
-          </button>
-          {!isValid.password && (
-            <p className="mt-1 text-xs text-red-500">Password is required</p>
-          )}
-        </div>
-
-        <div className="flex space-x-1 h-1 w-full mt-1">
-          <div className={cn(
-            "h-full rounded-full transition-all duration-300",
-            form.password.length > 0 ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
-          )} style={{ width: form.password.length > 0 ? '25%' : '0%' }}></div>
-          <div className={cn(
-            "h-full rounded-full transition-all duration-300",
-            form.password.length > 3 ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
-          )} style={{ width: form.password.length > 3 ? '25%' : '0%' }}></div>
-          <div className={cn(
-            "h-full rounded-full transition-all duration-300",
-            form.password.length > 6 ? "bg-yellow-400" : "bg-gray-200 dark:bg-gray-700"
-          )} style={{ width: form.password.length > 6 ? '25%' : '0%' }}></div>
-          <div className={cn(
-            "h-full rounded-full transition-all duration-300",
-            form.password.length > 8 ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
-          )} style={{ width: form.password.length > 8 ? '25%' : '0%' }}></div>
-        </div>
-
-        <div className="flex items-center justify-between text-sm">
-          <label className="flex items-center space-x-2 cursor-pointer group">
-            <input 
-              type="checkbox" 
-              className="form-checkbox h-4 w-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 dark:bg-gray-800 dark:border-gray-600 transition duration-150 ease-in-out" 
+      <div className="px-8 py-4">
+        <form onSubmit={handleSubmit} className="px-8 py-4 space-y-6">
+          <div className="relative group">
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={form.email}
+              onChange={handleChange}
+              className={cn(
+                "floating-input peer w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-xl",
+                "focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm",
+                !isValid.email ? "border-red-500" : "border-gray-200 dark:border-gray-700"
+              )}
+              placeholder=" "
+              disabled={loading}
             />
-            <span className="text-gray-600 dark:text-gray-300 group-hover:text-gray-800 dark:group-hover:text-gray-100 transition-colors select-none">
-              Remember me
+            <span className="absolute left-3.5 top-3.5 text-gray-400 peer-focus:text-orange-500 transition-colors">
+              <Mail className="h-5 w-5" />
             </span>
-          </label>
-          <button
-            type="button"
-            className="flex items-center text-orange-500 hover:text-orange-600 dark:hover:text-orange-400 font-medium transition-colors cursor-pointer"
-            onClick={() => {
-              closeModal();
-              setTimeout(() => {
-                openModal('forgotpassword');
-              }, 100);
-            }}
-          >
-            <Key className="h-4 w-4 mr-1" />
-            Forgot Password?
-          </button>
-        </div>
-
-        <motion.button
-          type="submit"
-          disabled={loading}
-          className={cn(
-            "w-full relative group overflow-hidden bg-gradient-to-r from-orange-500 to-orange-600",
-            "hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3.5 rounded-xl",
-            "shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 transition-all duration-300",
-            "transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2",
-            loading ? "opacity-70 cursor-not-allowed" : ""
-          )}
-          whileHover={{ scale: loading ? 1 : 1.02 }}
-          whileTap={{ scale: loading ? 1 : 0.98 }}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.3 }}
-        >
-          <div className="absolute inset-0 w-full h-full bg-white/20 group-hover:translate-x-full transition-transform duration-500 ease-out -translate-x-full skew-x-12"></div>
-          <span className="relative flex items-center justify-center gap-2">
-            {loading ? (
-              <>
-                <Loader2 className="animate-spin h-4 w-4" />
-                Getting your food ready...
-              </>
-            ) : (
-              <>
-                Get My Food Ready 🍽️
-              </>
+            <label 
+              className={cn(
+                "floating-label absolute left-11 top-3.5 text-gray-500 dark:text-gray-400 text-sm",
+                "transition-all pointer-events-none bg-white dark:bg-gray-900 px-1",
+                "peer-focus:text-orange-500 peer-placeholder-shown:bg-transparent"
+              )}
+              htmlFor="email"
+            >
+              Student Email
+            </label>
+            {!isValid.email && (
+              <p className="mt-1 text-xs text-red-500">Please enter a valid email</p>
             )}
-          </span>
-        </motion.button>
-      </form>
+          </div>
+
+          <div className="relative group">
+            <input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              autoComplete="current-password"
+              value={form.password}
+              onChange={handleChange}
+              className={cn(
+                "floating-input peer w-full pl-11 pr-11 py-3 bg-gray-50 dark:bg-gray-800 border rounded-xl",
+                "focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm",
+                !isValid.password ? "border-red-500" : "border-gray-200 dark:border-gray-700"
+              )}
+              placeholder=" "
+              disabled={loading}
+            />
+            <span className="absolute left-3.5 top-3.5 text-gray-400 peer-focus:text-orange-500 transition-colors">
+              <Lock className="h-5 w-5" />
+            </span>
+            <label 
+              className={cn(
+                "floating-label absolute left-11 top-3.5 text-gray-500 dark:text-gray-400 text-sm",
+                "transition-all pointer-events-none bg-white dark:bg-gray-900 px-1",
+                "peer-focus:text-orange-500 peer-placeholder-shown:bg-transparent"
+              )}
+              htmlFor="password"
+            >
+              Password
+            </label>
+            <button
+              type="button"
+              onClick={togglePasswordVisibility}
+              className="absolute right-3.5 top-3.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none transition-colors"
+              tabIndex={-1}
+            >
+              {showPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
+            </button>
+            {!isValid.password && (
+              <p className="mt-1 text-xs text-red-500">Password is required</p>
+            )}
+          </div>
+
+          <div className="flex space-x-1 h-1 w-full mt-1">
+            <div className={cn(
+              "h-full rounded-full transition-all duration-300",
+              form.password.length > 0 ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
+            )} style={{ width: form.password.length > 0 ? '25%' : '0%' }}></div>
+            <div className={cn(
+              "h-full rounded-full transition-all duration-300",
+              form.password.length > 3 ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
+            )} style={{ width: form.password.length > 3 ? '25%' : '0%' }}></div>
+            <div className={cn(
+              "h-full rounded-full transition-all duration-300",
+              form.password.length > 6 ? "bg-yellow-400" : "bg-gray-200 dark:bg-gray-700"
+            )} style={{ width: form.password.length > 6 ? '25%' : '0%' }}></div>
+            <div className={cn(
+              "h-full rounded-full transition-all duration-300",
+              form.password.length > 8 ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
+            )} style={{ width: form.password.length > 8 ? '25%' : '0%' }}></div>
+          </div>
+
+          <div className="flex items-center justify-between text-sm">
+            <label className="flex items-center space-x-2 cursor-pointer group">
+              <input 
+                type="checkbox" 
+                className="form-checkbox h-4 w-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 dark:bg-gray-800 dark:border-gray-600 transition duration-150 ease-in-out" 
+              />
+              <span className="text-gray-600 dark:text-gray-300 group-hover:text-gray-800 dark:group-hover:text-gray-100 transition-colors select-none">
+                Remember me
+              </span>
+            </label>
+            <button
+              type="button"
+              className="flex items-center text-orange-500 hover:text-orange-600 dark:hover:text-orange-400 font-medium transition-colors cursor-pointer"
+              onClick={() => {
+                closeModal();
+                setTimeout(() => {
+                  openModal('forgotpassword');
+                }, 100);
+              }}
+            >
+              <Key className="h-4 w-4 mr-1" />
+              Forgot Password?
+            </button>
+          </div>
+
+          <motion.button
+            type="submit"
+            disabled={loading}
+            className={cn(
+              "w-full relative group overflow-hidden bg-gradient-to-r from-orange-500 to-orange-600",
+              "hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3.5 rounded-xl",
+              "shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 transition-all duration-300",
+              "transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2",
+              loading ? "opacity-70 cursor-not-allowed" : ""
+            )}
+            whileHover={{ scale: loading ? 1 : 1.02 }}
+            whileTap={{ scale: loading ? 1 : 0.98 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.3 }}
+          >
+            <div className="absolute inset-0 w-full h-full bg-white/20 group-hover:translate-x-full transition-transform duration-500 ease-out -translate-x-full skew-x-12"></div>
+            <span className="relative flex items-center justify-center gap-2">
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin h-4 w-4" />
+                  Getting your food ready...
+                </>
+              ) : (
+                <>
+                  Get My Food Ready 🍽️
+                </>
+              )}
+            </span>
+          </motion.button>
+        </form>
+      </div>
 
       <div className="bg-gray-50 dark:bg-gray-800/50 py-5 px-8 border-t border-gray-100 dark:border-gray-700 mt-6">
         <div className="text-center space-y-4">

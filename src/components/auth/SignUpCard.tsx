@@ -5,6 +5,8 @@ import { motion } from 'framer-motion';
 import { Eye, EyeOff, User, Mail, Lock, Badge, Pin, Check, Utensils } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { signIn, useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 interface SignUpCardProps {
   onSuccess?: () => void;
@@ -25,6 +27,8 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const regNoRegex = /^[a-zA-Z0-9]+$/;
 
 export function SignUpCard({ onSuccess, onSwitchToSignIn, className }: SignUpCardProps) {
+  const { update: updateSession } = useSession();
+  const router = useRouter();
 
   const [form, setForm] = useState({
     name: '',
@@ -144,7 +148,6 @@ export function SignUpCard({ onSuccess, onSwitchToSignIn, className }: SignUpCar
 
       toast.success('Account created successfully! Signing you in...');
 
-      const { signIn } = await import('next-auth/react');
       const signInResult = await signIn('credentials', {
         email: form.email,
         password: form.password,
@@ -159,10 +162,30 @@ export function SignUpCard({ onSuccess, onSwitchToSignIn, className }: SignUpCar
         return;
       }
 
-      toast.success('Signed in successfully!');
+      // Step 2: Update session to get fresh role info
+      const updatedSession = await updateSession();
+      
+      toast.success('Signed in successfully! Redirecting...');
 
+      // Determine redirect path
+      let redirectPath = '/';
+      const userRole = updatedSession?.user?.role || form.role;
 
-      onSuccess?.();
+      if (userRole === 'admin' || userRole === 'canteen_staff') {
+        redirectPath = '/admin/dashboard';
+      } else {
+        redirectPath = '/customer';
+      }
+      
+      // Step 3: Fast and smooth transition
+      // We trigger the navigation FIRST so the browser starts loading the new page
+      window.location.href = redirectPath;
+      
+      // We delay closing the modal slightly so it covers the "/" screen flash 
+      // while the new page is being prepared by the browser
+      setTimeout(() => {
+        onSuccess?.();
+      }, 100);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Signup failed';
       setError(message);
@@ -199,18 +222,17 @@ export function SignUpCard({ onSuccess, onSwitchToSignIn, className }: SignUpCar
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, []);
-
-  return (
+  }, []);  return (
     <motion.div
       className={cn(
-        'relative w-full max-w-lg bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col max-h-[95vh]',
+        'relative w-full max-w-lg bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 flex flex-col',
         className
       )}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
     >
+      {/* Close Button */}
       <button
         type="button"
         onClick={onSuccess}
@@ -222,11 +244,13 @@ export function SignUpCard({ onSuccess, onSwitchToSignIn, className }: SignUpCar
         </svg>
       </button>
 
+      {/* Decorative Background */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-orange-400/20 rounded-full blur-[120px] dark:bg-orange-600/20"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-400/10 rounded-full blur-[120px] dark:bg-blue-600/10"></div>
       </div>
       
+      {/* Header */}
       <div className="pt-8 px-8 pb-2 text-center shrink-0">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-orange-100 dark:bg-orange-900/30 mb-3 shadow-sm ring-4 ring-orange-50 dark:ring-orange-900/20">
           <Utensils className="h-6 w-6 text-orange-500" />
@@ -249,312 +273,246 @@ export function SignUpCard({ onSuccess, onSwitchToSignIn, className }: SignUpCar
         </motion.p>
       )}
 
-      <div className="overflow-y-auto px-8 py-2">
-        <form onSubmit={handleSubmit} className="space-y-5 py-2">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Personal Details</span>
-              <div className="h-px bg-gray-100 dark:bg-gray-700 flex-grow"></div>
-            </div>
+      {/* Main Form Area */}
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+        {/* Scrollable Content Container */}
+        <div className="px-8 py-3 overflow-y-auto max-h-[70vh] custom-scrollbar flex-1">
+          <div className="space-y-5">
             
-            <div className="relative">
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="name">
-                Full Name
-              </label>
-              <div className="relative">
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => handleChange('name', e.target.value)}
-                  className={cn(
-                    "glow-input w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-800 border rounded-xl",
-                    "focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm placeholder-gray-400",
-                    !isValid.name && form.name !== '' ? "border-red-500" : "border-gray-200 dark:border-gray-700"
-                  )}
-                  placeholder="John Doe"
-                  disabled={loading}
-                />
-                <span className="absolute left-3 top-2.5 text-gray-400">
-                  <User className="h-5 w-5" />
-                </span>
+            {/* 1. Personal Details */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Personal Details</span>
+                <div className="h-px bg-gray-100 dark:bg-gray-700 flex-grow"></div>
               </div>
-              <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">As per college records</p>
-            </div>
-
-            <div className="relative">
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="regNo">
-                Registration Number
-              </label>
+              
               <div className="relative">
-                <input
-                  id="regNo"
-                  name="regNo"
-                  type="text"
-                  value={form.regNo}
-                  onChange={(e) => handleChange('regNo', e.target.value)}
-                  className={cn(
-                    "glow-input w-full pl-10 pr-4 py-2.5 bg-gray-50 dark:bg-gray-800 border rounded-xl",
-                    "focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm placeholder-gray-400",
-                    !isValid.regNo && form.regNo !== '' ? "border-red-500" : "border-gray-200 dark:border-gray-700"
-                  )}
-                  placeholder="e.g. 21CSE045"
-                  disabled={loading}
-                />
-                <span className="absolute left-3 top-2.5 text-gray-400">
-                  <Pin className="h-5 w-5" />
-                </span>
-              </div>
-              {!isValid.regNo && form.regNo !== '' ? (
-                <p className="mt-1 text-xs text-red-500 flex items-center gap-1">
-                  Hmm… that registration number doesn&apos;t match our format 🤔
-                </p>
-              ) : (
-                <p className="mt-1 text-[11px] text-gray-400 dark:text-gray-500">As per college records</p>
-              )}
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Access Credentials</span>
-              <div className="h-px bg-gray-100 dark:bg-gray-700 flex-grow"></div>
-            </div>
-
-            <div className="relative">
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="email">
-                College Email
-              </label>
-              <div className="relative">
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  value={form.email}
-                  onChange={(e) => handleChange('email', e.target.value)}
-                  className={cn(
-                    "glow-input w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-gray-800 border rounded-xl",
-                    "focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm placeholder-gray-400",
-                    !isValid.email && form.email !== '' ? "border-red-500" : "border-gray-200 dark:border-gray-700"
-                  )}
-                  placeholder="you@university.edu"
-                  disabled={loading}
-                />
-                <span className="absolute left-3 top-2.5 text-gray-400">
-                  <Mail className="h-5 w-5" />
-                </span>
-                {isValid.email && form.email && (
-                  <span className="absolute right-3 top-2.5 text-green-500">
-                    <Check className="h-5 w-5" />
+                <label className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-0.5" htmlFor="name">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <input
+                    id="name"
+                    name="name"
+                    type="text"
+                    value={form.name}
+                    onChange={(e) => handleChange('name', e.target.value)}
+                    className={cn(
+                      "glow-input w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border rounded-xl",
+                      "focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm placeholder-gray-400",
+                      !isValid.name && form.name !== '' ? "border-red-500" : "border-gray-200 dark:border-gray-700"
+                    )}
+                    placeholder="John Doe"
+                    disabled={loading}
+                  />
+                  <span className="absolute left-2.5 top-2 text-gray-400">
+                    <User className="h-4 w-4" />
                   </span>
-                )}
+                </div>
               </div>
-            </div>
 
-            <div className="relative group">
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1" htmlFor="password">
-                Password
-              </label>
               <div className="relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="new-password"
-                  value={form.password}
-                  onChange={(e) => handleChange('password', e.target.value)}
-                  className={cn(
-                    "glow-input w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-gray-800 border rounded-xl",
-                    "focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm placeholder-gray-400",
-                    !isValid.password && form.password !== '' ? "border-red-500" : "border-gray-200 dark:border-gray-700"
-                  )}
-                  placeholder="Create a strong password"
-                  disabled={loading}
-                  onKeyDown={(e) => {
-                    if (e.getModifierState('CapsLock')) {
-                      setCapsLockOn(true);
-                    } else {
-                      setCapsLockOn(false);
-                    }
-                  }}
-                />
-                <span className="absolute left-3 top-2.5 text-gray-400">
-                  <Lock className="h-5 w-5" />
-                </span>
-                <button
-                  type="button"
-                  onClick={togglePasswordVisibility}
-                  className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none transition-colors"
-                  title={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
-                </button>
-              </div>
-              
-              <div className="flex space-x-1 h-1 w-full mt-2 mb-1">
-                <div className={cn(
-                  "h-full rounded-full transition-all duration-300",
-                  form.password.length > 0 ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
-                )} style={{ width: '25%' }}></div>
-                <div className={cn(
-                  "h-full rounded-full transition-all duration-300",
-                  form.password.length > 3 ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
-                )} style={{ width: '25%' }}></div>
-                <div className={cn(
-                  "h-full rounded-full transition-all duration-300",
-                  form.password.length > 6 ? "bg-yellow-400" : "bg-gray-200 dark:bg-gray-700"
-                )} style={{ width: '25%' }}></div>
-                <div className={cn(
-                  "h-full rounded-full transition-all duration-300",
-                  form.password.length > 8 ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
-                )} style={{ width: '25%' }}></div>
-              </div>
-              
-              <div className="flex justify-between items-start mt-1">
-                <div className="text-[11px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
-                  <Lock className="h-3 w-3" />
-                  Your password is encrypted & never shared
+                <label className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-0.5" htmlFor="regNo">
+                  Registration Number
+                </label>
+                <div className="relative">
+                  <input
+                    id="regNo"
+                    name="regNo"
+                    type="text"
+                    value={form.regNo}
+                    onChange={(e) => handleChange('regNo', e.target.value)}
+                    className={cn(
+                      "glow-input w-full pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-800 border rounded-xl",
+                      "focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm placeholder-gray-400",
+                      !isValid.regNo && form.regNo !== '' ? "border-red-500" : "border-gray-200 dark:border-gray-700"
+                    )}
+                    placeholder="e.g. 21CSE045"
+                    disabled={loading}
+                  />
+                  <span className="absolute left-2.5 top-2 text-gray-400">
+                    <Pin className="h-4 w-4" />
+                  </span>
                 </div>
-                {capsLockOn && (
-                  <div className="text-[11px] text-amber-500 flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[12px]">warning</span>
-                    Caps lock on
+              </div>
+            </div>
+
+            {/* 2. Select Role Section */}
+            <div className="space-y-2.5 pt-1">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Select Role</span>
+                <div className="h-px bg-gray-100 dark:bg-gray-700 flex-grow"></div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2.5">
+                <label className="cursor-pointer group relative">
+                  <input 
+                    type="radio" 
+                    name="role" 
+                    value="customer" 
+                    checked={form.role === 'customer'}
+                    onChange={() => handleChange('role', 'customer')}
+                    className="peer sr-only" 
+                  />
+                  <div className="p-2.5 rounded-xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-orange-200 dark:hover:border-orange-900 peer-checked:border-orange-500 peer-checked:bg-orange-50 dark:peer-checked:bg-orange-900/10 transition-all duration-200 h-full flex flex-col items-center justify-center text-center gap-1.5">
+                    <User className="h-4 w-4 text-gray-400 peer-checked:text-orange-500 transition-colors" />
+                    <div>
+                      <div className="font-semibold text-xs text-gray-700 dark:text-gray-200">Customer</div>
+                      <div className="text-[9px] text-gray-500">Order Food</div>
+                    </div>
                   </div>
-                )}
+                  <div className="absolute top-1.5 right-1.5 opacity-0 peer-checked:opacity-100 transition-opacity text-orange-500">
+                    <Check className="h-3 w-3" />
+                  </div>
+                </label>
+
+                <label className="cursor-pointer group relative">
+                  <input 
+                    type="radio" 
+                    name="role" 
+                    value="admin" 
+                    checked={form.role === 'admin'}
+                    onChange={() => handleChange('role', 'admin')}
+                    className="peer sr-only" 
+                  />
+                  <div className="p-2.5 rounded-xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-orange-200 dark:hover:border-orange-900 peer-checked:border-orange-500 peer-checked:bg-orange-50 dark:peer-checked:bg-orange-900/10 transition-all duration-200 h-full flex flex-col items-center justify-center text-center gap-1.5">
+                    <Badge className="h-4 w-4 text-gray-400 peer-checked:text-orange-500 transition-colors" />
+                    <div>
+                      <div className="font-semibold text-xs text-gray-700 dark:text-gray-200">Admin</div>
+                      <div className="text-[9px] text-gray-500">Manage Canteen</div>
+                    </div>
+                  </div>
+                  <div className="absolute top-1.5 right-1.5 opacity-0 peer-checked:opacity-100 transition-opacity text-orange-500">
+                    <Check className="h-3 w-3" />
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            {/* 3. Access Credentials */}
+            <div className="space-y-3 pt-1 pb-2">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Access Credentials</span>
+                <div className="h-px bg-gray-100 dark:bg-gray-700 flex-grow"></div>
+              </div>
+
+              <div className="relative">
+                <label className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-0.5" htmlFor="email">
+                  College Email
+                </label>
+                <div className="relative">
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    value={form.email}
+                    onChange={(e) => handleChange('email', e.target.value)}
+                    className={cn(
+                      "glow-input w-full pl-9 pr-9 py-2 bg-gray-50 dark:bg-gray-800 border rounded-xl",
+                      "focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm placeholder-gray-400",
+                      !isValid.email && form.email !== '' ? "border-red-500" : "border-gray-200 dark:border-gray-700"
+                    )}
+                    placeholder="you@university.edu"
+                    disabled={loading}
+                  />
+                  <span className="absolute left-2.5 top-2 text-gray-400">
+                    <Mail className="h-4 w-4" />
+                  </span>
+                </div>
+              </div>
+
+              <div className="relative group">
+                <label className="block text-[11px] font-medium text-gray-700 dark:text-gray-300 mb-0.5" htmlFor="password">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    value={form.password}
+                    onChange={(e) => handleChange('password', e.target.value)}
+                    className={cn(
+                      "glow-input w-full pl-9 pr-9 py-2 bg-gray-50 dark:bg-gray-800 border rounded-xl",
+                      "focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm placeholder-gray-400",
+                      !isValid.password && form.password !== '' ? "border-red-500" : "border-gray-200 dark:border-gray-700"
+                    )}
+                    placeholder="Create a strong password"
+                    disabled={loading}
+                  />
+                  <span className="absolute left-2.5 top-2 text-gray-400">
+                    <Lock className="h-4 w-4" />
+                  </span>
+                  <button
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className="absolute right-2.5 top-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Select Role</span>
-              <div className="h-px bg-gray-100 dark:bg-gray-700 flex-grow"></div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <label className="cursor-pointer group relative">
-                <input 
-                  type="radio" 
-                  name="role" 
-                  value="customer" 
-                  checked={form.role === 'customer'}
-                  onChange={() => handleChange('role', 'customer')}
-                  className="peer sr-only" 
-                />
-                <div className="p-3 rounded-xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-orange-200 dark:hover:border-orange-900 peer-checked:border-orange-500 peer-checked:bg-orange-50 dark:peer-checked:bg-orange-900/10 transition-all duration-200 h-full flex flex-col items-center justify-center text-center gap-2">
-                  <User className="h-5 w-5 text-gray-400 peer-checked:text-orange-500 transition-colors" />
-                  <div>
-                    <div className="font-semibold text-sm text-gray-700 dark:text-gray-200">Customer</div>
-                    <div className="text-[10px] text-gray-500">I want to order food</div>
-                  </div>
-                </div>
-                <div className="absolute top-2 right-2 opacity-0 peer-checked:opacity-100 transition-opacity text-orange-500">
-                  <Check className="h-4 w-4" />
-                </div>
-              </label>
-
-              <label className="cursor-pointer group relative">
-                <input 
-                  type="radio" 
-                  name="role" 
-                  value="admin" 
-                  checked={form.role === 'admin'}
-                  onChange={() => handleChange('role', 'admin')}
-                  className="peer sr-only" 
-                />
-                <div className="p-3 rounded-xl border-2 border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-orange-200 dark:hover:border-orange-900 peer-checked:border-orange-500 peer-checked:bg-orange-50 dark:peer-checked:bg-orange-900/10 transition-all duration-200 h-full flex flex-col items-center justify-center text-center gap-2">
-                  <Badge className="h-5 w-5 text-gray-400 peer-checked:text-orange-500 transition-colors" />
-                  <div>
-                    <div className="font-semibold text-sm text-gray-700 dark:text-gray-200">Admin</div>
-                    <div className="text-[10px] text-gray-500">Manage canteen</div>
-                  </div>
-                </div>
-                <div className="absolute top-2 right-2 opacity-0 peer-checked:opacity-100 transition-opacity text-orange-500">
-                  <Check className="h-4 w-4" />
-                </div>
-                <div className="group-hover:opacity-100 opacity-0 absolute -top-8 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] py-1 px-2 rounded pointer-events-none transition-opacity whitespace-nowrap z-10">
-                  Admin access requires approval
-                </div>
-              </label>
-            </div>
-          </div>
-
+        {/* Fixed Bottom Action Area */}
+        <div className="px-8 py-4 border-t border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-900 shrink-0">
           <motion.button
             type="submit"
             disabled={loading}
             className={cn(
               "w-full relative group overflow-hidden bg-gradient-to-r from-orange-500 to-orange-600",
-              "hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3.5 rounded-xl",
+              "hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3 rounded-xl",
               "shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 transition-all duration-300",
-              "transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2",
+              "transform hover:-translate-y-0.5 focus:outline-none",
               loading ? "opacity-70 cursor-not-allowed" : ""
             )}
-            whileHover={{ scale: loading ? 1 : 1.02 }}
-            whileTap={{ scale: loading ? 1 : 0.98 }}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.3 }}
+            whileHover={{ scale: loading ? 1 : 1.01 }}
+            whileTap={{ scale: loading ? 1 : 0.99 }}
           >
             <div className="absolute inset-0 w-full h-full bg-white/20 group-hover:translate-x-full transition-transform duration-500 ease-out -translate-x-full skew-x-12"></div>
             <span className="relative flex items-center justify-center gap-2">
               {loading ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Creating your account...
+                  Creating Account...
                 </>
               ) : (
-                <>
-                  Create my campus account 🚀
-                </>
+                <>Create my campus account 🚀</>
               )}
             </span>
           </motion.button>
-        </form>
-      </div>
+        </div>
+      </form>
 
-      <div className="bg-gray-50 dark:bg-gray-800/50 py-4 px-8 border-t border-gray-100 dark:border-gray-700 shrink-0">
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[11px] text-gray-500 dark:text-gray-400">
+      {/* Footer Info */}
+      <div className="bg-gray-50 dark:bg-gray-800/50 py-3 px-8 border-t border-gray-100 dark:border-gray-700 shrink-0">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10px] text-gray-500 dark:text-gray-400">
           <div className="flex items-center gap-1">
             <Check className="h-3 w-3 text-green-500" />
             Used by 5,000+ students
           </div>
           <div className="flex items-center gap-1">
             <Check className="h-3 w-3 text-green-500" />
-            Secure data
-          </div>
-          <div className="flex items-center gap-1">
-            <Check className="h-3 w-3 text-green-500" />
             Campus verified
           </div>
         </div>
-        <div className="text-center mt-3">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
+        <div className="text-center mt-2">
+          <p className="text-[11px] text-gray-500 dark:text-gray-400">
             Already have an account?{' '}
-            {onSwitchToSignIn ? (
-              <button
-                type="button"
-                onClick={onSwitchToSignIn}
-                className="text-orange-500 font-semibold hover:underline"
-              >
-                Sign in
-              </button>
-            ) : (
-              <a 
-                href="/auth/signin" 
-                className="text-orange-500 font-semibold hover:underline"
-              >
-                Sign in
-              </a>
-            )}
+            <button
+              type="button"
+              onClick={onSwitchToSignIn}
+              className="text-orange-500 font-semibold hover:underline"
+            >
+              Sign in
+            </button>
           </p>
         </div>
       </div>

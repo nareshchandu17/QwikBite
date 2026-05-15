@@ -19,7 +19,8 @@ import {
   Edit3,
   Camera,
   CheckCircle2,
-  Clock
+  Clock,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCustomerGuard } from '@/hooks/use-customer-guard';
@@ -187,8 +188,8 @@ export default function ProfilePage() {
               <div className="relative mb-6 mt-4">
                 <div className="w-28 h-28 rounded-full bg-gradient-to-br from-[#f96124] to-[#ff8e53] p-1 shadow-xl">
                   <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
-                    {user.profilePic ? (
-                      <img src={user.profilePic} alt={user.name} className="w-full h-full object-cover" />
+                    {(user as any).profilePic ? (
+                      <img src={(user as any).profilePic} alt={user.name} className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-4xl font-black text-[#f96124]">{user.name.charAt(0).toUpperCase()}</span>
                     )}

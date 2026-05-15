@@ -156,7 +156,7 @@ export default function FavouritesPage() {
   const [allMenuItems, setAllMenuItems] = useState<MenuItem[]>([]);
 
   // Refs and hooks
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const addItem = useCartStore(state => state.addItem);
   const router = useRouter();
   const debouncedSearchQuery = useDebounce(searchQuery, 300);

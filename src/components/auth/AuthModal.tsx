@@ -56,7 +56,7 @@ export function AuthModal({ redirectOnSignIn = false }: AuthModalProps) {
           onMouseDown={handleBackgroundClick}
         >
           <motion.div
-            className="relative w-full max-w-lg my-8"
+            className="relative w-full max-w-lg my-8 flex flex-col"
             role="dialog"
             aria-modal="true"
             initial={{ opacity: 0, y: 30 }}
