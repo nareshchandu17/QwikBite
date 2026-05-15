@@ -5,7 +5,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { Order, OrderStatus, PaymentStatus } from '@/models/order.model';
 import mongoose from 'mongoose';
 import { syncTimeSlotUsage } from '@/lib/slot-utils';
-import { socketManager } from '@/lib/websocket/server';
+// import { socketManager } from '@/lib/websocket/server'; // REMOVED
 import { cache } from '@/lib/cache';
 import { successResponse, errorResponse } from '@/lib/api-response';
 import logger from '@/lib/logger';
