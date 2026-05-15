@@ -345,7 +345,7 @@ const Settings: React.FC = () => {
                         <div className="mt-8 border-t border-white/5 pt-6">
                             <h4 className="text-sm font-bold text-white mb-4">Active Sessions</h4>
                             <div className="space-y-3">
-                                {sessions.map((session) => (
+                                {sessions.map((session: any) => (
                                     <div key={session.id} className={`flex justify-between items-center p-3 bg-white/5 rounded-xl ${!session.isActive ? 'opacity-60' : ''}`}>
                                         <div className="flex items-center gap-3">
                                             <div className={`w-2 h-2 ${session.isActive ? 'bg-[#4CAF50] animate-pulse' : 'bg-[#9ca3af]'} rounded-full`}></div>

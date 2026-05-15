@@ -26,7 +26,7 @@ interface OrderCardProps {
 
 const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus }) => {
   const firstItem = order.items[0];
-  const itemThumbnail = firstItem?.image || '/placeholder-food.jpg';
+  const itemThumbnail = firstItem?.image || firstItem?.imageUrl || (firstItem?.menuItem as any)?.image || '/placeholder-food.jpg';
 
   return (
     <motion.div
@@ -52,7 +52,9 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onUpdateStatus }) => {
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex flex-wrap items-center gap-3 mb-1">
-          <span className="text-xs font-black tracking-widest uppercase text-white/40">#{order.id.split('-').pop()}</span>
+          <span className="text-xs font-black tracking-widest uppercase text-white/40">
+            #{(order.id || (order as any)._id)?.split('-').pop() || 'ORDER'}
+          </span>
           <span className={`text-[10px] px-2 py-0.5 rounded-full font-black uppercase tracking-tighter border ${getStatusStyles(order.status)}`}>
             {formatStatus(order.status)}
           </span>
@@ -147,7 +149,7 @@ const LiveOrdersQueue: React.FC<LiveOrdersQueueProps> = ({ orders, onUpdateStatu
   const [activeFilter, setActiveFilter] = useState<OrderStatus | 'All'>('All');
 
   const filters: (OrderStatus | 'All')[] = [
-    'All', 'received', 'preparing', 'ready', 'cancelled'
+    'All', 'pending', 'confirmed', 'received', 'preparing', 'ready', 'cancelled'
   ] as const;
 
   const filteredOrders = activeFilter === 'All'

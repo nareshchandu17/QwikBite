@@ -59,19 +59,19 @@ const Header: React.FC<HeaderProps> = ({ title, subtitle, setActiveTab }) => {
         {subtitle && <p className="text-sm text-amber-500">{subtitle}</p>}
       </div>
       <div className="flex items-center gap-6">
-        
+
         {/* Notification Bell */}
         <div className="relative">
-          <button 
+          <button
             onClick={() => { setIsNotifOpen(!isNotifOpen); setIsProfileOpen(false); }}
             className={`relative p-2 rounded-full transition-all duration-300 ${isNotifOpen ? 'bg-white/10 text-white' : 'text-[#9ca3af] hover:text-white hover:bg-white/5'}`}
           >
             <NotificationIcon className="w-6 h-6" />
             {hasNewNotification && (
-               <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
-                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F09819] opacity-75"></span>
-                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#F09819]"></span>
-               </span>
+              <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F09819] opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#F09819]"></span>
+              </span>
             )}
           </button>
 
@@ -84,7 +84,7 @@ const Header: React.FC<HeaderProps> = ({ title, subtitle, setActiveTab }) => {
               </div>
               <div className="max-h-64 overflow-y-auto custom-scrollbar">
                 {notifications.map(notif => (
-                  <div 
+                  <div
                     key={notif.id}
                     onClick={() => notif.tab && setActiveTab && setActiveTab(notif.tab)}
                     className="p-4 border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors group"
@@ -108,7 +108,7 @@ const Header: React.FC<HeaderProps> = ({ title, subtitle, setActiveTab }) => {
 
         {/* Profile Dropdown */}
         <div className="relative">
-          <button 
+          <button
             onClick={() => { setIsProfileOpen(!isProfileOpen); setIsNotifOpen(false); }}
             className={`flex items-center gap-3 p-1.5 rounded-full border border-transparent transition-all duration-300 ${isProfileOpen ? 'bg-white/10 border-white/10' : 'hover:bg-white/5'}`}
           >
@@ -117,7 +117,7 @@ const Header: React.FC<HeaderProps> = ({ title, subtitle, setActiveTab }) => {
               <p className="font-bold text-sm text-white leading-none">Admin</p>
               <p className="text-[10px] text-[#9ca3af] mt-0.5 font-medium">Superuser</p>
             </div>
-             <ChevronDownIcon className={`w-4 h-4 text-[#9ca3af] transition-transform duration-300 ${isProfileOpen ? 'rotate-180' : ''} hidden md:block`}/>
+            <ChevronDownIcon className={`w-4 h-4 text-[#9ca3af] transition-transform duration-300 ${isProfileOpen ? 'rotate-180' : ''} hidden md:block`} />
           </button>
 
           {isProfileOpen && (
@@ -128,7 +128,7 @@ const Header: React.FC<HeaderProps> = ({ title, subtitle, setActiveTab }) => {
                   Settings
                 </button>
                 <button className="w-full text-left px-4 py-2.5 text-sm text-[#9ca3af] hover:text-white hover:bg-white/10 transition-colors flex items-center gap-2">
-                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
                   Help & Support
                 </button>
                 <div className="h-px bg-white/10 my-1"></div>

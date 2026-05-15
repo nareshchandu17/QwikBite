@@ -1,6 +1,6 @@
 'use client';
 
-import React,{ useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import KpiCard from './KpiCard';
 import LiveOrdersQueue from './LiveOrdersQueue';
 import { Order, OrderStatus } from '@/types/order';
@@ -10,15 +10,15 @@ import { getSocket } from '@/lib/socket';
 
 // Mock data for slot load
 const slotLoadData = [
-  { hour: '8 AM', load: 20 },
-  { hour: '9 AM', load: 45 },
-  { hour: '10 AM', load: 65 },
-  { hour: '11 AM', load: 80 },
-  { hour: '12 PM', load: 90, current: true },
-  { hour: '1 PM', load: 85 },
-  { hour: '2 PM', load: 70 },
-  { hour: '3 PM', load: 50 },
-  { hour: '4 PM', load: 30 },
+    { hour: '8 AM', load: 20 },
+    { hour: '9 AM', load: 45 },
+    { hour: '10 AM', load: 65 },
+    { hour: '11 AM', load: 80 },
+    { hour: '12 PM', load: 90, current: true },
+    { hour: '1 PM', load: 85 },
+    { hour: '2 PM', load: 70 },
+    { hour: '3 PM', load: 50 },
+    { hour: '4 PM', load: 30 },
 ];
 
 interface DashboardOverviewProps {
@@ -35,7 +35,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ orders, onUpdateS
     }, 0);
 
     const [currentTime, setCurrentTime] = useState(new Date());
-    
+
     // Fetch slots data
     useEffect(() => {
         const fetchSlots = async () => {
@@ -53,10 +53,10 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ orders, onUpdateS
         fetchSlots();
         // Refresh slots every 30 seconds
         const interval = setInterval(fetchSlots, 30000);
-        
+
         // Set up WebSocket for real-time updates
         const socket = getSocket();
-        socket.on('timeslot:update', (updatedSlots: unknown[]) => {
+        socket.on('timeslot:update', (updatedSlots: any[]) => {
             console.log('Dashboard: Received timeslot update via socket');
             setSlots(updatedSlots);
         });
@@ -66,7 +66,7 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ orders, onUpdateS
             socket.off('timeslot:update');
         };
     }, []);
-    
+
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
@@ -81,15 +81,15 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ orders, onUpdateS
     }, [onUpdateStatus]);
 
     // Calculate peak hour and top dish from real data
-    const peakHour = slots.length > 0 
+    const peakHour = slots.length > 0
         ? slots.reduce((max: any, slot: any) => slot.percentage > max.percentage ? slot : max).timeSlot
         : '1-2 PM';
-    
+
     const topDish = orders.length > 0
         ? (orders as any[]).reduce((most: any, order: any) => {
-            const topItem = (order.items || []).reduce((popular: any, item: any) => 
+            const topItem = (order.items || []).reduce((popular: any, item: any) =>
                 (item.quantity || 0) > (popular.quantity || 0) ? item : popular
-            , order.items?.[0] || {});
+                , order.items?.[0] || {});
             return topItem;
         }, { name: 'Veggie Burger' }).name || 'Veggie Burger'
         : 'Veggie Burger';
@@ -99,9 +99,21 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ orders, onUpdateS
         : 12;
 
     // Calculate active orders by status
-    const activeOrders = orders.filter(order => 
-        order.status === 'received' || order.status === 'preparing' || order.status === 'ready' || order.status === 'pending'
-    );
+    const activeOrders = orders.filter(order => {
+        const status = order.status?.toLowerCase();
+        return status === 'received' || 
+               status === 'preparing' || 
+               status === 'ready' || 
+               status === 'pending' || 
+               status === 'confirmed' ||
+               status === 'almost_ready';
+    });
+
+    console.log('DashboardOverview: Total orders received from API:', orders.length);
+    console.log('DashboardOverview: Active orders after filtering:', activeOrders.length);
+    if (activeOrders.length === 0 && orders.length > 0) {
+        console.log('DashboardOverview: Sample order status:', orders[0].status);
+    }
 
     return (
         <div className="space-y-8">
@@ -119,46 +131,46 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ orders, onUpdateS
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-                <KpiCard 
-                    title="Total Orders Today" 
-                    value={totalOrders.toString()} 
-                    change="+5%" 
+                <KpiCard
+                    title="Total Orders Today"
+                    value={totalOrders.toString()}
+                    change="+5%"
                     icon={<Utensils className="h-5 w-5" />}
                     onClick={() => setActiveTab('Orders')}
                 />
-                <KpiCard 
-                    title="Revenue Today" 
-                    value={`₹${revenue.toLocaleString()}`} 
-                    change="+8%" 
+                <KpiCard
+                    title="Revenue Today"
+                    value={`₹${revenue.toLocaleString()}`}
+                    change="+8%"
                     isCurrency={true}
                     icon={<TrendingUp className="h-5 w-5" />}
                     onClick={() => setActiveTab('Payments')}
                 />
-                <KpiCard 
-                    title="Live Queue Load" 
-                    value={`${activeOrders.length} / 50`} 
-                    change="Medium" 
+                <KpiCard
+                    title="Live Queue Load"
+                    value={`${activeOrders.length} / 50`}
+                    change="Medium"
                     icon={<Clock className="h-5 w-5" />}
                     onClick={() => setActiveTab('Orders')}
                 />
-                <KpiCard 
-                    title="Avg. Prep Time" 
-                    value={`${avgPrepTime}m ${avgPrepTime % 60 !== 0 ? avgPrepTime % 60 + 's' : ''}`} 
-                    change="-2%" 
+                <KpiCard
+                    title="Avg. Prep Time"
+                    value={`${avgPrepTime}m ${avgPrepTime % 60 !== 0 ? avgPrepTime % 60 + 's' : ''}`}
+                    change="-2%"
                     icon={<Clock3 className="h-5 w-5" />}
                     onClick={() => setActiveTab('Analytics & Insights')}
                 />
-                <KpiCard 
-                    title="Top Dish" 
-                    value={topDish.length > 15 ? topDish.substring(0, 15) + '...' : topDish} 
-                    change="Popular" 
+                <KpiCard
+                    title="Top Dish"
+                    value={topDish.length > 15 ? topDish.substring(0, 15) + '...' : topDish}
+                    change="Popular"
                     icon={<ChefHat className="h-5 w-5" />}
                     onClick={() => setActiveTab('Menu Management')}
                 />
-                <KpiCard 
-                    title="Peak Hour" 
-                    value={peakHour} 
-                    change="Now" 
+                <KpiCard
+                    title="Peak Hour"
+                    value={peakHour}
+                    change="Now"
                     icon={<Zap className="h-5 w-5" />}
                     onClick={() => setActiveTab('Analytics & Insights')}
                 />
@@ -168,8 +180,8 @@ const DashboardOverview: React.FC<DashboardOverviewProps> = ({ orders, onUpdateS
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Live Orders Queue */}
                 <div className="lg:col-span-2">
-                 <LiveOrdersQueue orders={activeOrders} onUpdateStatus={updateOrderStatus} />
-                
+                    <LiveOrdersQueue orders={activeOrders} onUpdateStatus={updateOrderStatus} />
+
                 </div>
 
                 <div>

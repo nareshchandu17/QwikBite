@@ -43,14 +43,14 @@ export default function QueuePage() {
       const ordersDataRaw = await ordersRes.json();
       
       // Format orders
-      const formattedOrders = (ordersDataRaw.data || []).map((o: unknown) => ({
+      const formattedOrders = (ordersDataRaw.data || []).map((o: any) => ({
         id: o.id,
         customerName: o.customerName || 'Guest Student',
         status: o.status,
         createdAt: o.createdAt,
         loadValue: o.loadValue || 5,
         timeSlot: o.timeSlot
-      })).filter((o: unknown) => ['received', 'cooking', 'ready'].includes(o.status));
+      })).filter((o: any) => ['received', 'cooking', 'ready'].includes(o.status));
 
       setTimeSlots(slotsData);
       setCurrentOrders(formattedOrders);

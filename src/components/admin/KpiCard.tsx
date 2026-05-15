@@ -15,7 +15,7 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, change, isCurrency, ico
   const isNeutral = !isPositive && !change.startsWith('-');
 
   return (
-    <div 
+    <div
       className="group relative rounded-2xl p-5 overflow-hidden cursor-pointer
       bg-[rgba(20,20,20,0.6)]
       backdrop-blur-[24px] [-webkit-backdrop-filter:blur(24px)]
@@ -30,19 +30,18 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, change, isCurrency, ico
       onKeyDown={(e) => e.key === 'Enter' && onClick?.()}
     >
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#FF512F]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        <div className="relative z-10">
-          <p className="text-sm font-medium text-[#9ca3af] mb-2">{title}</p>
-          <h3 className="text-2xl lg:text-3xl font-bold text-white">{value}</h3>
-      
-        
-      
-         <div className={`text-xs font-semibold px-2 py-1 rounded-full inline-block${
-          isPositive 
-            ? 'bg-[#4CAF50]/20 text-[#4CAF50]' 
-            : isNeutral 
-              ? 'bg-[#9ca3af]/20 text-[#9ca3af]' 
+      <div className="relative z-10">
+        <p className="text-sm font-medium text-[#9ca3af] mb-2">{title}</p>
+        <h3 className="text-2xl lg:text-3xl font-bold text-white">{value}</h3>
+
+
+
+        <div className={`text-xs font-semibold px-2 py-1 rounded-full inline-block${isPositive
+            ? 'bg-[#4CAF50]/20 text-[#4CAF50]'
+            : isNeutral
+              ? 'bg-[#9ca3af]/20 text-[#9ca3af]'
               : 'bg-[#FF3D00]/20 text-[#FF3D00]'
-        }`}>
+          }`}>
           {change}
         </div>
       </div>

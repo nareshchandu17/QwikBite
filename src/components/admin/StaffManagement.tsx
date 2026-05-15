@@ -593,7 +593,7 @@ const StaffManagement: React.FC = () => {
                 const data = await response.json();
                 if (data.success) {
                     // Map the data to ensure it matches our Staff type
-                    const formattedStaff = data.data.map((s: unknown) => ({
+                    const formattedStaff = data.data.map((s: any) => ({
                         ...s,
                         id: s._id, // For backward compatibility
                         avatar: s.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(s.name)}&background=random`
@@ -672,6 +672,8 @@ const StaffManagement: React.FC = () => {
         }
     };
 
+
+
     const handleSaveShift = async (id: string, newShift: string) => {
         try {
             const response = await fetch(`/api/staff/${id}`, {
@@ -703,6 +705,8 @@ const StaffManagement: React.FC = () => {
         }
     };
 
+
+
     const handleDeleteStaff = async (staffToDelete: Staff) => {
         if (!window.confirm(`Are you sure you want to delete ${staffToDelete.name}?`)) {
             return;
@@ -723,7 +727,7 @@ const StaffManagement: React.FC = () => {
             }
         } catch (error: unknown) {
             console.error('Error deleting staff:', error);
-            toast.error(`Failed to delete staff: ${error.message}`);
+            toast.error(`Failed to delete staff: ${(error as any).message}`);
         }
     };
 

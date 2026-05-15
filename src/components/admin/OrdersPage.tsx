@@ -51,12 +51,12 @@ const OrdersPage: React.FC = () => {
       );
     };
 
-    const handleCustomerTracking = (data: unknown) => {
+    const handleCustomerTracking = (data: any) => {
       console.log('Customer started tracking order:', data.orderId);
       toast.info(`Customer is tracking order #${data.orderId.split('-').pop()}`);
     };
 
-    const handleCustomerStoppedTracking = (data: unknown) => {
+    const handleCustomerStoppedTracking = (data: any) => {
       console.log('Customer stopped tracking order:', data.orderId);
     };
 
@@ -89,7 +89,7 @@ const OrdersPage: React.FC = () => {
       toast.success(`Order marked as ${status}`);
     } catch (err: unknown) {
       console.error('Failed to update status', err);
-      toast.error(err.message || 'Failed to update status');
+      toast.error((err as any).message || 'Failed to update status');
     }
   };
 
@@ -106,7 +106,7 @@ const OrdersPage: React.FC = () => {
           {loading ? (
             <div className="space-y-4">
               {/* Order Card Skeletons */}
-              {[1, 2, 3, 4, 5].map((i) => (
+                                {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="bg-white/[0.03] border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-4">

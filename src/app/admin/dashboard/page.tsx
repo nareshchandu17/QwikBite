@@ -33,19 +33,19 @@ export default function DashboardPage() {
       }
     };
 
-    // Only fetch if user is admin
-    if (!loading && isAuthenticated && isAdmin) {
+    // Only fetch if user is authenticated (admin guard ensures they're admin)
+    if (!loading && isAuthenticated) {
       fetchOrders();
     }
 
-    // Set up real-time updates (optional)
+    // Refresh every 30 seconds
     const interval = setInterval(() => {
-      if (!loading && isAuthenticated && isAdmin) {
+      if (!loading && isAuthenticated) {
         fetchOrders();
       }
-    }, 30000); // Refresh every 30 seconds
+    }, 30000);
     return () => clearInterval(interval);
-  }, [loading, isAuthenticated, isAdmin]);
+  }, [loading, isAuthenticated]);
 
   // Function to update order status
   const updateOrderStatus = async (orderId: string, newStatus: OrderStatus) => {

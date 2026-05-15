@@ -139,7 +139,7 @@ const ModernProgressBar: React.FC<{ label: string, value: number }> = ({ label, 
     )
 };
 
-const SlotLoadViz: React.FC<{ slots?: unknown[] }> = ({ slots = [] }) => {
+const SlotLoadViz: React.FC<{ slots?: any[] }> = ({ slots = [] }) => {
     const [currentLoad, setCurrentLoad] = useState(0);
 
     // Calculate overall capacity load

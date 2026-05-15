@@ -57,7 +57,7 @@ const SlotsTimings: React.FC = () => {
 
     // 🔹 Real-time updates via WebSockets
     const socket = getSocket();
-    socket.on('timeslot:update', (updatedSlots: unknown[]) => {
+    socket.on('timeslot:update', (updatedSlots: any[]) => {
       fetchSlots(); // Re-fetch to ensure full data sync
     });
 

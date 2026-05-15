@@ -199,7 +199,7 @@ const InventoryAlerts: React.FC = () => {
         const data = JSON.parse(text);
 
         setItems(
-          Array.isArray(data) ? data.map((item: unknown) => ({
+          Array.isArray(data) ? data.map((item: any) => ({
             id: item._id,
             name: item.name,
             category: item.category,

@@ -18,7 +18,7 @@ interface AdminNotification {
   type: 'order' | 'payment' | 'feedback' | 'system' | 'alert';
   priority: 'low' | 'normal' | 'high';
   icon: string;
-  data?: unknown;
+  data?: any;
   ctaLink?: string;
   timestamp: Date;
 }
@@ -53,7 +53,7 @@ export default function AdminNotifications() {
 
     console.log('[AdminNotifications] 🔌 Setting up WebSocket listeners');
 
-    const handleAdminNotification = (data: unknown) => {
+    const handleAdminNotification = (data: any) => {
       console.log('[AdminNotifications] 📡 Received notification:', data);
       
       const newNotification: AdminNotification = {
