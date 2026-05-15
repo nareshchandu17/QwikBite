@@ -70,26 +70,28 @@ export async function POST(request: Request) {
     const orderId = `ORD-${Date.now()}`;
     
     // Create order document
-    const orderData: IOrder = {
-      id: orderId,
-      userId: userId || "anonymous",
+    const orderData: any = {
+      orderId: orderId,
+      user: userId || "anonymous",
       createdAt: new Date(),
       items: items.map((it: any) => ({ 
+        menuItem: it.id || String(Date.now()),
         id: it.id || String(Date.now()),
         name: it.name || it.title, 
         quantity: it.quantity || 1, 
         price: it.price || 0,
         image: it.image || ""
       })),
-      total: +(subtotal).toFixed(2),
+      totalAmount: +(subtotal).toFixed(2),
+      total: +(subtotal).toFixed(2), // Keep for backward compatibility
       paymentMethod: payment,
-      paymentStatus: "completed",
-      status: "received",
+      paymentStatus: "paid", // changed from "completed" which violates enum
+      status: "pending", // changed from "received" which violates enum
       timeSlot: timeSlot || "Not specified",
       paymentIntentId: paymentIntentId,
       transactionId: transactionId,
       pickupDate: new Date().toISOString().split('T')[0] // Add pickupDate for today
-    } as IOrder;
+    };
 
     const order = new Order(orderData);
     await order.save();
