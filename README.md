@@ -2,9 +2,9 @@
 
 # 🍽️ QwikBite
 
-### **Smart Campus Dining — Reimagined for the Modern Student**
+### **Smart Slot Based Campus Food Ordering System**
 
-> A production-grade, event-driven canteen management platform built to eliminate queues and maximize break time. Engineered with Next.js 15, Pusher, and MongoDB.
+> QwikBite is a real-time campus food ordering platform designed to eliminate long queues through intelligent slot scheduling, live queue tracking, and AI-assisted workflows..
 
 [![Next.js](https://img.shields.io/badge/Next.js-15.5-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![Pusher](https://img.shields.io/badge/Pusher-Real--time-7037D5?style=for-the-badge&logo=pusher)](https://pusher.com/)
