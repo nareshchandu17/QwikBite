@@ -7,8 +7,8 @@ import { io, Socket } from 'socket.io-client';
 type EventMap = {
   'order:update': (data: { orderId: string; status: string; message?: string; timestamp?: string }) => void;
   'order_update': (data: { orderId: string; status: string }) => void;
-  'admin:new_order': (data: { orderId: string; customerName: string; total: number }) => void;
-  'admin:order_updated': (data: { orderId: string; status: string }) => void;
+  'admin:new_order': (data: any) => void;
+  'admin:order_updated': (data: any) => void;
   'connect': () => void;
   'disconnect': (reason: string) => void;
   'connect_error': (error: Error) => void;
@@ -39,7 +39,7 @@ class WebSocketClient {
 
   constructor() {
     this.instanceId = Math.random().toString(36).substring(7);
-    console.log(`[CLIENT INSTANCE] Created ID: ${this.instanceId}`, Date.now());
+    // console.log(`[CLIENT INSTANCE] Created ID: ${this.instanceId}`, Date.now());
   }
 
   public connect(namespace: string = '/customer', token?: string): void {
@@ -66,7 +66,7 @@ class WebSocketClient {
     this.socket = io(`${baseUrl}${namespace}`, {
       path: '/api/socket/io',
       addTrailingSlash: false,
-      transports: ['websocket'], 
+      transports: ['polling', 'websocket'], // Prefer polling first for dev stability, upgrade to websocket later
       auth: token ? { token } : undefined,
       reconnection: true,
       reconnectionAttempts: 5,
