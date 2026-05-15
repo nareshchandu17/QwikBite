@@ -29,7 +29,7 @@ export class AuditService {
         timestamp: data.timestamp || new Date(),
       };
 
-      await AuditLog.create(logEntry);
+      await (AuditLog as any).create(logEntry);
 
       console.log(`[AUDIT] ${data.action} ${data.entityType}:${data.entityId} by ${data.userEmail}`);
     } catch (error) {
@@ -72,7 +72,7 @@ export class AuditService {
   static async getUserActivity(userId: string, limit: number = 50): Promise<IAuditLog[]> {
     try {
       await connectDB();
-      return await AuditLog.find({ userId })
+      return await (AuditLog as any).find({ userId })
         .sort({ timestamp: -1 })
         .limit(limit)
         .lean() as unknown as IAuditLog[];
@@ -89,7 +89,7 @@ export class AuditService {
   ): Promise<IAuditLog[]> {
     try {
       await connectDB();
-      return await AuditLog.find({ entityType, entityId })
+      return await (AuditLog as any).find({ entityType, entityId })
         .sort({ timestamp: -1 })
         .limit(limit)
         .lean() as unknown as IAuditLog[];
@@ -111,7 +111,7 @@ export class AuditService {
       const minSeverityIndex = severityLevels.indexOf(severity);
       const targetSeverities = severityLevels.slice(minSeverityIndex);
       
-      return await AuditLog.find({
+      return await (AuditLog as any).find({
         severity: { $in: targetSeverities },
         timestamp: { $gte: since }
       })
@@ -170,7 +170,7 @@ export class AuditService {
   static async getAllLogs(limit: number = 100): Promise<IAuditLog[]> {
     try {
       await connectDB();
-      return await AuditLog.find()
+      return await (AuditLog as any).find({})
         .sort({ timestamp: -1 })
         .limit(limit)
         .lean() as unknown as IAuditLog[];
@@ -183,7 +183,7 @@ export class AuditService {
   static async clearLogs(): Promise<void> {
     try {
       await connectDB();
-      await AuditLog.deleteMany({});
+      await (AuditLog as any).deleteMany({});
     } catch (error) {
       console.error('Failed to clear logs:', error);
     }
