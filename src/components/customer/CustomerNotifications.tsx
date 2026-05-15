@@ -9,7 +9,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Bell, X, Package, Menu, MessageSquare, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { useWebSocket } from '@/context/WebSocketContext';
+import { usePusher } from '@/context/PusherContext';
+import { useSession } from 'next-auth/react';
 
 interface CustomerNotification {
   id: string;
@@ -27,7 +28,8 @@ export default function CustomerNotifications() {
   const [notifications, setNotifications] = useState<CustomerNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showPanel, setShowPanel] = useState(false);
-  const { socket, isConnected } = useWebSocket();
+  const { pusherClient, isConnected } = usePusher();
+  const { data: session } = useSession();
 
   const getIconComponent = (type: string) => {
     switch (type) {
@@ -44,14 +46,14 @@ export default function CustomerNotifications() {
     }
   };
 
-  // Listen for WebSocket notifications
+  // Listen for Pusher notifications
   useEffect(() => {
-    if (!socket || !isConnected) {
-      console.log('[CustomerNotifications] ⚠️ WebSocket not ready');
+    if (!pusherClient || !isConnected) {
+      console.log('[CustomerNotifications] ⚠️ Pusher not ready');
       return;
     }
 
-    console.log('[CustomerNotifications] 🔌 Setting up WebSocket listeners');
+    console.log('[CustomerNotifications] 🔌 Setting up Pusher listeners');
 
     const handleNotification = (data: any) => {
       console.log('[CustomerNotifications] 📡 Received notification:', data);
@@ -84,7 +86,7 @@ export default function CustomerNotifications() {
         try {
           const audio = new Audio('/notification-sound.mp3');
           audio.play().catch(() => {
-            // Silently fail if audio can&apos;t play
+            // Silently fail if audio can't play
             console.log('[CustomerNotifications] Audio play failed');
           });
         } catch (err) {
@@ -93,19 +95,33 @@ export default function CustomerNotifications() {
       }
     };
 
-    // Listen for different notification types
-    socket.on('new_notification', handleNotification);
-    socket.on('order_status', handleNotification);
-    socket.on('menu_update', handleNotification);
-    socket.on('feedback_reply', handleNotification);
+    // Listen to broadcast channel
+    const broadcastChannel = pusherClient.subscribe('broadcast');
+    broadcastChannel.bind('new_notification', handleNotification);
+    broadcastChannel.bind('menu_update', handleNotification);
+
+    let userChannel: any = null;
+    const userId = session?.user?.id || 'customer';
+    if (userId) {
+      userChannel = pusherClient.subscribe(`user-${userId}`);
+      userChannel.bind('new_notification', handleNotification);
+      userChannel.bind('order_status', handleNotification);
+      userChannel.bind('feedback_reply', handleNotification);
+    }
 
     return () => {
-      socket.off('new_notification', handleNotification);
-      socket.off('order_status', handleNotification);
-      socket.off('menu_update', handleNotification);
-      socket.off('feedback_reply', handleNotification);
+      broadcastChannel.unbind('new_notification', handleNotification);
+      broadcastChannel.unbind('menu_update', handleNotification);
+      pusherClient.unsubscribe('broadcast');
+
+      if (userChannel) {
+        userChannel.unbind('new_notification', handleNotification);
+        userChannel.unbind('order_status', handleNotification);
+        userChannel.unbind('feedback_reply', handleNotification);
+        pusherClient.unsubscribe(`user-${userId}`);
+      }
     };
-  }, [socket, isConnected]);
+  }, [pusherClient, isConnected, session]);
 
   const handleNotificationClick = (notification: CustomerNotification) => {
     if (notification.ctaLink) {
