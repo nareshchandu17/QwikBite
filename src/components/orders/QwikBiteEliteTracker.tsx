@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useWebSocket as useSocket } from '@/context/WebSocketContext';
+import { usePusher } from '@/context/PusherContext';
 import { 
   Clock, 
   Timer, 
@@ -148,7 +148,7 @@ export default function qwikBiteEliteTracker({ order, isOpen, onClose }: qwikBit
   const [liveOrder, setLiveOrder] = useState(order);
   const [estimatedTime, setEstimatedTime] = useState(order.estimatedTime || null);
   const [queuePosition, setQueuePosition] = useState<number | null>(null);
-  const { socket } = useSocket();
+  const { pusherClient } = usePusher();
 
   // Generate dynamic status steps based on current order
   const statusSteps = generateStatusSteps(liveOrder);
@@ -164,14 +164,15 @@ export default function qwikBiteEliteTracker({ order, isOpen, onClose }: qwikBit
     setCurrentStep(stepIndex >= 0 ? stepIndex : 0);
   }, [order]);
 
-  // Real-time socket listeners
+  // Real-time pusher listeners
   useEffect(() => {
-    if (!socket || !isOpen || !liveOrder?.id) return;
+    if (!pusherClient || !isOpen || !liveOrder?.id) return;
 
     console.log('[EliteTracker] Setting up real-time listeners for order:', liveOrder.id);
 
-    // Join order-specific room
-    socket.emit('order:join', { orderId: liveOrder.id });
+    // Join order-specific channel
+    const channelName = `order-${liveOrder.id.replace(/:/g, '-')}`;
+    const channel = pusherClient.subscribe(channelName);
 
     // Listen for order status updates
     const handleOrderUpdate = (updatedOrder: any) => {
@@ -218,19 +219,19 @@ export default function qwikBiteEliteTracker({ order, isOpen, onClose }: qwikBit
     };
 
     // Set up event listeners
-    socket.on('order:update', handleOrderUpdate);
-    socket.on('order:queue', handleQueueUpdate);
-    socket.on('order:time', handleTimeUpdate);
+    channel.bind('order:update', handleOrderUpdate);
+    channel.bind('order:queue', handleQueueUpdate);
+    channel.bind('order:time', handleTimeUpdate);
 
     // Clean up on unmount or close
     return () => {
-      console.log('[EliteTracker] Cleaning up socket listeners');
-      socket.emit('order:leave', { orderId: liveOrder.id });
-      socket.off('order:update', handleOrderUpdate);
-      socket.off('order:queue', handleQueueUpdate);
-      socket.off('order:time', handleTimeUpdate);
+      console.log('[EliteTracker] Cleaning up pusher listeners');
+      channel.unbind('order:update', handleOrderUpdate);
+      channel.unbind('order:queue', handleQueueUpdate);
+      channel.unbind('order:time', handleTimeUpdate);
+      pusherClient.unsubscribe(channelName);
     };
-  }, [socket, isOpen, liveOrder?.id, liveOrder.status]);
+  }, [pusherClient, isOpen, liveOrder?.id, liveOrder.status]);
 
   // Removed API fetch call - using the order data passed from parent component
 
