@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Transaction, PaymentStatus, PaymentMethod } from '@/types/payment';
 import { X } from 'lucide-react';
-import { useWebSocket } from '@/context/WebSocketContext';
+import { usePusher } from '@/context/PusherContext';
 
 
 const PaymentStatusBadge: React.FC<{ status: PaymentStatus }> = ({ status }) => {
@@ -164,7 +164,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({ txn, 
 
 const Payments: React.FC = () => {
   const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
-  const { transactions } = useWebSocket();
+  const { transactions } = usePusher();
   
   // Format transactions with proper date formatting
   const formattedTransactions = transactions.map(txn => ({
