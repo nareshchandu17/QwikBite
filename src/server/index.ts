@@ -44,11 +44,6 @@ app.prepare().then(async () => {
         return;
       }
 
-      // 🛡️ EXCLUDE SOCKET.IO FROM NEXT.JS HANDLER
-      // This allows the socket server to handle its own handshake without interference
-      if (req.url?.startsWith('/api/socket/io')) {
-        return; 
-      }
 
       // Be sure to pass `true` as the second argument to `url.parse`.
       // This tells it to parse the query portion of the URL.
@@ -65,7 +60,6 @@ app.prepare().then(async () => {
 
   httpServer.listen(port, () => {
     console.log(`> Ready on http://${hostname}:${port}`);
-    console.log(`> WebSocket server active at ws://${hostname}:${port}/api/socket/io`);
   });
 
 
