@@ -5,10 +5,10 @@ export interface ITransaction extends Document {
   userId: string;
   orderId: string;
   amount: number;
-  paymentMethod: 'upi' | 'wallet' | 'card' | 'cash' | 'stripe' | 'razorpay';
-  paymentStatus: 'success' | 'pending' | 'failed' | 'refunded';
+  paymentMethod: string;
+  paymentStatus: string;
   receiptURL?: string;
-  refundStatus?: 'not_requested' | 'pending' | 'completed' | 'rejected';
+  refundStatus?: string;
   refundAmount?: number;
   refundReason?: string;
   paymentGatewayResponse?: unknown;
@@ -66,16 +66,13 @@ const transactionSchema = new Schema<ITransaction>({
 
 // Indexes for performance
 transactionSchema.index({ userId: 1, createdAt: -1 });
-transactionSchema.index({ orderId: 1 });
-transactionSchema.index({ paymentStatus: 1 });
 transactionSchema.index({ createdAt: -1 });
 
 // Auto-generate transactionId before saving
-transactionSchema.pre('save', function(next) {
+transactionSchema.pre('save', async function() {
   if (!this.transactionId) {
     this.transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
   }
-  next();
 });
 
 export const Transaction = mongoose.models.Transaction || mongoose.model<ITransaction>("Transaction", transactionSchema, "transactions");

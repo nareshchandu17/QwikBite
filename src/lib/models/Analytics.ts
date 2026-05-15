@@ -153,7 +153,7 @@ analyticsSchema.index({ totalOrders: -1 });
 analyticsSchema.index({ createdAt: -1 });
 
 // Auto-generate analyticsId before saving
-analyticsSchema.pre('save', function(next) {
+analyticsSchema.pre('save', async function() {
   if (!this.analyticsId) {
     const dateStr = this.date.toISOString().split('T')[0].replace(/-/g, '');
     this.analyticsId = `ANALYTICS-${dateStr}`;
@@ -163,8 +163,6 @@ analyticsSchema.pre('save', function(next) {
   if (this.totalOrders > 0) {
     this.averageOrderValue = this.totalRevenue / this.totalOrders;
   }
-  
-  next();
 });
 
 export const Analytics = mongoose.models.Analytics || mongoose.model<IAnalytics>("Analytics", analyticsSchema);

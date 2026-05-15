@@ -28,7 +28,6 @@ const EventLogSchema = new Schema<IEventLog>(
     namespace: {
       type: String,
       required: true,
-      index: true,
     },
     socketId: {
       type: String,
@@ -37,13 +36,11 @@ const EventLogSchema = new Schema<IEventLog>(
     },
     userId: {
       type: String,
-      index: true,
     },
     eventType: {
       type: String,
       required: true,
       enum: ['connect', 'disconnect', 'message', 'error'],
-      index: true,
     },
     eventName: {
       type: String,

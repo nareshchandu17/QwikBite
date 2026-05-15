@@ -42,7 +42,6 @@ favoriteSchema.index(
  * INDEXES (performance)
  */
 favoriteSchema.index({ user: 1, createdAt: -1 });
-favoriteSchema.index({ menuItem: 1 });
 
 /**
  * MODEL EXPORT (Next.js safe)

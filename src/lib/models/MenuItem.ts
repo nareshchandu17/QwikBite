@@ -74,13 +74,12 @@ menuItemSchema.index({ totalOrders: -1 });
 menuItemSchema.index({ name: 'text', description: 'text' });
 
 // Auto-generate itemId before saving
-menuItemSchema.pre('save', function(next) {
+menuItemSchema.pre('save', async function() {
   if (!this.itemId) {
     this.itemId = this.id || `ITEM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
   // Sync availability fields
   this.available = this.availability;
-  next();
 });
 
 export const MenuItem = mongoose.models.MenuItem || mongoose.model<IMenuItem>("MenuItem", menuItemSchema);

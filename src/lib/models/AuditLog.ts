@@ -1,8 +1,8 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IAuditLog extends Document {
-  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'VIEW' | 'LOGIN' | 'LOGOUT';
-  entityType: 'STAFF' | 'MENU' | 'ORDER' | 'INVENTORY' | 'FEEDBACK';
+  action: string;
+  entityType: string;
   entityId: string;
   entityName?: string;
   userId: string;
@@ -12,7 +12,7 @@ export interface IAuditLog extends Document {
   ipAddress?: string;
   userAgent?: string;
   description?: string;
-  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  severity: string;
   timestamp: Date;
 }
 

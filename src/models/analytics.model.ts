@@ -60,7 +60,6 @@ const analyticsSchema = new Schema<IDailyAnalytics>(
 );
 
 // Indexes for efficient querying
-analyticsSchema.index({ date: -1 });
 analyticsSchema.index({ 'mostOrderedItems.menuItem': 1 });
 analyticsSchema.index({ 'paymentMethods.method': 1 });
 

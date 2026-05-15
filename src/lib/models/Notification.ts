@@ -62,11 +62,10 @@ notificationSchema.index({ type: 1, createdAt: -1 });
 notificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL index
 
 // Auto-generate notificationId before saving
-notificationSchema.pre('save', function(next) {
+notificationSchema.pre('save', async function() {
   if (!this.notificationId) {
     this.notificationId = `NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
-  next();
 });
 
 export const Notification = mongoose.models.Notification || mongoose.model<INotification>("Notification", notificationSchema);

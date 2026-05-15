@@ -26,7 +26,7 @@ export enum PaymentStatus {
  * Status History Entry
  */
 export interface IStatusHistory {
-  status: OrderStatus;
+  status: string;
   timestamp: Date;
   note?: string;
   updatedBy?: Types.ObjectId;
@@ -38,9 +38,11 @@ export interface IStatusHistory {
 export interface IOrderItem {
   menuItem: string | Types.ObjectId; // Allow both for compatibility
   name: string;
+  image: string;
   quantity: number;
   price: number;
   prepTime?: number;
+  id?: string;
 }
 
 /**
@@ -51,11 +53,23 @@ export interface IOrder extends Document {
   user: string | Types.ObjectId; // Allow both for compatibility
   items: IOrderItem[];
   totalAmount: number;
-  status: OrderStatus;
+  status: string;
   statusHistory: IStatusHistory[];
-  paymentStatus: PaymentStatus;
+  paymentStatus: string;
+  paymentMethod?: string;
+  transactionId?: string;
+  paymentIntentId?: string;
+  feedbackGiven?: boolean;
+  rating?: number;
+  comment?: string;
   slot?: Types.ObjectId;
   pickupTime?: Date;
+  pickupDate?: string;
+  timeSlot?: string;
+  loadValue?: number;
+  username?: string;
+  price?: number;
+  total?: number;
   estimatedReadyTime?: Date;
   assignedStaff?: Types.ObjectId;
   isCancelled: boolean;
@@ -76,6 +90,10 @@ const orderItemSchema = new Schema<IOrderItem>(
     name: {
       type: String,
       required: true,
+    },
+    image: {
+      type: String,
+      default: '/placeholder-food.jpg',
     },
     quantity: {
       type: Number,
@@ -102,7 +120,6 @@ const statusHistorySchema = new Schema<IStatusHistory>(
   {
     status: {
       type: String,
-      enum: Object.values(OrderStatus),
       required: true,
     },
     timestamp: {
@@ -126,7 +143,6 @@ const orderSchema = new Schema<IOrder>(
     orderId: {
       type: String,
       unique: true,
-      index: true,
     },
     user: {
       type: Schema.Types.Mixed, // Use Mixed to allow both ObjectId and String
@@ -168,6 +184,25 @@ const orderSchema = new Schema<IOrder>(
     pickupTime: {
       type: Date,
     },
+    pickupDate: {
+      type: String, // YYYY-MM-DD
+    },
+    timeSlot: {
+      type: String,
+    },
+    loadValue: {
+      type: Number,
+      default: 0,
+    },
+    username: {
+      type: String,
+    },
+    price: {
+      type: Number, // Alias for totalAmount
+    },
+    total: {
+      type: Number, // Alias for totalAmount
+    },
     estimatedReadyTime: {
       type: Date,
     },
@@ -184,6 +219,7 @@ const orderSchema = new Schema<IOrder>(
   {
     timestamps: true,
     versionKey: false,
+    id: false, // Disable virtual id to prevent conflict with real id field
   }
 );
 
@@ -192,13 +228,11 @@ const orderSchema = new Schema<IOrder>(
  */
 orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ status: 1, createdAt: -1 });
-orderSchema.index({ paymentStatus: 1 });
-orderSchema.index({ slot: 1 });
 
 /**
  * PRE-SAVE HOOK: Generate Order ID & Initial Status History
  */
-orderSchema.pre<IOrder>('save', function (next) {
+orderSchema.pre<IOrder>('save', async function () {
   if (!this.orderId) {
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -213,8 +247,6 @@ orderSchema.pre<IOrder>('save', function (next) {
       note: this.isNew ? 'Order placed' : `Status updated to ${this.status}`,
     });
   }
-
-  next();
 });
 
 /**

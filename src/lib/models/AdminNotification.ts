@@ -94,11 +94,10 @@ adminNotificationSchema.index({ type: 1, sentAt: -1 });
 adminNotificationSchema.index({ createdAt: -1 });
 
 // Auto-generate notificationId before saving
-adminNotificationSchema.pre('save', function(next) {
+adminNotificationSchema.pre('save', async function() {
   if (!this.notificationId) {
     this.notificationId = `ADMIN-NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
   }
-  next();
 });
 
 export const AdminNotification = mongoose.models.AdminNotification || mongoose.model<IAdminNotification>("AdminNotification", adminNotificationSchema);

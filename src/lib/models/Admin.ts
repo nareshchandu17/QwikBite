@@ -94,12 +94,11 @@ const adminSchema = new Schema<IAdmin>({
 });
 
 // Indexes for performance
-adminSchema.index({ email: 1 });
 adminSchema.index({ role: 1, isActive: 1 });
 adminSchema.index({ createdAt: -1 });
 
 // Auto-generate adminId and set default permissions based on role
-adminSchema.pre('save', function(next) {
+adminSchema.pre('save', async function() {
   if (!this.adminId) {
     this.adminId = `ADMIN-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
   }
@@ -141,8 +140,6 @@ adminSchema.pre('save', function(next) {
       };
     }
   }
-  
-  next();
 });
 
 export const Admin = mongoose.models.Admin || mongoose.model<IAdmin>("Admin", adminSchema);

@@ -2,8 +2,8 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 // Define the interface for the Audit Log document
 export interface IAuditLog extends Document {
-  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'VIEW' | 'LOGIN' | 'LOGOUT';
-  entityType: 'STAFF' | 'MENU' | 'ORDER' | 'INVENTORY' | 'FEEDBACK';
+  action: string;
+  entityType: string;
   entityId: string;
   entityName?: string;
   userId: string;
@@ -14,7 +14,7 @@ export interface IAuditLog extends Document {
   userAgent?: string;
   timestamp: Date;
   description?: string;
-  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  severity: string;
 }
 
 // Define the schema

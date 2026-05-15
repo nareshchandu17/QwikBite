@@ -58,7 +58,7 @@ FeedbackMessageSchema.virtual('customerDetails', {
 });
 
 // Pre-save hook for data consistency
-FeedbackMessageSchema.pre<IFeedbackMessage>('save', function(next) {
+FeedbackMessageSchema.pre<IFeedbackMessage>('save', async function() {
   if (this.message) {
     this.message = this.message.trim();
   }
@@ -70,8 +70,6 @@ FeedbackMessageSchema.pre<IFeedbackMessage>('save', function(next) {
   if (this.reply && this.status === 'open') {
     this.status = 'replied';
   }
-  
-  next();
 });
 
 const FeedbackMessage = mongoose.models.FeedbackMessage || model<IFeedbackMessage>('FeedbackMessage', FeedbackMessageSchema);

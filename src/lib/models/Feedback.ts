@@ -7,7 +7,7 @@ export interface IFeedback extends Document {
   comment?: string;
   images?: string[];
   isAnonymous: boolean;
-  status: 'pending' | 'approved' | 'rejected';
+  status: string;
   adminComment?: string;
   menuItem?: Types.ObjectId;
   createdAt: Date;
@@ -86,7 +86,7 @@ FeedbackSchema.virtual('orderDetails', {
 });
 
 // Pre-save hook to ensure data consistency
-FeedbackSchema.pre<IFeedback>('save', function(next) {
+FeedbackSchema.pre<IFeedback>('save', async function() {
   // Ensure rating is within bounds
   if (this.rating < 1) this.rating = 1;
   if (this.rating > 5) this.rating = 5;
@@ -95,8 +95,6 @@ FeedbackSchema.pre<IFeedback>('save', function(next) {
   if (this.comment) {
     this.comment = this.comment.trim();
   }
-  
-  next();
 });
 
 // Create model with proper typing

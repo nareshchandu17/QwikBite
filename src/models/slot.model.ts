@@ -123,7 +123,6 @@ const slotSchema = new Schema<ITimeSlot>(
  * INDEXES
  */
 slotSchema.index({ dateOnly: 1, startTime: 1 });
-slotSchema.index({ status: 1 });
 slotSchema.index({ isActive: 1, startTime: 1 });
 
 /**
@@ -147,7 +146,7 @@ slotSchema.methods.hasCapacity = function (incomingLoad: number) {
  * - update status
  * - compute wait time
  */
-slotSchema.pre<ITimeSlot>('save', function (next) {
+slotSchema.pre<ITimeSlot>('save', async function () {
   // dateOnly (YYYY-MM-DD)
   const date = new Date(this.startTime);
   this.dateOnly = date.toISOString().split('T')[0];
@@ -171,8 +170,6 @@ slotSchema.pre<ITimeSlot>('save', function (next) {
   } else {
     this.estimatedWaitTime = 0;
   }
-
-  next();
 });
 
 /**

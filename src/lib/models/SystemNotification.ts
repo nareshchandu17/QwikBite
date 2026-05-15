@@ -54,14 +54,13 @@ SystemNotificationSchema.index({ userId: 1, role: 1, createdAt: -1 });
 SystemNotificationSchema.index({ role: 1, isRead: 1, createdAt: -1 });
 
 // Pre-save hook for data consistency
-SystemNotificationSchema.pre<ISystemNotification>('save', function(next) {
+SystemNotificationSchema.pre<ISystemNotification>('save', async function() {
   if (this.title) {
     this.title = this.title.trim();
   }
   if (this.link) {
     this.link = this.link.trim();
   }
-  next();
 });
 
 const SystemNotification = mongoose.models.SystemNotification || model<ISystemNotification>('SystemNotification', SystemNotificationSchema);

@@ -53,20 +53,15 @@ if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
 }
 
 // Auto-generate userId and hash password before saving
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
   if (!this.userId) {
     this.userId = `USER-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
   if (this.isModified('password')) {
-    try {
-      const salt = await bcrypt.genSalt(12);
-      this.password = await bcrypt.hash(this.password, salt);
-    } catch (error: unknown) {
-      return next(error);
-    }
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
   }
-  next();
 });
 
 // Method to compare password

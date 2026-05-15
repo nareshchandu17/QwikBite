@@ -9,8 +9,8 @@ export interface ITransaction extends Document {
   amount: number;
   currency: string;
   paymentMethod: PaymentMethod;
-  status: 'pending' | 'completed' | 'failed' | 'refunded';
-  refundStatus: RefundStatus;
+  status: string;
+  refundStatus: string;
   stripePaymentIntentId?: string;
   metadata?: Record<string, unknown>;
   createdAt: Date;

@@ -119,10 +119,9 @@ staffSchema.index({ role: 1, isActive: 1 });
 /**
  * PRE-SAVE HOOK (optional formatting / normalization)
  */
-staffSchema.pre<IStaff>('save', function (next) {
+staffSchema.pre<IStaff>('save', async function () {
   this.name = this.name.trim();
   this.phone = this.phone.trim();
-  next();
 });
 
 /**
