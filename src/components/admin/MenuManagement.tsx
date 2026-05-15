@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { MenuItem, categories } from '@/data/menu';
 import { toast } from 'sonner';
-import { useWebSocket as useSocket } from '@/context/WebSocketContext';
+import { usePusher } from '@/context/PusherContext';
 import { VegIcon, NonVegIcon, SpicyIcon, SearchIcon, FilterIcon, PlusIcon, ArrowLeftIcon, XIcon, UploadIcon } from './icons';
 
 const CategoryIcon: React.FC<{ tags: string[], category: string }> = ({ tags, category }) => {
@@ -458,7 +458,7 @@ const MenuManagement: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingDish, setEditingDish] = useState<MenuItem | null>(null);
-    const { socket } = useSocket();
+    const { pusherClient } = usePusher();
 
     // Fetch menu items from API
     const fetchMenuItems = async () => {
@@ -503,7 +503,7 @@ const MenuManagement: React.FC = () => {
 
     // Listen for real-time menu updates
     useEffect(() => {
-        if (!socket) return;
+        if (!pusherClient) return;
 
         const handleMenuUpdate = (event: string, data: MenuItem) => {
             console.log(`Received menu ${event} event:`, data);
@@ -511,7 +511,7 @@ const MenuManagement: React.FC = () => {
             switch (event) {
                 case 'created':
                     setItems(prev => [...prev, data]);
-                    // Don&apos;t show toast here as It&apos;s already shown in the admin panel
+                    // Don't show toast here as It's already shown in the admin panel
                     break;
                 case 'updated':
                     setItems(prev => prev.map(item => item.id === data.id ? data : item));
@@ -523,17 +523,19 @@ const MenuManagement: React.FC = () => {
         };
 
         // Set up event listeners
-        socket.on('menu:created', (data: MenuItem) => handleMenuUpdate('created', data));
-        socket.on('menu:updated', (data: MenuItem) => handleMenuUpdate('updated', data));
-        socket.on('menu:deleted', (data: MenuItem) => handleMenuUpdate('deleted', data));
+        const channel = pusherClient.subscribe('broadcast');
+        channel.bind('menu:created', (data: MenuItem) => handleMenuUpdate('created', data));
+        channel.bind('menu:updated', (data: MenuItem) => handleMenuUpdate('updated', data));
+        channel.bind('menu:deleted', (data: MenuItem) => handleMenuUpdate('deleted', data));
 
         // Clean up
         return () => {
-            socket.off('menu:created');
-            socket.off('menu:updated');
-            socket.off('menu:deleted');
+            channel.unbind('menu:created');
+            channel.unbind('menu:updated');
+            channel.unbind('menu:deleted');
+            pusherClient.unsubscribe('broadcast');
         };
-    }, [socket]);
+    }, [pusherClient]);
 
     // Debug: Log available categories when items change
     useEffect(() => {
