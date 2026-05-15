@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🍽️ qwikBite
+# 🍽️ QwikBite
 
 ### **Smart Canteen Management System — Reimagined**
 
@@ -330,8 +330,8 @@ Create a `.env` file in the project root with the following variables:
 
 ```env
 # MongoDB
-MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/qwikbite
-MONGODB_DB=qwikbite
+MONGODB_URI=your_mongodb_uri_here
+MONGODB_DB=your_database_name 
 
 # Authentication
 JWT_SECRET=your-strong-random-secret-min-32-chars
