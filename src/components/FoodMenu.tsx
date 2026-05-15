@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Heart, ShoppingCart, Plus, Minus } from 'lucide-react';
 import { useFavorites } from '@/context/FavoritesContext';
-import { useWebSocket as useSocket } from '@/context/WebSocketContext';
+import { usePusher } from '@/context/PusherContext';
 import { toast } from 'sonner';
 import { MenuItem } from '@/data/menu';
 
@@ -19,7 +19,7 @@ const FoodMenu = ({ categories: categoryList = ['All', 'Tiffins', 'Fast Food', '
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { toggleFavorite, isFavorite } = useFavorites();
-  const { socket } = useSocket();
+  const { pusherClient } = usePusher();
 
   // Fetch menu items from API
   const fetchMenuItems = async () => {
@@ -44,7 +44,7 @@ const FoodMenu = ({ categories: categoryList = ['All', 'Tiffins', 'Fast Food', '
 
   // Listen for real-time menu updates
   useEffect(() => {
-    if (!socket) return;
+    if (!pusherClient) return;
 
     const handleMenuUpdate = (event: string, data: MenuItem) => {
       console.log(`Customer received menu ${event} event:`, data);
@@ -65,17 +65,19 @@ const FoodMenu = ({ categories: categoryList = ['All', 'Tiffins', 'Fast Food', '
     };
 
     // Set up event listeners
-    socket.on('menu:created', (data: MenuItem) => handleMenuUpdate('created', data));
-    socket.on('menu:updated', (data: MenuItem) => handleMenuUpdate('updated', data));
-    socket.on('menu:deleted', (data: MenuItem) => handleMenuUpdate('deleted', data));
+    const channel = pusherClient.subscribe('broadcast');
+    channel.bind('menu:created', (data: MenuItem) => handleMenuUpdate('created', data));
+    channel.bind('menu:updated', (data: MenuItem) => handleMenuUpdate('updated', data));
+    channel.bind('menu:deleted', (data: MenuItem) => handleMenuUpdate('deleted', data));
 
     // Clean up
     return () => {
-      socket.off('menu:created');
-      socket.off('menu:updated');
-      socket.off('menu:deleted');
+      channel.unbind('menu:created');
+      channel.unbind('menu:updated');
+      channel.unbind('menu:deleted');
+      pusherClient.unsubscribe('broadcast');
     };
-  }, [socket]);
+  }, [pusherClient]);
 
   // Filter items by category
   const filteredItems = activeCategory === 'All'
