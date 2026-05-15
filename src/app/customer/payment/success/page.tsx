@@ -369,12 +369,28 @@ export default function PaymentSuccessPage() {
     }
   }, [orderData, orderProcessedRef, addOrder, router, paymentMethod]);
 
-  // Effect: Process order AFTER orderData is loaded
+  // Effect: Process order ONLY if it hasn't been created yet
   useEffect(() => {
-    if (orderData && !orderProcessedRef.current) {
-      processOrder();
-    }
-  }, [orderData, orderProcessedRef, processOrder]);
+    const runProcessing = async () => {
+      // If we already have an orderId that isn't a placeholder, it's already created
+      const savedOrderId = localStorage.getItem('orderId') || localStorage.getItem('lastOrderId');
+      if (savedOrderId && !savedOrderId.startsWith('#')) {
+        console.log('[Payment Success] Order already exists in localStorage, skipping creation:', savedOrderId);
+        orderProcessedRef.current = true;
+        return;
+      }
+
+      if (orderData && orderData.items && orderData.items.length > 0 && !orderProcessedRef.current) {
+        console.log('[Payment Success] No existing order found, creating new order...');
+        await processOrder();
+      } else if (orderData && (!orderData.items || orderData.items.length === 0)) {
+        console.log('[Payment Success] Order data has no items, skipping creation');
+        orderProcessedRef.current = true;
+      }
+    };
+
+    runProcessing();
+  }, [orderData, processOrder]);
 
   const handleGoToAccount = () => {
     console.log('🔘 View Order Status clicked');

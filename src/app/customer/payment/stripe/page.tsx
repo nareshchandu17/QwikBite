@@ -104,7 +104,7 @@ const StripePaymentForm = ({ clientSecret }: { clientSecret: string }) => {
           
           try {
             console.log('💾 Creating order in database...');
-            const orderResponse = await fetch('/api/orders', {
+            const orderResponse = await fetch('/api/orders/customer', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(paymentData),
@@ -116,7 +116,7 @@ const StripePaymentForm = ({ clientSecret }: { clientSecret: string }) => {
             
             if (orderResponse.ok) {
               // Store order ID for redirection
-              const orderId = orderResult.data?.id || orderResult.order?.id || orderResult.id;
+              const orderId = orderResult.orderId || orderResult.id || (orderResult.data?.orderId);
               console.log('✅ Order created with ID:', orderId);
               
               if (!orderId) {
@@ -131,7 +131,7 @@ const StripePaymentForm = ({ clientSecret }: { clientSecret: string }) => {
               
               console.log('🔄 Redirecting to payment success page with orderId:', orderId);
               // Redirect to payment success page
-              router.push('/payment/success');
+              router.push('/customer/payment/success');
             } else {
               throw new Error(orderResult.error || 'Failed to create order');
             }

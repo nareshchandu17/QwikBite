@@ -4,7 +4,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useOrders } from '@/context/OrderContext';
-import qwikBiteEliteTracker from '@/components/orders/qwikBiteEliteTracker';
+import QwikBiteEliteTracker from '@/components/orders/QwikBiteEliteTracker';
+import { useCartStore } from '@/stores/cartStore';
+import { OrderHistorySkeleton } from '@/components/OrderHistorySkeleton';
+import { toast } from 'sonner';
 
 // --- Types ---
 type OrderStatus = 'Preparing' | 'Delivered' | 'Cancelled' | 'Received';
@@ -15,7 +18,7 @@ interface Order {
   status: OrderStatus;
   statusText?: string;
   date: string;
-  items: string | Array<{id: string; name: string; quantity: number; price: number; description?: string; imageUrl?: string; image?: string}>;
+  items: string | Array<{ id: string; name: string; quantity: number; price: number; description?: string; imageUrl?: string; image?: string }>;
   price: string;
   imageUrl: string;
   originalPrice?: string;
@@ -142,7 +145,12 @@ const OrderFilters: React.FC<{ currentFilter: FilterType; onFilterChange: (filte
   );
 };
 
-const OrderCard: React.FC<{ order: Order; onTrackOrder: (order: Order) => void }> = ({ order, onTrackOrder }) => {
+const OrderCard: React.FC<{
+  order: Order;
+  onTrackOrder: (order: Order) => void;
+  onReorder: (order: Order) => void;
+  isReordering?: boolean;
+}> = ({ order, onTrackOrder, onReorder, isReordering }) => {
   const router = useRouter();
   const isCancelled = order.status.toLowerCase().includes('cancelled');
   const isDelivered = order.status.toLowerCase().includes('delivered');
@@ -152,7 +160,7 @@ const OrderCard: React.FC<{ order: Order; onTrackOrder: (order: Order) => void }
   const handleDownloadInvoice = async (event: React.MouseEvent<HTMLButtonElement>, orderId: string) => {
     const button = event.currentTarget;
     const originalContent = button.innerHTML;
-    
+
     try {
       // Show loading state
       button.innerHTML = '<span class="material-symbols-outlined animate-spin">refresh</span> Generating...';
@@ -160,7 +168,7 @@ const OrderCard: React.FC<{ order: Order; onTrackOrder: (order: Order) => void }
 
       // Open invoice in new tab
       const invoiceWindow = window.open(`/api/customer/orders/${orderId}/invoice`, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
-      
+
       if (!invoiceWindow) {
         throw new Error('Failed to open invoice window');
       }
@@ -196,7 +204,7 @@ const OrderCard: React.FC<{ order: Order; onTrackOrder: (order: Order) => void }
               ].map((step, idx) => {
                 const stepActive = order.progressStep === idx;
                 const stepPast = (order.progressStep ?? -1) > idx;
-                
+
                 let circleClass = "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300";
                 let containerClass = "opacity-30";
                 let labelClass = "text-xs font-medium text-gray-500 dark:text-gray-400";
@@ -253,16 +261,16 @@ const OrderCard: React.FC<{ order: Order; onTrackOrder: (order: Order) => void }
                 console.log('Order data:', order);
                 console.log('Order items:', order.items);
                 console.log('First item:', Array.isArray(order.items) && order.items.length > 0 ? order.items[0] : 'No items');
-                
+
                 const firstItem = Array.isArray(order.items) && order.items.length > 0 ? order.items[0] : null;
-                
+
                 // Try to get real image from menu items first
                 const getMenuImageForItem = (itemName: string) => {
                   try {
                     // Using dynamic require inside the helper, but since it's a small JSON
                     // we wrap it for safety. In production, this should be pre-loaded.
                     const { menuItems } = require('@/data/menu');
-                    const menuItem = menuItems.find((item: any) => 
+                    const menuItem = menuItems.find((item: any) =>
                       item.name.toLowerCase() === itemName.toLowerCase() ||
                       itemName.toLowerCase().includes(item.name.toLowerCase()) ||
                       item.name.toLowerCase().includes(itemName.toLowerCase())
@@ -272,12 +280,12 @@ const OrderCard: React.FC<{ order: Order; onTrackOrder: (order: Order) => void }
                     return null;
                   }
                 };
-                
+
                 // Use order.imageUrl first (set during payment), then fallback logic
                 let imageSrc = order.imageUrl || '/images/order.jpg'; // Use order.imageUrl as primary source
                 console.log('Order imageUrl:', order.imageUrl);
                 console.log('Initial imageSrc:', imageSrc);
-                
+
                 if (firstItem && !order.imageUrl) {
                   // Only use fallback logic if order.imageUrl is not available
                   // Try item's own image first
@@ -292,13 +300,13 @@ const OrderCard: React.FC<{ order: Order; onTrackOrder: (order: Order) => void }
                     }
                   }
                 }
-                
+
                 console.log('Final image source:', imageSrc);
-                
+
                 return (
-                  <img 
-                    alt={`${order.username} Meal`} 
-                    className={`w-full h-full object-cover ${isCancelled ? 'grayscale' : 'grayscale group-hover:grayscale-0 transition-all duration-500'} ${isPreparing ? '' : ''}`} 
+                  <img
+                    alt={`${order.username} Meal`}
+                    className={`w-full h-full object-cover ${isCancelled ? 'grayscale' : 'grayscale group-hover:grayscale-0 transition-all duration-500'} ${isPreparing ? '' : ''}`}
                     src={imageSrc}
                     onLoad={() => console.log('Order image loaded successfully:', imageSrc)}
                     onError={(e) => {
@@ -323,7 +331,7 @@ const OrderCard: React.FC<{ order: Order; onTrackOrder: (order: Order) => void }
               </div>
               <p className="text-base text-gray-500 dark:text-gray-400">Order #{order.id} • {order.date}</p>
               <p className="text-gray-700 dark:text-gray-300 text-base font-medium line-clamp-2">
-                {Array.isArray(order.items) 
+                {Array.isArray(order.items)
                   ? order.items.map(item => `${item.quantity}x ${item.name}`).join(', ')
                   : order.items
                 }
@@ -343,7 +351,7 @@ const OrderCard: React.FC<{ order: Order; onTrackOrder: (order: Order) => void }
           <div className="flex flex-wrap items-center gap-2">
             {isPreparing && (
               <>
-                <button 
+                <button
                   suppressHydrationWarning
                   onClick={(e) => handleDownloadInvoice(e, order.id)}
                   className="h-10 px-5 rounded-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-105 cursor-pointer dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
@@ -351,7 +359,7 @@ const OrderCard: React.FC<{ order: Order; onTrackOrder: (order: Order) => void }
                   <span className="material-symbols-outlined text-[18px]">description</span>
                   Invoice
                 </button>
-                <button 
+                <button
                   suppressHydrationWarning
                   onClick={() => onTrackOrder(order)}
                   className="h-10 px-6 rounded-full bg-[#f9f506] text-black font-bold text-sm shadow-md shadow-[#f9f506]/20 hover:shadow-lg hover:shadow-[#f9f506]/40 flex items-center justify-center gap-2 transition-all hover:scale-105 cursor-pointer"
@@ -364,7 +372,7 @@ const OrderCard: React.FC<{ order: Order; onTrackOrder: (order: Order) => void }
 
             {isDelivered && (
               <>
-                <button 
+                <button
                   suppressHydrationWarning
                   onClick={(e) => handleDownloadInvoice(e, order.id)}
                   className="h-10 px-5 rounded-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-105 cursor-pointer dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
@@ -372,7 +380,7 @@ const OrderCard: React.FC<{ order: Order; onTrackOrder: (order: Order) => void }
                   <span className="material-symbols-outlined text-[18px]">description</span>
                   Invoice
                 </button>
-                <button 
+                <button
                   suppressHydrationWarning
                   onClick={() => router.push('/customer/feedback')}
                   className="h-10 px-5 rounded-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-105 cursor-pointer dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
@@ -380,18 +388,24 @@ const OrderCard: React.FC<{ order: Order; onTrackOrder: (order: Order) => void }
                   <span className="material-symbols-outlined text-[18px]">star</span>
                   Rate
                 </button>
-                <button 
+                <button
+                  onClick={() => onReorder(order)}
+                  disabled={isReordering}
                   suppressHydrationWarning
-                  className="h-10 px-6 rounded-full bg-green-600 text-white hover:bg-green-700 font-bold text-sm shadow-md shadow-green-600/20 hover:shadow-lg hover:shadow-green-600/30 flex items-center justify-center gap-2 transition-all hover:scale-105 cursor-pointer"
+                  className={`h-10 px-6 rounded-full bg-green-600 text-white hover:bg-green-700 font-bold text-sm shadow-md shadow-green-600/20 hover:shadow-lg hover:shadow-green-600/30 flex items-center justify-center gap-2 transition-all hover:scale-105 cursor-pointer ${isReordering ? 'opacity-70 cursor-wait' : ''}`}
                 >
-                  <span className="material-symbols-outlined text-[18px]">refresh</span>
-                  Reorder
+                  {isReordering ? (
+                    <span className="material-symbols-outlined animate-spin text-[18px]">refresh</span>
+                  ) : (
+                    <span className="material-symbols-outlined text-[18px]">refresh</span>
+                  )}
+                  {isReordering ? 'Reordering...' : 'Reorder'}
                 </button>
               </>
             )}
 
             {isCancelled && (
-              <button 
+              <button
                 suppressHydrationWarning
                 className="h-10 px-5 rounded-full bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 font-bold text-sm flex items-center justify-center gap-2 transition-all hover:scale-105 cursor-pointer dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
               >
@@ -417,7 +431,7 @@ const Pagination: React.FC<{
   const getVisiblePages = () => {
     const pages: number[] = [];
     const maxVisible = 5;
-    
+
     if (totalPages <= maxVisible) {
       for (let i = 1; i <= totalPages; i++) {
         pages.push(i);
@@ -445,7 +459,7 @@ const Pagination: React.FC<{
         pages.push(totalPages);
       }
     }
-    
+
     return pages;
   };
 
@@ -458,17 +472,16 @@ const Pagination: React.FC<{
       <div className="text-sm text-gray-600 dark:text-gray-400">
         Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} orders
       </div>
-      
+
       <div className="flex items-center gap-2">
         {/* Previous Button */}
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-            currentPage === 1
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600'
-              : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 cursor-pointer dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700'
-          }`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${currentPage === 1
+            ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600'
+            : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 cursor-pointer dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700'
+            }`}
         >
           <span className="material-symbols-outlined text-[18px]">chevron_left</span>
           Previous
@@ -485,11 +498,10 @@ const Pagination: React.FC<{
               <button
                 key={page}
                 onClick={() => onPageChange(page)}
-                className={`w-10 h-10 rounded-lg font-medium text-sm transition-all ${
-                  currentPage === page
-                    ? 'bg-[#f9f506] text-black shadow-lg shadow-[#f9f506]/30'
-                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 cursor-pointer dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700'
-                }`}
+                className={`w-10 h-10 rounded-lg font-medium text-sm transition-all ${currentPage === page
+                  ? 'bg-[#f9f506] text-black shadow-lg shadow-[#f9f506]/30'
+                  : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 cursor-pointer dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700'
+                  }`}
               >
                 {page}
               </button>
@@ -501,11 +513,10 @@ const Pagination: React.FC<{
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${
-            currentPage === totalPages
-              ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600'
-              : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 cursor-pointer dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700'
-          }`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${currentPage === totalPages
+            ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-800 dark:text-gray-600'
+            : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 cursor-pointer dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700'
+            }`}
         >
           Next
           <span className="material-symbols-outlined text-[18px]">chevron_right</span>
@@ -524,8 +535,10 @@ const OrdersPage = () => {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isReorderingId, setIsReorderingId] = useState<string | null>(null);
   const ORDERS_PER_PAGE = 14;
-  const { orders } = useOrders();
+  const { orders, addOrder } = useOrders();
+  const { addItem: addToCart } = useCartStore();
 
   // Simplified loading logic
   useEffect(() => {
@@ -568,14 +581,7 @@ const OrdersPage = () => {
   const currentOrders = filteredOrders.slice(startIndex, endIndex);
 
   // Debug logging
-  console.log('Pagination Debug:', {
-    totalOrders: filteredOrders.length,
-    totalPages,
-    currentPage,
-    startIndex,
-    endIndex,
-    currentOrdersLength: currentOrders.length
-  });
+  // Pagination Debug logs removed for production
 
   // Reset to page 1 when filter changes
   useEffect(() => {
@@ -595,6 +601,69 @@ const OrdersPage = () => {
     console.log('Modal state set to open, isModalOpen:', true);
   };
 
+  const handleReorder = async (order: Order) => {
+    if (isReorderingId) return;
+
+    setIsReorderingId(order.id);
+    const reorderToast = toast.loading("Processing your reorder...");
+
+    try {
+      let itemsArray: any[] = [];
+
+      if (Array.isArray(order.items)) {
+        itemsArray = order.items;
+      } else if (typeof order.items === 'string') {
+        // Parse "1x Item Name, 2x Another Item"
+        const parts = order.items.split(',').map(s => s.trim());
+        itemsArray = parts.map(part => {
+          const match = part.match(/(\d+)x\s*(.+)/);
+          if (match) {
+            return {
+              quantity: parseInt(match[1]),
+              name: match[2],
+              id: `reorder-${match[2]}`,
+              price: 0 // Will be handled by backend or shown as 0 if unknown
+            };
+          }
+          return null;
+        }).filter(Boolean);
+      }
+
+      if (itemsArray.length === 0) {
+        toast.error("Could not find items to reorder", { id: reorderToast });
+        setIsReorderingId(null);
+        return;
+      }
+
+      // One-Click: Call addOrder directly
+      const newOrderId = await addOrder({
+        username: order.username,
+        status: 'Preparing',
+        items: itemsArray.map(it => `${it.quantity}x ${it.name}`).join(', '),
+        itemsArray: itemsArray,
+        price: order.price,
+        total: order.total,
+        imageUrl: order.imageUrl,
+        timeSlot: 'ASAP',
+        paymentMethod: 'Cash at Counter'
+      });
+
+      toast.success("Order placed successfully!", {
+        id: reorderToast,
+        description: `Your new order ${newOrderId} is now being prepared.`,
+        action: {
+          label: "Track",
+          onClick: () => handleTrackOrder({ ...order, id: newOrderId, status: 'Preparing' })
+        }
+      });
+    } catch (error) {
+      console.error('Error reordering:', error);
+      toast.error("Failed to reorder. Please try again.", { id: reorderToast });
+    } finally {
+      setIsReorderingId(null);
+    }
+  };
+
   // Helper function to convert timeslot ID to display time
   const getDisplayTimeFromSlot = (slotId: string | null | undefined, orderDate?: string, orderId?: string): string => {
     if (slotId && slotId !== 'ASAP') {
@@ -603,51 +672,51 @@ const OrdersPage = () => {
       if (parts.length >= 3) {
         const hour = parseInt(parts[1]);
         const minute = parseInt(parts[2]);
-        
+
         // Convert to 12-hour format
         const period = hour >= 12 ? 'PM' : 'AM';
         const displayHour = hour > 12 ? hour - 12 : hour;
         const displayMinute = minute.toString().padStart(2, '0');
-        
+
         return `${displayHour}:${displayMinute} ${period}`;
       }
     }
-    
+
     // Generate realistic timeslot from order date if no timeslot field exists
     if (orderDate) {
       const orderDateTime = new Date(orderDate);
-      
+
       // Use order ID to generate consistent but different times for different orders
       const orderIdHash = orderId ? orderId.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0) : 0;
       const minutesOffset = (orderIdHash % 240); // 0-4 hours range based on order ID
-      
+
       const slotTime = new Date(orderDateTime.getTime() + minutesOffset * 60000);
-      
+
       const hour = slotTime.getHours();
       const minute = slotTime.getMinutes();
-      
+
       // Round to nearest 15-minute interval
       const roundedMinute = Math.round(minute / 15) * 15;
       const adjustedHour = roundedMinute === 60 ? hour + 1 : hour;
       const finalMinute = roundedMinute === 60 ? 0 : roundedMinute;
-      
+
       const period = adjustedHour >= 12 ? 'PM' : 'AM';
       const displayHour = adjustedHour > 12 ? adjustedHour - 12 : (adjustedHour === 0 ? 12 : adjustedHour);
       const displayMinute = finalMinute.toString().padStart(2, '0');
-      
+
       return `${displayHour}:${displayMinute} ${period}`;
     }
-    
+
     return 'ASAP';
   };
 
   // Map local Order type to tracker Order type
   const mapToTrackerOrder = (order: Order) => {
     const displayTime = getDisplayTimeFromSlot(order.timeSlot, order.date, order.id);
-    
+
     const statusLower = order.status.toLowerCase();
     let mappedStatus: 'ordered' | 'preparing' | 'ready' | 'picked_up' | 'delivered';
-    
+
     if (statusLower === 'preparing') {
       mappedStatus = 'preparing';
     } else if (statusLower === 'delivered') {
@@ -669,16 +738,16 @@ const OrdersPage = () => {
       description?: string;
       imageUrl?: string;
     }> = [];
-    
+
     if (typeof order.items === 'string' && order.items.trim()) {
       // Parse items from string format like "1x Lemon Tea"
       const itemString = order.items.trim();
       const quantityMatch = itemString.match(/^(\d+)x\s+(.+)$/);
-      
+
       if (quantityMatch) {
         const quantity = parseInt(quantityMatch[1]);
         const itemName = quantityMatch[2].trim();
-        
+
         processedItems = [{
           id: `item-0`,
           name: itemName,
@@ -740,7 +809,7 @@ const OrdersPage = () => {
       timeSlot: getDisplayTimeFromSlot(order.timeSlot, order.date, order.id),
       pickupDate: order.date
     };
-    
+
     return mappedOrder;
   };
 
@@ -753,24 +822,19 @@ const OrdersPage = () => {
               👋 Welcome back!
             </h1>
             <h1 className="text-gray-900 dark:text-white tracking-tight text-2xl md:text-4xl font-bold leading-tight">
-               Here are your recent orders
+              Here are your recent orders
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-lg font-normal">Track your delivery, reorder favorites, and view your history.</p>
           </div>
           <StatsCard />
         </section>
-        
+
         <OrderFilters currentFilter={filter} onFilterChange={setFilter} />
 
         <div className="flex flex-col gap-8 px-0 pb-20">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center gap-6">
-              <div className="w-48 h-48 bg-gray-50 rounded-full flex items-center justify-center mb-4 dark:bg-gray-800">
-                <span className="material-symbols-outlined text-gray-300 text-6xl dark:text-gray-600 animate-spin">hourglass_bottom</span>
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Loading your orders...</h3>
-              </div>
+            <div className="w-full py-8">
+              <OrderHistorySkeleton />
             </div>
           ) : filteredOrders.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center gap-6">
@@ -781,7 +845,7 @@ const OrdersPage = () => {
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">No orders found 🍽</h3>
                 <p className="text-gray-500 dark:text-gray-400 text-base">Try changing your filter or browse top restaurants near you!</p>
               </div>
-              <Link 
+              <Link
                 href="/customer/menu"
                 className="h-12 px-8 rounded-full bg-[#f9f506] text-black font-bold text-base shadow-lg shadow-[#f9f506]/30 hover:shadow-[#f9f506]/50 hover:scale-105 transition-all flex items-center gap-2 cursor-pointer"
               >
@@ -792,9 +856,15 @@ const OrdersPage = () => {
           ) : (
             <div className="flex flex-col gap-8">
               {currentOrders.map((order) => (
-                <OrderCard key={order.id} order={order} onTrackOrder={handleTrackOrder} />
+                <OrderCard
+                  key={order.id}
+                  order={order}
+                  onTrackOrder={handleTrackOrder}
+                  onReorder={handleReorder}
+                  isReordering={isReorderingId === order.id}
+                />
               ))}
-              
+
               {/* Pagination Component */}
               <Pagination
                 currentPage={currentPage}
@@ -807,12 +877,12 @@ const OrdersPage = () => {
           )}
         </div>
       </div>
-      
+
       {/* Order Tracker Modal */}
       {selectedOrder && (
         <>
           {console.log('Rendering modal for order:', selectedOrder, 'isModalOpen:', isModalOpen)}
-          <qwikBiteEliteTracker
+          <QwikBiteEliteTracker
             order={mapToTrackerOrder(selectedOrder)}
             isOpen={isModalOpen}
             onClose={handleCloseModal}

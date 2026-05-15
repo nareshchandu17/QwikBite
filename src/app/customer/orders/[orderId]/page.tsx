@@ -60,7 +60,7 @@ export default function OrderDetail({ params }: { params: Promise<{ orderId: str
         }
       });
       
-      websocketClient.on('order:update', (data: unknown) => {
+      websocketClient.on('order:update', (data: any) => {
         if (data.orderId === orderId && mounted) {
           console.log('Order update received:', data);
           
@@ -102,7 +102,7 @@ export default function OrderDetail({ params }: { params: Promise<{ orderId: str
         .then(r => r.json())
         .then(d => { 
           if (mounted) { 
-            const foundOrder = d.data?.find((o: unknown) => o.id === orderId);
+            const foundOrder = d.data?.find((o: any) => o.id === orderId);
             if (foundOrder) {
                 setOrder(foundOrder); 
                 updateProgress(foundOrder.status);

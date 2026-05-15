@@ -35,13 +35,11 @@ interface OrderTotals {
 const formatTimeSlot = (slot: string): string => {
   if (!slot) return slot;
   
-  console.log('[Order Summary] Original time slot:', slot);
-  console.log('[Order Summary] Slot type:', typeof slot);
-  console.log('[Order Summary] Slot length:', slot.length);
+  // Debug logs removed for production
   
   // If slot is already in format "8:30-8:45", return as is
   if (slot.includes('-') && slot.match(/^\d{1,2}:\d{2}-\d{1,2}:\d{2}$/)) {
-    console.log('[Order Summary] Already formatted time slot:', slot);
+    // console.log('[Order Summary] Already formatted time slot:', slot);
     return slot;
   }
   
@@ -53,7 +51,7 @@ const formatTimeSlot = (slot: string): string => {
       const startHour = parseInt(hour);
       const startMin = parseInt(min);
       
-      console.log('[Order Summary] Parsed session slot:', { session, hour: startHour, min: startMin });
+      // console.log('[Order Summary] Parsed session slot:', { session, hour: startHour, min: startMin });
       
       // Convert to 12-hour format
       const displayHour = startHour > 12 ? startHour - 12 : startHour;
@@ -66,12 +64,12 @@ const formatTimeSlot = (slot: string): string => {
         const adjustedEndMin = endMin - 60;
         const displayEndHour = endHour > 12 ? endHour - 12 : endHour;
         const formatted = `${displayHour}:${startMin.toString().padStart(2, '0')}-${displayEndHour}:${adjustedEndMin.toString().padStart(2, '0')}`;
-        console.log('[Order Summary] Formatted session slot with overflow:', formatted);
+        // console.log('[Order Summary] Formatted session slot with overflow:', formatted);
         return formatted;
       } else {
         const displayEndHour = endHour > 12 ? endHour - 12 : endHour;
         const formatted = `${displayHour}:${startMin.toString().padStart(2, '0')}-${displayEndHour}:${endMin.toString().padStart(2, '0')}`;
-        console.log('[Order Summary] Formatted session slot:', formatted);
+        // console.log('[Order Summary] Formatted session slot:', formatted);
         return formatted;
       }
     }
@@ -96,12 +94,12 @@ const formatTimeSlot = (slot: string): string => {
         const adjustedEndMin = endMin - 60;
         const displayEndHour = endHour > 12 ? endHour - 12 : endHour;
         const formatted = `${displayHour}:${min.toString().padStart(2, '0')}-${displayEndHour}:${adjustedEndMin.toString().padStart(2, '0')}`;
-        console.log('[Order Summary] Formatted time slot:', formatted);
+        // console.log('[Order Summary] Formatted time slot:', formatted);
         return formatted;
       } else {
         const displayEndHour = endHour > 12 ? endHour - 12 : endHour;
         const formatted = `${displayHour}:${min.toString().padStart(2, '0')}-${displayEndHour}:${endMin.toString().padStart(2, '0')}`;
-        console.log('[Order Summary] Formatted time slot:', formatted);
+        // console.log('[Order Summary] Formatted time slot:', formatted);
         return formatted;
       }
     }
@@ -123,12 +121,12 @@ const formatTimeSlot = (slot: string): string => {
         const adjustedEndMin = endMin - 60;
         const displayEndHour = endHour > 12 ? endHour - 12 : endHour;
         const formatted = `${displayHour}:${min.toString().padStart(2, '0')}-${displayEndHour}:${adjustedEndMin.toString().padStart(2, '0')}`;
-        console.log('[Order Summary] Formatted standard time:', formatted);
+        // console.log('[Order Summary] Formatted standard time:', formatted);
         return formatted;
       } else {
         const displayEndHour = endHour > 12 ? endHour - 12 : endHour;
         const formatted = `${displayHour}:${min.toString().padStart(2, '0')}-${displayEndHour}:${endMin.toString().padStart(2, '0')}`;
-        console.log('[Order Summary] Formatted standard time:', formatted);
+        // console.log('[Order Summary] Formatted standard time:', formatted);
         return formatted;
       }
     }
@@ -179,7 +177,7 @@ const formatTimeSlot = (slot: string): string => {
   
   // Return mapped slot or original if no mapping found
   const result = slotMappings[norm] || slot;
-  console.log('[Order Summary] Final time slot result:', result);
+  // console.log('[Order Summary] Final time slot result:', result);
   return result;
 };
 
@@ -189,14 +187,14 @@ export default function OrderSummaryPage() {
   const cart = useCartStore((state) => state.items);
   const timeSlot = useCartStore((state) => state.timeSlot);
   
-  console.log('[Order Summary] Current timeSlot from store:', timeSlot);
-  console.log('[Order Summary] TimeSlot type:', typeof timeSlot);
+  // console.log('[Order Summary] Current timeSlot from store:', timeSlot);
+  // console.log('[Order Summary] TimeSlot type:', typeof timeSlot);
   
   const [isVisible, setIsVisible] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [orderNumber, setOrderNumber] = useState<string>('');
   const [showTimeSlotModal, setShowTimeSlotModal] = useState<boolean>(false);
-  console.log('[Order Summary] showTimeSlotModal state:', showTimeSlotModal);
+  // console.log('[Order Summary] showTimeSlotModal state:', showTimeSlotModal);
   const [totals, setTotals] = useState<OrderTotals>({ 
     subtotal: 0, 
     tax: 0, 
@@ -323,7 +321,7 @@ export default function OrderSummaryPage() {
         >
           <button
             onClick={() => {
-              console.log('[Order Summary] Back button clicked, opening modal');
+              // console.log('[Order Summary] Back button clicked, opening modal');
               setShowTimeSlotModal(true);
             }}
             className="inline-flex items-center gap-2 text-amber-600 hover:text-amber-700 font-medium transition-colors"
@@ -576,17 +574,17 @@ export default function OrderSummaryPage() {
                   status: 'pending'
                 };
                 
-                console.log('[Order Summary] ✅ Saving orderData to localStorage:', orderData);
+                // console.log('[Order Summary] ✅ Saving orderData to localStorage:', orderData);
                 
                 // Use synchronous localStorage for faster operation
                 try {
                   localStorage.setItem('orderData', JSON.stringify(orderData));
-                  console.log('[Order Summary] ✅ Data saved successfully');
+                  // console.log('[Order Summary] ✅ Data saved successfully');
                   
                   // Navigate immediately after saving
                   router.push('/customer/payment');
                 } catch (error) {
-                  console.error('[Order Summary] ❌ Error saving data:', error);
+                  // console.error('[Order Summary] ❌ Error saving data:', error);
                   toast.error('Error preparing payment. Please try again.');
                   setIsLoading(false);
                 }
@@ -629,7 +627,7 @@ export default function OrderSummaryPage() {
       <TimeSlotModal
         isOpen={showTimeSlotModal}
         onClose={() => {
-          console.log('[Order Summary] TimeSlotModal onClose called');
+          // console.log('[Order Summary] TimeSlotModal onClose called');
           setShowTimeSlotModal(false);
         }}
         item={null} // No specific item, just for time slot selection

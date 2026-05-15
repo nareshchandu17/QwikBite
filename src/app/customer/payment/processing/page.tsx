@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useOrders } from "@/context/OrderContext";
@@ -42,10 +42,14 @@ export default function ProcessingPaymentPage() {
     }
   }, [loading, isAuthenticated, items, router]);
 
+  const orderAttemptedRef = useRef(false);
+  
   // Main payment processing logic
   useEffect(() => {
-    // We only proceed if auth is ready and items exist
-    if (loading || !isAuthenticated || !items || items.length === 0) return;
+    // We only proceed if auth is ready and items exist and we haven't attempted yet
+    if (loading || !isAuthenticated || !items || items.length === 0 || orderAttemptedRef.current) return;
+
+    orderAttemptedRef.current = true;
 
     const updateTimeslotFill = async (selectedTimeSlot: string) => {
       try {
@@ -82,6 +86,11 @@ export default function ProcessingPaymentPage() {
 
         const orderId = await addOrder(orderData, token || undefined);
         console.log('[Payment Processing] Order created successfully:', orderId);
+        
+        // Store in localStorage so PaymentSuccessPage knows it's already done
+        localStorage.setItem('orderId', orderId);
+        localStorage.setItem('lastOrderId', orderId);
+        
         await updateTimeslotFill(timeSlot || '');
         return true;
       } catch (error) {

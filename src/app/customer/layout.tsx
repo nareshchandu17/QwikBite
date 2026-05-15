@@ -7,7 +7,7 @@ import { AppLayout } from "@/components/AppLayout";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { AuthModalProvider } from "@/context/AuthModalContext";
 import { OrderProvider } from "@/context/OrderContext";
-import qwikBiteAssistant from "@/components/customer/qwikBiteAssistant";
+import QwikBiteAssistant from "@/components/customer/QwikBiteAssistant";
 
 export default function CustomerLayout({
   children,
@@ -23,7 +23,7 @@ export default function CustomerLayout({
               <AppLayout>
                 {children}
               </AppLayout>
-              <qwikBiteAssistant />
+              <QwikBiteAssistant />
             </OrderProvider>
           </FavoritesProvider>
           <AuthModal />
