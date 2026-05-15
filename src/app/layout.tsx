@@ -3,7 +3,7 @@ import { Inter, Plus_Jakarta_Sans, Be_Vietnam_Pro } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/context/AuthContext';
 import { AuthModalProvider } from '@/context/AuthModalContext';
-import { WebSocketProvider } from '@/context/WebSocketContext';
+import { PusherProvider } from '@/context/PusherContext';
 import { SessionProvider } from '@/providers/SessionProvider';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthRedirector, AuthModal } from '@/components/auth';
@@ -59,7 +59,7 @@ export default async function RootLayout({
             <SessionProvider>
               <AuthProvider>
                 <AuthModalProvider>
-                  <WebSocketProvider>
+                  <PusherProvider>
                     <AuthRedirector>
                       <GlobalStyles />
                       {children}
@@ -67,7 +67,7 @@ export default async function RootLayout({
                       <Toaster />
                       <SpeedInsights />
                     </AuthRedirector>
-                  </WebSocketProvider>
+                  </PusherProvider>
                 </AuthModalProvider>
               </AuthProvider>
             </SessionProvider>
