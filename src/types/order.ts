@@ -1,4 +1,4 @@
-export type OrderStatus = 'received' | 'preparing' | 'almost_ready' | 'ready' | 'collected' | 'delivered' | 'pending' | 'out_for_delivery' | 'cancelled' | 'delayed';
+export type OrderStatus = 'received' | 'preparing' | 'almost_ready' | 'ready' | 'collected' | 'delivered' | 'pending' | 'out_for_delivery' | 'cancelled' | 'delayed' | 'confirmed';
 
 export interface OrderItem {
   id: string;
@@ -6,6 +6,8 @@ export interface OrderItem {
   quantity: number;
   price: number;
   image?: string;
+  imageUrl?: string;
+  menuItem?: any;
   qty?: number; // Alias for quantity
 }
 

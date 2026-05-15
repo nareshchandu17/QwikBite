@@ -8,6 +8,7 @@ export const statusMessages: Record<OrderStatus, string> = {
   'collected': 'Your order has been collected. Enjoy your meal!',
   'delivered': 'Your order has been delivered',
   'pending': 'Your order is pending',
+  'confirmed': 'Your order has been confirmed',
   'out_for_delivery': 'Your order is out for delivery',
   'delayed': 'Your order has been delayed',
   'cancelled': 'Your order has been cancelled',

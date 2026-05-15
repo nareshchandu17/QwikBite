@@ -10,7 +10,7 @@ export function useFavorites(userId: string | null) {
     setLoading(true);
     fetch(`/api/favorites?userId=${userId}`, { cache: 'no-store', credentials: 'include' })
       .then(r => r.json())
-      .then(data => { if (!mounted) return; setFavorites((data || []).map((f: unknown) => f.itemId)); })
+      .then(data => { if (!mounted) return; setFavorites((data || []).map((f: any) => f.itemId)); })
       .catch(() => setFavorites([]))
       .finally(() => mounted && setLoading(false));
     return () => { mounted = false; };

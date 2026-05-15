@@ -16,7 +16,7 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isThankYouModalOpen, setIsThankYouModalOpen] = useState(false);
-  const [orderDetails, setOrderDetails] = useState<unknown>(null);
+  const [orderDetails, setOrderDetails] = useState<any>(null);
 
   const dismissToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));

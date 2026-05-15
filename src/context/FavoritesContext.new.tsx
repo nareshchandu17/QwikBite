@@ -44,7 +44,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
       const favoritesList = Array.isArray(data) 
-        ? data.map((fav: unknown) => fav.itemId).filter(Boolean)
+        ? data.map((fav: any) => fav.itemId).filter(Boolean)
         : [];
       
       setFavorites(favoritesList);

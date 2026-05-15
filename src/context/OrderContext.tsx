@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
 import { useWebSocket as useSocket } from './WebSocketContext';
 import { menuItems } from '@/data/menu';
 
@@ -235,8 +235,14 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, [orders, isInitialized]);
 
-  const addOrder = async (order: Omit<Order, 'id' | 'date' | 'statusText' | 'progressStep'> & { itemsArray?: unknown[]; timeSlot?: string; paymentMethod?: string }, authToken?: string) => {
+  const addOrder = useCallback(async (order: Omit<Order, 'id' | 'date' | 'statusText' | 'progressStep'> & { itemsArray?: unknown[]; timeSlot?: string; paymentMethod?: string }, authToken?: string) => {
     console.log('[OrderContext] addOrder called with token:', authToken ? `${authToken.substring(0, 20)}...` : 'No token');
+    
+    // Validate order items
+    if (!order.itemsArray || !Array.isArray(order.itemsArray) || order.itemsArray.length === 0) {
+      console.error('[OrderContext] ❌ addOrder failed: itemsArray is missing or empty');
+      throw new Error('Order must contain at least one item');
+    }
     
     // Generate truly unique ID: timestamp + random + nano-precision
     const timestamp = Date.now();
@@ -244,11 +250,11 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const uniqueId = `ORD-${timestamp}-${random}`;
 
     // Parse price to number for DB
-    const numericPrice = parseFloat(order.price.replace(/[^0-9.]/g, '')) || 0;
-    const numericOriginalPrice = order.originalPrice ? parseFloat(order.originalPrice.replace(/[^0-9.]/g, '')) : numericPrice;
+    const numericPrice = typeof order.price === 'number' ? order.price : parseFloat(String(order.price).replace(/[^0-9.]/g, '')) || 0;
+    const numericOriginalPrice = order.originalPrice ? (typeof order.originalPrice === 'number' ? order.originalPrice : parseFloat(String(order.originalPrice).replace(/[^0-9.]/g, ''))) : numericPrice;
 
     const newOrder: Order = {
-      ...order,
+      ...order as any,
       id: uniqueId,
       date: new Date().toLocaleDateString('en-US', {
         year: 'numeric',
@@ -283,35 +289,34 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       // Add Authorization header if token is available
       if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
-        console.log('[OrderContext] Authorization header added:', `Bearer ${authToken.substring(0, 20)}...`);
-      } else {
-        console.log('[OrderContext] No auth token available, request will be unauthenticated');
       }
       
-      console.log('[OrderContext] Request headers:', headers);
+      const requestBody = {
+        id: uniqueId,
+        orderId: uniqueId,
+        userId: 'customer', // This should be the actual user ID from auth
+        username: order.username,
+        items: order.itemsArray || [], // Use itemsArray as items
+        total: numericPrice,
+        price: numericPrice,
+        status: 'preparing',
+        imageUrl: getRealItemImage(order) || '/images/order.jpg',
+        originalPrice: numericOriginalPrice,
+        statusText: 'Preparing your order',
+        progressStep: 0,
+        timeSlot: order.timeSlot || (window as unknown as { selectedTimeSlot?: string }).selectedTimeSlot || 'ASAP',
+        pickupDate: pickupDate,
+        paymentMethod: 'online',
+        paymentStatus: 'completed'
+      };
+
+      console.log('[OrderContext] POST /api/orders/customer with body:', requestBody);
       
       const response = await fetch('/api/orders/customer', {
         method: 'POST',
         headers,
         credentials: 'include',
-        body: JSON.stringify({
-          id: uniqueId,
-          orderId: uniqueId,
-          userId: 'customer', // This should be the actual user ID from auth
-          username: order.username,
-          items: order.itemsArray || [], // Use itemsArray as items
-          total: numericPrice,
-          price: numericPrice,
-          status: 'preparing',
-          imageUrl: getRealItemImage(order) || '/images/order.jpg',
-          originalPrice: numericOriginalPrice,
-          statusText: 'Preparing your order',
-          progressStep: 0,
-          timeSlot: order.timeSlot || (window as unknown as { selectedTimeSlot?: string }).selectedTimeSlot || 'ASAP',
-          pickupDate: pickupDate,
-          paymentMethod: 'online',
-          paymentStatus: 'completed'
-        })
+        body: JSON.stringify(requestBody)
       });
 
       console.log('[OrderContext] Customer API response status:', response.status);
@@ -381,9 +386,9 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
     // Return the generated ID so caller can use it for transactions, etc.
     return uniqueId;
-  };
+  }, []);
 
-  const updateOrderStatus = (orderId: string, status: OrderStatus) => {
+  const updateOrderStatus = useCallback((orderId: string, status: OrderStatus) => {
     setOrders(prev =>
       prev.map(order =>
         order.id === orderId
@@ -396,10 +401,16 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           : order
       )
     );
-  };
+  }, []);
 
+  const contextValue = useMemo(() => ({
+    orders,
+    addOrder,
+    updateOrderStatus
+  }), [orders, addOrder, updateOrderStatus]);
+  
   return (
-    <OrderContext.Provider value={{ orders, addOrder, updateOrderStatus }}>
+    <OrderContext.Provider value={contextValue}>
       {children}
     </OrderContext.Provider>
   );
