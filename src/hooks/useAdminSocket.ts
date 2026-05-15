@@ -11,7 +11,7 @@
 'use client';
 
 import { useEffect, useCallback, useState } from 'react';
-import { Socket } from 'socket.io-client';
+// import removed
 import { getSocket } from '@/lib/socket';
 
 export interface AdminNotificationPayload {

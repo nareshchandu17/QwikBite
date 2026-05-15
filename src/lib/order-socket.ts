@@ -1,18 +1,4 @@
-import { Server as SocketIOServer } from 'socket.io';
-import { Server as NetServer } from 'http';
-import { NextApiRequest, NextApiResponse } from 'next';
-
-export interface SocketServerWithIO extends NetServer {
-  io?: SocketIOServer;
-}
-
-export type NextApiResponseWithSocket = Omit<NextApiResponse, 'socket'> & {
-  socket: SocketServerWithIO & {
-    server: SocketServerWithIO & {
-      io?: SocketIOServer;
-    };
-  };
-};
+import { pusherServer } from './pusher';
 
 // WebSocket Events
 export const ORDER_EVENTS = {
@@ -34,52 +20,9 @@ export const ORDER_STATUS_MESSAGES = {
   cancelled: 'Order cancelled ❌'
 } as const;
 
-// Initialize Socket.IO
-export const initSocketIO = (req: NextApiRequest, res: NextApiResponseWithSocket) => {
-  if (!res.socket.server.io) {
-    console.log('[Socket.IO] Initializing server...');
-    
-    const httpServer: NetServer = res.socket.server as unknown as NetServer;
-    const _io = new SocketIOServer(httpServer, {
-      path: '/api/socket/io',
-      addTrailingSlash: false,
-      cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-      }
-    });
-    
-    // Connection handling
-    _io.on('connection', (socket) => {
-      console.log(`[Socket.IO] Client connected: ${socket.id}`);
-      
-      // Join user-specific room for personal orders
-      socket.on('join:user', (userId: string) => {
-        socket.join(`user:${userId}`);
-        console.log(`[Socket.IO] User ${userId} joined their room`);
-      });
-      
-      // Join order-specific room for order updates
-      socket.on('join:order', (orderId: string) => {
-        socket.join(`order:${orderId}`);
-        console.log(`[Socket.IO] Client joined order room: ${orderId}`);
-      });
-      
-      // Handle disconnection
-      socket.on('disconnect', () => {
-        console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
-      });
-    });
-    
-    res.socket.server.io = _io;
-  }
-  
-  return res.socket.server.io;
-};
-
-// Emit order update event
-export const emitOrderUpdate = (
-  io: SocketIOServer,
+// Emit order update event using Pusher
+export const emitOrderUpdate = async (
+  io: any, // kept for backward compatibility with calling code, not used
   orderId: string,
   status: string,
   userId?: string,
@@ -95,31 +38,25 @@ export const emitOrderUpdate = (
     ...additionalData
   };
   
-  // Emit to order-specific room
-  io.to(`order:${orderId}`).emit(ORDER_EVENTS.ORDER_UPDATED, eventData);
-  
-  // Emit to user-specific room if userId is provided
-  if (userId) {
-    io.to(`user:${userId}`).emit(ORDER_EVENTS.ORDER_UPDATED, eventData);
-  }
-  
-  // Emit to general room for admin/staff
-  io.to('admin').emit(ORDER_EVENTS.ORDER_UPDATED, eventData);
-  
-  console.log(`[Socket.IO] Emitted order update:`, eventData);
-};
-
-// Socket.IO API Route Handler
-export const SocketHandler = (req: NextApiRequest, res: NextApiResponseWithSocket) => {
-  const _io = initSocketIO(req, res);
-  
-  res.socket.server.io?.on('connection', (socket) => {
-    console.log(`[Socket.IO] New connection: ${socket.id}`);
+  try {
+    // Note: Pusher channel names cannot contain colons in some contexts, using hyphen instead
+    const sanitizedOrderId = orderId.replace(/:/g, '-');
+    const orderChannel = `order-${sanitizedOrderId}`;
     
-    socket.on('disconnect', () => {
-      console.log(`[Socket.IO] Disconnection: ${socket.id}`);
-    });
-  });
-  
-  res.end();
+    // Emit to order-specific room
+    await pusherServer.trigger(orderChannel, ORDER_EVENTS.ORDER_UPDATED, eventData);
+    
+    // Emit to user-specific room if userId is provided
+    if (userId) {
+      const userChannel = `user-${userId.toString().replace(/:/g, '-')}`;
+      await pusherServer.trigger(userChannel, ORDER_EVENTS.ORDER_UPDATED, eventData);
+    }
+    
+    // Emit to general room for admin/staff
+    await pusherServer.trigger('admin', ORDER_EVENTS.ORDER_UPDATED, eventData);
+    
+    console.log(`[Pusher] Emitted order update to ${orderChannel}:`, eventData);
+  } catch (error) {
+    console.error(`[Pusher] Failed to emit order update:`, error);
+  }
 };

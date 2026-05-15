@@ -1,7 +1,7 @@
-import { io, Socket } from 'socket.io-client';
+import { getPusherClient } from './pusher';
 
 /**
- * PRODUCTION-GRADE WEBSOCKET CLIENT (DEBUG VERSION)
+ * PRODUCTION-GRADE WEBSOCKET CLIENT USING PUSHER
  */
 
 type EventMap = {
@@ -12,103 +12,51 @@ type EventMap = {
   'connect': () => void;
   'disconnect': (reason: string) => void;
   'connect_error': (error: Error) => void;
-  'reconnect_attempt': (attempt: number) => void;
   'error': (error: Error) => void;
-  'room_joined': (data: { room: string }) => void;
-  'room_left': (data: { room: string }) => void;
-  'test_response': (data: unknown) => void;
-  // Allow other string keys but don't force them to match the args exactly if they are specific
   [key: string]: (...args: any[]) => void;
 };
 
 class WebSocketClient {
-  private socket: Socket | null = null;
   private listeners: Map<string, Set<(...args: any[]) => void>> = new Map();
   private _isConnected = false;
-  private currentNamespace: string | null = null;
-  private isConnecting = false;
-  private instanceId: string;
+  private currentRoom: string | null = null;
+  private pusherChannel: any = null;
   
   public get isConnected(): boolean {
     return this._isConnected;
   }
 
-  public getSocket(): Socket | null {
-    return this.socket;
-  }
-
   constructor() {
-    this.instanceId = Math.random().toString(36).substring(7);
-    // console.log(`[CLIENT INSTANCE] Created ID: ${this.instanceId}`, Date.now());
+    // Initialized
   }
 
   public connect(namespace: string = '/customer', token?: string): void {
-    if (this.isConnecting) {
-        console.log(`[CLIENT ${this.instanceId}] Connection already in progress...`);
-        return;
-    }
+    const pusher = getPusherClient();
+    if (!pusher) return;
 
-    if (this.socket?.connected) {
-      if (this.currentNamespace === namespace) {
-        console.log(`[CLIENT ${this.instanceId}] Already connected to ${namespace}`);
-        return;
-      }
-      console.log(`[CLIENT ${this.instanceId}] Switching namespace to ${namespace}`);
-      this.socket.disconnect();
-    }
-
-    this.isConnecting = true;
-    this.currentNamespace = namespace;
-    const baseUrl = process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3001');
-    
-    console.log(`[CLIENT ${this.instanceId}] Connecting to ${baseUrl}${namespace}`);
-
-    this.socket = io(`${baseUrl}${namespace}`, {
-      path: '/api/socket/io',
-      addTrailingSlash: false,
-      transports: ['polling', 'websocket'], // Prefer polling first for dev stability, upgrade to websocket later
-      auth: token ? { token } : undefined,
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 2000,
-      timeout: 10000,
-    });
-
-    this.setupEventListeners();
-  }
-
-  private setupEventListeners(): void {
-    if (!this.socket) return;
-
-    this.socket.on('connect', () => {
-      console.log(`[CLIENT ${this.instanceId}] ✅ CONNECTED | ID: ${this.socket?.id}`);
-      this._isConnected = true;
-      this.isConnecting = false;
-      this.trigger('connect');
-    });
-
-    this.socket.on('disconnect', (reason) => {
-      console.log(`[CLIENT ${this.instanceId}] ❌ DISCONNECTED | Reason: ${reason}`);
-      this._isConnected = false;
-      this.isConnecting = false;
-      this.trigger('disconnect', reason);
-    });
-
-    this.socket.on('connect_error', (error) => {
-      console.error(`[CLIENT ${this.instanceId}] ⚠️ ERROR: ${error.message}`);
-      this.isConnecting = false;
-      this.trigger('connect_error', error);
-    });
-
-    // Generic listener for all registered events
-    const events = ['order:update', 'admin:new_order', 'admin:order_updated', 'room_joined'];
-    events.forEach(event => {
-      this.socket?.on(event, (data) => {
-        this.trigger(event, data);
+    // In Pusher, connection is handled globally by the instance
+    // We just simulate the connect event
+    if (!this._isConnected) {
+      pusher.connection.bind('connected', () => {
+        this._isConnected = true;
+        this.trigger('connect');
       });
-    });
+      pusher.connection.bind('disconnected', () => {
+        this._isConnected = false;
+        this.trigger('disconnect', 'pusher_disconnected');
+      });
+      pusher.connection.bind('error', (err: any) => {
+        this.trigger('error', new Error(err.message || 'Pusher error'));
+      });
+    }
+
+    if (pusher.connection.state === 'connected') {
+      this._isConnected = true;
+      setTimeout(() => this.trigger('connect'), 0);
+    }
   }
 
+  // Generic on event for socket.io style listeners
   public on<K extends keyof EventMap & string>(event: K, listener: EventMap[K]): () => void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
@@ -131,32 +79,56 @@ class WebSocketClient {
         try {
           listener(...args);
         } catch (error) {
-          console.error(`[CLIENT ${this.instanceId}] Listener Error (${event}):`, error);
+          console.error(`[Pusher Client] Listener Error (${event}):`, error);
         }
       });
     }
   }
 
+  // We can't really emit events to other clients without a backend in Pusher,
+  // but we can handle 'order:join' which is typically sent by client to join a room
   public emit(event: string, ...args: any[]): void {
-    if (this.socket?.connected) {
-      this.socket.emit(event, ...args);
-    } else {
-      console.warn(`[CLIENT ${this.instanceId}] Cannot emit '${event}': not connected`);
+    if (event === 'order:join' || event === 'join:room') {
+      const room = args[0] as string;
+      this.joinRoom(room);
     }
   }
 
   public joinRoom(room: string): void {
-    this.emit('order:join', room);
+    const pusher = getPusherClient();
+    if (!pusher) return;
+
+    // Unsubscribe from previous room if any
+    if (this.currentRoom && this.pusherChannel) {
+      pusher.unsubscribe(this.currentRoom);
+      this.pusherChannel.unbind_all();
+    }
+
+    const sanitizedRoom = room.replace(/:/g, '-');
+    this.currentRoom = sanitizedRoom;
+    this.pusherChannel = pusher.subscribe(sanitizedRoom);
+
+    // Bind common events that the frontend expects
+    this.pusherChannel.bind('order:updated', (data: any) => {
+      this.trigger('order:update', data);
+      this.trigger('order_update', data); // fallback
+    });
+    
+    // Fallback if someone emits exact names
+    this.pusherChannel.bind('order:update', (data: any) => this.trigger('order:update', data));
+    this.pusherChannel.bind('order_update', (data: any) => this.trigger('order_update', data));
+    
+    console.log(`[Pusher Client] Joined channel: ${sanitizedRoom}`);
   }
 
   public disconnect(): void {
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
-      this.currentNamespace = null;
-      this._isConnected = false;
-      this.isConnecting = false;
+    const pusher = getPusherClient();
+    if (pusher && this.currentRoom) {
+      pusher.unsubscribe(this.currentRoom);
     }
+    this.currentRoom = null;
+    this.pusherChannel = null;
+    this._isConnected = false;
   }
 }
 

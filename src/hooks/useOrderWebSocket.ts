@@ -12,7 +12,7 @@
 'use client';
 
 import { useEffect, useCallback, useRef, useState } from 'react';
-import { Socket } from 'socket.io-client';
+// Import removed
 import { useWebSocket as useSocket } from '@/context/WebSocketContext';
 
 export interface OrderUpdate {

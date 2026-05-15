@@ -4,7 +4,7 @@ import { Order, OrderStatus } from '@/models/order.model';
 import '@/models/menuItem.model';
 import '@/models/user.model';
 import { syncTimeSlotUsage } from '@/lib/slot-utils';
-import { socketManager } from '@/lib/websocket/server';
+import { pusherServer } from '@/lib/pusher';
 import { AuditService } from '@/lib/services/auditService';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
@@ -74,12 +74,13 @@ export async function PATCH(req: NextRequest) {
         await syncTimeSlotUsage();
 
         // 🚀 REAL-TIME: Emit update to specific order room and admin dashboard
-        socketManager.emitToRoom(`order:${order._id}`, 'order:update', {
+        const orderChannel = `order-${order._id.toString().replace(/:/g, '-')}`;
+        await pusherServer.trigger(orderChannel, 'order:update', {
             status: order.status,
             orderId: order.orderId,
             updatedOrder: order
         });
-        socketManager.emitToAll('admin:order_updated', order);
+        await pusherServer.trigger('admin', 'admin:order_updated', order);
 
         // Log the action (Audit Trail)
         const session = await getServerSession(authOptions);
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
         });
 
         await syncTimeSlotUsage();
-        socketManager.emitToAll('admin:new_order', order);
+        await pusherServer.trigger('admin', 'admin:new_order', order);
 
         return jsonResponse(order, 201);
 

@@ -3,7 +3,7 @@
  * Handles creating and sending notifications to admin and customers
  */
 
-import { socketManager } from '@/lib/websocket/server';
+import { pusherServer } from '@/lib/pusher';
 import { connectDB } from '@/lib/db';
 import { Notification } from '@/lib/models/Notification';
 import mongoose from 'mongoose';
@@ -54,8 +54,9 @@ export class NotificationService {
 
       // Emit WebSocket event for real-time delivery
       try {
-        await socketManager.emitToUser(
-          payload.userId,
+        const channel = `user-${payload.userId}`;
+        await pusherServer.trigger(
+          channel,
           'new_notification',
           {
             id: notification._id?.toString(),
@@ -91,7 +92,7 @@ export class NotificationService {
       await connectDB();
 
       // Broadcast via WebSocket
-      socketManager.emitToAll('new_notification', {
+      await pusherServer.trigger('broadcast', 'new_notification', {
         title: payload.title,
         message: payload.message,
         type: payload.type,
@@ -120,8 +121,9 @@ export class NotificationService {
       if (adminIds && adminIds.length > 0) {
         // Send to specific admins
         for (const adminId of adminIds) {
-          await socketManager.emitToUser(
-            adminId,
+          const channel = `user-${adminId}`;
+          await pusherServer.trigger(
+            channel,
             'admin_notification',
             {
               title: notificationData.title,
@@ -137,7 +139,7 @@ export class NotificationService {
         console.log(`[NotificationService] 📡 Admin notification sent to ${adminIds.length} admins`);
       } else {
         // Broadcast to all connected admins
-        socketManager.emitToAll('admin_notification', {
+        await pusherServer.trigger('admin', 'admin_notification', {
           title: notificationData.title,
           message: notificationData.message,
           type: notificationData.type,
@@ -178,7 +180,8 @@ export class NotificationService {
       }
 
       // Emit update event
-      await socketManager.emitToUser(userId, 'notification_updated', {
+      const channel = `user-${userId}`;
+      await pusherServer.trigger(channel, 'notification_updated', {
         notificationId,
         isRead: true
       });
@@ -204,7 +207,8 @@ export class NotificationService {
       await Notification.findByIdAndDelete(notificationId);
 
       // Emit delete event
-      await socketManager.emitToUser(userId, 'notification_deleted', {
+      const channel = `user-${userId}`;
+      await pusherServer.trigger(channel, 'notification_deleted', {
         notificationId
       });
 

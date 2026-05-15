@@ -4,7 +4,7 @@ import Feedback from '@/lib/models/Feedback';
 import { feedbackIntelligenceService } from '@/lib/ai/feedback-intelligence.service';
 import { verifyToken, parseCookies } from '@/lib/auth';
 import { Types } from 'mongoose';
-import { socketManager } from '@/lib/websocket/server';
+import { pusherServer } from '@/lib/pusher';
 import { MongoClient } from 'mongodb';
 
 export const dynamic = 'force-dynamic';
@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
       
       // Emit WebSocket notification to admins
       try {
-        socketManager.emitToAll('feedback_notification', {
+        await pusherServer.trigger('admin', 'feedback_notification', {
           title: notificationData.title,
           message: notificationData.message,
           type: notificationData.type,

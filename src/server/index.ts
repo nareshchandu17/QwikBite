@@ -6,7 +6,7 @@ import { parse } from 'url';
 import next from 'next';
 import { validateEnv } from '../lib/env';
 import { mongoDBService } from './db/mongodb';
-import { socketManager } from '../lib/websocket/server';
+// Import removed
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = 'localhost';
@@ -61,8 +61,7 @@ app.prepare().then(async () => {
     }
   });
 
-  // Initialize WebSocket server using the centralized SocketManager
-  await socketManager.initialize(httpServer);
+// Socket initialization removed
 
   httpServer.listen(port, () => {
     console.log(`> Ready on http://${hostname}:${port}`);

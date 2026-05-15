@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
-import { socketManager } from "@/lib/websocket/server";
+import { pusherServer } from "@/lib/pusher";
 import { Transaction } from "@/lib/models";
 
 interface ITransaction {
@@ -207,10 +207,10 @@ export async function POST(req: Request) {
         date: txn.createdAt,
       };
       
-      socketManager.emitToAll('new_transaction', transactionData);
-      console.log('[Transactions POST] Step 7: ✅ WebSocket event emitted');
+      await pusherServer.trigger('admin', 'new_transaction', transactionData);
+      console.log('[Transactions POST] Step 7: ✅ Pusher event emitted');
     } catch (wsError) {
-      console.error('[Transactions POST] Step 7: ⚠️ WebSocket event failed:', wsError);
+      console.error('[Transactions POST] Step 7: ⚠️ Pusher event failed:', wsError);
       // Don't fail the request if WebSocket fails
     }
 

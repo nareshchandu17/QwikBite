@@ -1,6 +1,6 @@
 import connectDB from '../db';
 import { Notification } from '../models/Notification';
-import { socketManager } from '../websocket/server';
+import { pusherServer } from '@/lib/pusher';
 import { User } from '../models/User';
 import mongoose from 'mongoose';
 
@@ -34,9 +34,10 @@ export class NotificationService {
 
       console.log(`[NotificationService] Saved to DB: ${notification.notificationId} for user ${params.userId}`);
 
-      // 2. Emit via WebSocket
+      // 2. Emit via Pusher
       // We emit both a specific event and a general 'new_notification'
-      await socketManager.emitToUser(params.userId, 'new_notification', notification);
+      const channel = `user-${params.userId}`;
+      await pusherServer.trigger(channel, 'new_notification', notification);
       
       return notification;
     } catch (error) {
@@ -67,7 +68,7 @@ export class NotificationService {
       ));
 
       // Also emit a general admin event for the dashboard counters
-      socketManager.emitToAll('admin:new_order', order);
+      await pusherServer.trigger('admin', 'admin:new_order', order);
       
       return notifications;
     } catch (error) {

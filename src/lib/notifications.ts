@@ -1,4 +1,4 @@
-import { Socket } from 'socket.io-client';
+import { pusherServer } from './pusher';
 import { connectToDatabase } from './db/mongodb';
 import { ObjectId } from 'mongodb';
 
@@ -17,7 +17,7 @@ export interface NotificationData {
 }
 
 // Send promotional offer notification
-export function sendPromotionalOffer(socket: Socket, userId: string, offerData: {
+export async function sendPromotionalOffer(socket: any, userId: string, offerData: {
   title: string;
   description: string;
   discount?: string;
@@ -36,12 +36,13 @@ export function sendPromotionalOffer(socket: Socket, userId: string, offerData: 
     data: { type: 'promotional-offer', ...offerData }
   };
 
-  socket.emit('new_notification', notification);
+  const channel = `user-${userId}`;
+  await pusherServer.trigger(channel, 'new_notification', notification);
   console.log('[Notifications] Sent promotional offer:', notification);
 }
 
 // Send system maintenance notification
-export function sendSystemMaintenance(socket: Socket, userId: string, maintenanceData: {
+export async function sendSystemMaintenance(socket: any, userId: string, maintenanceData: {
   title: string;
   message: string;
   scheduledTime?: Date;
@@ -60,12 +61,13 @@ export function sendSystemMaintenance(socket: Socket, userId: string, maintenanc
     data: { type: 'system-maintenance', ...maintenanceData }
   };
 
-  socket.emit('new_notification', notification);
+  const channel = `user-${userId}`;
+  await pusherServer.trigger(channel, 'new_notification', notification);
   console.log('[Notifications] Sent system maintenance:', notification);
 }
 
 // Send delivery update notification
-export function sendDeliveryUpdate(socket: Socket, userId: string, deliveryData: {
+export async function sendDeliveryUpdate(socket: any, userId: string, deliveryData: {
   orderId: string;
   status: 'out-for-delivery' | 'arriving-soon' | 'delivered';
   estimatedTime?: Date;
@@ -90,12 +92,13 @@ export function sendDeliveryUpdate(socket: Socket, userId: string, deliveryData:
     data: { type: 'delivery-update', ...deliveryData }
   };
 
-  socket.emit('new_notification', notification);
+  const channel = `user-${userId}`;
+  await pusherServer.trigger(channel, 'new_notification', notification);
   console.log('[Notifications] Sent delivery update:', notification);
 }
 
 // Send time slot reminder notification
-export function sendTimeSlotReminder(socket: Socket, userId: string, reminderData: {
+export async function sendTimeSlotReminder(socket: any, userId: string, reminderData: {
   orderId: string;
   timeSlot: string;
   reminderType: '30-min' | '15-min' | '5-min';
@@ -119,12 +122,13 @@ export function sendTimeSlotReminder(socket: Socket, userId: string, reminderDat
     data: { type: 'time-slot-reminder', ...reminderData }
   };
 
-  socket.emit('new_notification', notification);
+  const channel = `user-${userId}`;
+  await pusherServer.trigger(channel, 'new_notification', notification);
   console.log('[Notifications] Sent time slot reminder:', notification);
 }
 
 // Broadcast promotional offer to all users
-export function broadcastPromotionalOffer(socket: Socket, offerData: {
+export async function broadcastPromotionalOffer(socket: any, offerData: {
   title: string;
   description: string;
   discount?: string;
@@ -143,7 +147,7 @@ export function broadcastPromotionalOffer(socket: Socket, offerData: {
     data: { type: 'broadcast-offer', ...offerData }
   };
 
-  socket.emit('broadcast_notification', notification);
+  await pusherServer.trigger('broadcast', 'broadcast_notification', notification);
   console.log('[Notifications] Broadcasted promotional offer:', notification);
 }
 

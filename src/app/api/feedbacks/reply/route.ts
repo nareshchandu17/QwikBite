@@ -62,8 +62,9 @@ export async function POST(req: NextRequest) {
         
         // Also emit WebSocket notification if available
         try {
-          const { socketManager } = await import('@/lib/websocket/server');
-          socketManager.emitToAll('new_notification', {
+          const { pusherServer } = await import('@/lib/pusher');
+          const channel = `user-${feedback.studentId}`;
+          await pusherServer.trigger(channel, 'new_notification', {
             userId: feedback.studentId,
             title: notificationData.title,
             message: notificationData.message,

@@ -4,7 +4,7 @@ import { Notification } from '@/lib/models';
 import { User } from '@/lib/models';
 import { verifyToken, parseCookies } from '@/lib/auth';
 import mongoose from 'mongoose';
-import { socketManager } from '@/lib/websocket/server';
+import { pusherServer } from '@/lib/pusher';
 
 // Helper to get user ID and verify admin
 const getAdminUser = async (req: NextRequest): Promise<any | null> => {
@@ -62,9 +62,10 @@ export async function POST(req: NextRequest) {
       sentBy: adminUser._id
     });
 
-    // Emit WebSocket event to notify customer in real-time (targeted if possible)
+    // Emit WebSocket event to notify customer in real-time
     try {
-      await socketManager.emitToUser(notification.userId?.toString() || '', 'new_notification', {
+      const channel = `user-${notification.userId?.toString()}`;
+      await pusherServer.trigger(channel, 'new_notification', {
         id: notification._id?.toString(),
         userId: notification.userId?.toString(),
         title: notification.title,
@@ -78,20 +79,7 @@ export async function POST(req: NextRequest) {
         ctaLink: notification.ctaLink
       });
     } catch (err) {
-      console.warn('Failed to emit targeted notification, falling back to broadcast', err);
-      socketManager.emitToAll('new_notification', {
-        id: notification._id?.toString(),
-        userId: notification.userId?.toString(),
-        title: notification.title,
-        message: notification.message,
-        type: notification.type,
-        priority: notification.priority,
-        icon: notification.icon,
-        data: notification.data,
-        isRead: notification.isRead,
-        timestamp: notification.createdAt,
-        ctaLink: notification.ctaLink
-      });
+      console.warn('Failed to emit notification via Pusher', err);
     }
 
     return NextResponse.json({ 
@@ -148,7 +136,7 @@ export async function PUT(req: NextRequest) {
     );
 
     // Emit WebSocket event to all customers (single broadcast)
-    socketManager.emitToAll('new_notification', {
+    await pusherServer.trigger('broadcast', 'new_notification', {
       title,
       message,
       type,
