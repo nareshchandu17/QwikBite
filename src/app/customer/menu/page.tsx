@@ -16,7 +16,7 @@ import { useSearch } from '@/context/SearchContext';
 import { useFavorites } from '@/context/FavoritesContext';
 import { useCartStore } from '@/stores/cartStore';
 import { useLoadingState } from '@/hooks/useLoadingState';
-import { useWebSocket } from '@/context/WebSocketContext';
+// WebSocket removed for serverless compatibility
 
 // Import UI components
 import { Button } from '@/components/ui/button';
@@ -124,7 +124,7 @@ export default function MenuPage() {
   const { items: cartItems, addItem: addToCart, removeItem: removeFromCart, clear } = useCartStore();
   const router = useRouter();
   const searchCtx = useSearch();
-  const { socket } = useWebSocket();
+  // WebSocket removed
   const { toggleFavorite, isFavorite } = useFavorites();
 
   // Constants
@@ -394,14 +394,8 @@ export default function MenuPage() {
     addToCart(item);
     console.log(`${item.name} has been added to your cart`);
 
-    // Notify other clients about popular items (example)
-    if (item.isPopular && socket) {
-      socket.emit('item_added', {
-        itemId: item.id,
-        name: item.name,
-        timestamp: new Date().toISOString(),
-      });
-    }
+    // Notify other clients about popular items (example - disabled for serverless)
+    // if (item.isPopular) { ... }
   };
 
   // Buy now handler
