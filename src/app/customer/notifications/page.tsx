@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { useWebSocket as useSocket } from '@/context/WebSocketContext';
+import { usePusher } from '@/context/PusherContext';
 import { useRouter } from 'next/navigation';
 type NotificationType = 'order' | 'offer' | 'feedback' | 'system';
 
@@ -30,7 +30,7 @@ const NotificationsPage = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeTab, setActiveTab] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
-  const { socket } = useSocket();
+  const { pusherClient } = usePusher();
   const router = useRouter();
 
   // Fetch notifications from database
@@ -89,14 +89,16 @@ const NotificationsPage = () => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Real-time WebSocket listener for new notifications
+  // Real-time Pusher listener for new notifications
   useEffect(() => {
-    if (!socket) return;
+    if (!pusherClient) return;
 
-    // Subscribe to customer notification room with user ID
+    // We can subscribe to the user channel if we have a userId
     const userId = notifications.length > 0 ? notifications[0].userId : '';
+    let userChannel: any = null;
+    
     if (userId) {
-      socket.emit('join:room', `notifications:${userId}`);
+      userChannel = pusherClient.subscribe(`user-${userId}`);
     }
 
     const handleNewNotification = (notification: Notification) => {
@@ -135,20 +137,23 @@ const NotificationsPage = () => {
       toast.info(`Order ${status.charAt(0).toUpperCase() + status.slice(1)}`);
     };
 
-    socket.on('new_notification', handleNewNotification);
-    socket.on('notification_updated', handleNotificationUpdate);
-    socket.on('notification_deleted', handleNotificationDeleted);
-    socket.on('order:update', handleOrderUpdate);
-    socket.on('order:update_global', handleOrderUpdate);
+    if (userChannel) {
+      userChannel.bind('new_notification', handleNewNotification);
+      userChannel.bind('notification_updated', handleNotificationUpdate);
+      userChannel.bind('notification_deleted', handleNotificationDeleted);
+      userChannel.bind('order_status', handleOrderUpdate);
+    }
 
     return () => {
-      socket.off('new_notification', handleNewNotification);
-      socket.off('notification_updated', handleNotificationUpdate);
-      socket.off('notification_deleted', handleNotificationDeleted);
-      socket.off('order:update', handleOrderUpdate);
-      socket.off('order:update_global', handleOrderUpdate);
+      if (userChannel) {
+        userChannel.unbind('new_notification', handleNewNotification);
+        userChannel.unbind('notification_updated', handleNotificationUpdate);
+        userChannel.unbind('notification_deleted', handleNotificationDeleted);
+        userChannel.unbind('order_status', handleOrderUpdate);
+        if (userId) pusherClient.unsubscribe(`user-${userId}`);
+      }
     };
-  }, [socket]);
+  }, [pusherClient, notifications.length > 0 ? notifications[0].userId : '']);
 
   const filteredNotifications = notifications.filter(notification => {
     if (activeTab === 'all') return true;
@@ -172,16 +177,13 @@ const NotificationsPage = () => {
           prev.map(n => (n.id === id ? { ...n, isRead: true } : n))
         );
 
-        // Emit event through WebSocket
-        if (socket) {
-          socket.emit('mark_notification_read', { notificationId: id });
-        }
+        // Pusher doesn't emit from client by default, handled via REST above
       }
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
       toast.error('Failed to update notification');
     }
-  }, [socket]);
+  }, []);
 
   const markAllAsRead = useCallback(async () => {
     try {
@@ -195,16 +197,13 @@ const NotificationsPage = () => {
         setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
         toast.success('All notifications marked as read');
 
-        // Emit event through WebSocket
-        if (socket) {
-          socket.emit('mark_all_notifications_read');
-        }
+        // Pusher doesn't emit from client by default, handled via REST above
       }
     } catch (error) {
       console.error('Failed to mark all as read:', error);
       toast.error('Failed to update notifications');
     }
-  }, [socket]);
+  }, []);
 
   const deleteNotification = useCallback(async (id: string) => {
     try {
@@ -218,16 +217,13 @@ const NotificationsPage = () => {
         setNotifications(prev => prev.filter(n => n.id !== id));
         toast.success('Notification deleted');
 
-        // Emit event through WebSocket
-        if (socket) {
-          socket.emit('delete_notification', { notificationId: id });
-        }
+        // Pusher doesn't emit from client by default, handled via REST above
       }
     } catch (error) {
       console.error('Failed to delete notification:', error);
       toast.error('Failed to delete notification');
     }
-  }, [socket]);
+  }, []);
 
   const getTypeLabel = (type: NotificationType) => {
     switch (type) {
