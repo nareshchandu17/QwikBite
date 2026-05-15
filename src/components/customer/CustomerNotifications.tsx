@@ -53,7 +53,7 @@ export default function CustomerNotifications() {
 
     console.log('[CustomerNotifications] 🔌 Setting up WebSocket listeners');
 
-    const handleNotification = (data: unknown) => {
+    const handleNotification = (data: any) => {
       console.log('[CustomerNotifications] 📡 Received notification:', data);
       
       const newNotification: CustomerNotification = {

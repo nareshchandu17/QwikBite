@@ -148,7 +148,7 @@ const ChartTooltipContent = React.forwardRef<
       if (labelFormatter) {
         return (
           <div className={cn('font-medium', labelClassName)}>
-            {labelFormatter(value as any, payload as unknown[])}
+            {labelFormatter(value as any, payload as any[])}
           </div>
         );
       }
@@ -184,7 +184,7 @@ const ChartTooltipContent = React.forwardRef<
       >
         {!nestLabel ? tooltipLabel : null}
         <div className="grid gap-1.5">
-          {payload.map((item: unknown, index: number) => {
+          {payload.map((item: any, index: number) => {
             const key = `${nameKey || item.name || item.dataKey || 'value'}`;
             const itemConfig = getPayloadConfigFromPayload(config, item, key);
             const indicatorColor = color || (item.payload as any)?.fill || (item as any).color;
@@ -198,7 +198,7 @@ const ChartTooltipContent = React.forwardRef<
                 )}
               >
                 {formatter && item?.value !== undefined && item.name ? (
-formatter(item.value as any, item.name as any, item as any, index as any, payload as unknown[])
+                  formatter(item.value as any, item.name as any, item as any, index as any, payload as any[])
                 ) : (
                   <>
                     {itemConfig?.icon ? (
@@ -234,12 +234,12 @@ formatter(item.value as any, item.name as any, item as any, index as any, payloa
                       <div className="grid gap-1.5">
                         {nestLabel ? tooltipLabel : null}
                         <span className="text-muted-foreground">
-                          {itemConfig?.label || item.name}
+                          {itemConfig?.label || (item as any).name}
                         </span>
                       </div>
-                      {item.value && (
+                      {(item as any).value && (
                         <span className="font-mono font-medium tabular-nums text-foreground">
-                          {item.value.toLocaleString()}
+                          {(item as any).value.toLocaleString()}
                         </span>
                       )}
                     </div>
@@ -284,7 +284,7 @@ const ChartLegendContent = React.forwardRef<
           className
         )}
       >
-        {payload.map((item: unknown) => {
+        {payload.map((item: any) => {
           const key = `${nameKey || item.dataKey || 'value'}`;
           const itemConfig = getPayloadConfigFromPayload(config, item, key);
 

@@ -54,19 +54,20 @@ export default function OrderCard({ order }: Props) {
 
   const showMore = order.items.length > 2;
 
-  // Status colors mapping
-  const statusMap = {
-    'pending': 'bg-blue-100 text-blue-800',
-    'preparing': 'bg-amber-100 text-amber-800',
-    'ready': 'bg-purple-100 text-purple-800',
-    'collected': 'bg-green-100 text-green-800',
-    'delayed': 'bg-red-100 text-red-800',
-    'cancelled': 'bg-gray-100 text-gray-800',
-    'delivered': 'bg-green-100 text-green-800',
-    'out_for_delivery': 'bg-blue-100 text-blue-800',
-    'almost_ready': 'bg-purple-100 text-purple-800',
-  } as const;
-   
+  const statusColors: Record<OrderStatus, string> = {
+    received: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+    preparing: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
+    almost_ready: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
+    ready: 'bg-green-500/10 text-green-500 border-green-500/20',
+    collected: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    delivered: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+    pending: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
+    confirmed: 'bg-cyan-500/10 text-cyan-500 border-cyan-500/20',
+    out_for_delivery: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+    cancelled: 'bg-red-500/10 text-red-500 border-red-500/20',
+    delayed: 'bg-orange-500/10 text-orange-500 border-orange-500/20'
+  };
+
   // Format date - handles both string and Date types
   const formatDate = (dateInput: string | Date) => {
     const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
@@ -88,6 +89,7 @@ export default function OrderCard({ order }: Props) {
       'collected': 'Collected',
       'delivered': 'Delivered',
       'pending': 'Pending',
+      'confirmed': 'Confirmed',
       'out_for_delivery': 'On the Way',
       'cancelled': 'Cancelled',
       'delayed': 'Delayed',
@@ -99,16 +101,17 @@ export default function OrderCard({ order }: Props) {
   // Get status icon
   const getStatusIcon = (status: OrderStatus) => {
     const icons: Record<OrderStatus, React.ReactNode> = {
-      'received': <div className="w-2 h-2 rounded-full bg-amber-500 mr-2"></div>,
-      'preparing': <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>,
-      'ready': <div className="w-2 h-2 rounded-full bg-purple-500 mr-2"></div>,
-      'collected': <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>,
-      'delivered': <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>,
-      'pending': <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>,
-      'out_for_delivery': <div className="w-2 h-2 rounded-full bg-blue-400 mr-2"></div>,
-      'cancelled': <div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div>,
-      'delayed': <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>,
-      'almost_ready': <div className="w-2 h-2 rounded-full bg-purple-400 mr-2"></div>
+      received: <div className="w-2 h-2 rounded-full bg-amber-500 mr-2"></div>,
+      preparing: <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>,
+      almost_ready: <div className="w-2 h-2 rounded-full bg-purple-400 mr-2"></div>,
+      ready: <div className="w-2 h-2 rounded-full bg-purple-500 mr-2"></div>,
+      collected: <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>,
+      delivered: <div className="w-2 h-2 rounded-full bg-green-500 mr-2"></div>,
+      pending: <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>,
+      confirmed: <div className="w-2 h-2 rounded-full bg-cyan-500 mr-2"></div>,
+      out_for_delivery: <div className="w-2 h-2 rounded-full bg-blue-400 mr-2"></div>,
+      cancelled: <div className="w-2 h-2 rounded-full bg-red-500 mr-2"></div>,
+      delayed: <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>
     };
     return icons[status] || <div className="w-2 h-2 rounded-full bg-gray-400 mr-2"></div>;
   };

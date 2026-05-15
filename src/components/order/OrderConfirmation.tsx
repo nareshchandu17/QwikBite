@@ -112,7 +112,7 @@ const OrderConfirmationCard = ({
 export default function OrderConfirmation() {
   const [showConfetti, setShowConfetti] = useState(true);
   const router = useRouter();
-  const [orderData, setOrderData] = useState<unknown>(null);
+  const [orderData, setOrderData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
