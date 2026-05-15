@@ -9,7 +9,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Bell, X, CheckCircle, AlertCircle, Package, CreditCard, MessageSquare, Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { useWebSocket } from '@/context/WebSocketContext';
+import { usePusher } from '@/context/PusherContext';
 
 interface AdminNotification {
   id: string;
@@ -27,7 +27,7 @@ export default function AdminNotifications() {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showPanel, setShowPanel] = useState(false);
-  const { socket, isConnected } = useWebSocket();
+  const { pusherClient, isConnected } = usePusher();
 
   const getIconComponent = (type: string, icon: string) => {
     switch (type) {
@@ -44,14 +44,14 @@ export default function AdminNotifications() {
     }
   };
 
-  // Listen for WebSocket notifications
+  // Listen for Pusher notifications
   useEffect(() => {
-    if (!socket || !isConnected) {
-      console.log('[AdminNotifications] ⚠️ WebSocket not ready');
+    if (!pusherClient || !isConnected) {
+      console.log('[AdminNotifications] ⚠️ Pusher not ready');
       return;
     }
 
-    console.log('[AdminNotifications] 🔌 Setting up WebSocket listeners');
+    console.log('[AdminNotifications] 🔌 Setting up Pusher listeners');
 
     const handleAdminNotification = (data: any) => {
       console.log('[AdminNotifications] 📡 Received notification:', data);
@@ -80,21 +80,25 @@ export default function AdminNotifications() {
       }
     };
 
+    // Subscribe to admin channel
+    const adminChannel = pusherClient.subscribe('admin');
+
     // Listen for admin notifications
-    socket.on('admin_notification', handleAdminNotification);
+    adminChannel.bind('admin_notification', handleAdminNotification);
 
     // Also listen for other notification types
-    socket.on('order_notification', handleAdminNotification);
-    socket.on('payment_notification', handleAdminNotification);
-    socket.on('feedback_notification', handleAdminNotification);
+    adminChannel.bind('order_notification', handleAdminNotification);
+    adminChannel.bind('payment_notification', handleAdminNotification);
+    adminChannel.bind('feedback_notification', handleAdminNotification);
 
     return () => {
-      socket.off('admin_notification', handleAdminNotification);
-      socket.off('order_notification', handleAdminNotification);
-      socket.off('payment_notification', handleAdminNotification);
-      socket.off('feedback_notification', handleAdminNotification);
+      adminChannel.unbind('admin_notification', handleAdminNotification);
+      adminChannel.unbind('order_notification', handleAdminNotification);
+      adminChannel.unbind('payment_notification', handleAdminNotification);
+      adminChannel.unbind('feedback_notification', handleAdminNotification);
+      pusherClient.unsubscribe('admin');
     };
-  }, [socket, isConnected]);
+  }, [pusherClient, isConnected]);
 
   const handleNotificationClick = (notification: AdminNotification) => {
     if (notification.ctaLink) {
