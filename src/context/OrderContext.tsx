@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback, useMemo } from 'react';
-import { useWebSocket as useSocket } from './WebSocketContext';
+import { usePusher } from './PusherContext';
 import { menuItems } from '@/data/menu';
 
 // Helper function to get real item image from menu
@@ -99,13 +99,15 @@ const OrderContext = createContext<OrderContextType | undefined>(undefined);
 export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
-  const { socket } = useSocket();
+  const { pusherClient } = usePusher();
 
-  // Handle real-time updates from WebSocket
+  // Handle real-time updates from Pusher
   useEffect(() => {
-    if (!socket) return;
+    if (!pusherClient) return;
 
-    const handleOrderUpdate = ({ status, order }: { status: string; order: { id?: string; orderId?: string } }) => {
+    const handleOrderUpdate = (data: any) => {
+      const status = data.status;
+      const order = data.updatedOrder || data;
       console.log('Customer received real-time order update:', order.id || order.orderId, status);
 
       setOrders(prev => prev.map(o => {
@@ -121,17 +123,34 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }));
     };
 
-    socket.on('order:update', handleOrderUpdate);
+    const subscribedChannels: string[] = [];
 
     // Join rooms for all current orders
     orders.forEach(order => {
-      socket.emit('order:join', order.id);
+      const channelName = `order-${order.id.replace(/:/g, '-')}`;
+      try {
+        const channel = pusherClient.subscribe(channelName);
+        channel.bind('order:update', handleOrderUpdate);
+        subscribedChannels.push(channelName);
+      } catch (err) {
+        console.error(`Failed to subscribe to ${channelName}:`, err);
+      }
     });
 
     return () => {
-      socket.off('order:update', handleOrderUpdate);
+      subscribedChannels.forEach(channelName => {
+        try {
+          const channel = pusherClient.channel(channelName);
+          if (channel) {
+            channel.unbind('order:update', handleOrderUpdate);
+          }
+          pusherClient.unsubscribe(channelName);
+        } catch (err) {
+          console.error(`Failed to unsubscribe from ${channelName}:`, err);
+        }
+      });
     };
-  }, [socket, orders.length, isInitialized]);
+  }, [pusherClient, orders.length, isInitialized]);
 
   // Fetch orders from database on initial load
   useEffect(() => {
