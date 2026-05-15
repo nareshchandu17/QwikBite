@@ -4,7 +4,7 @@ import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { PremiumCard } from '.';
 
-interface Props { items: unknown[] }
+interface Props { items: any[] }
 
 export default function CarouselRow({ items }: Props) {
   const sc = useRef<HTMLDivElement | null>(null);

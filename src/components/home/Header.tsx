@@ -45,7 +45,7 @@ export const Header: React.FC = () => {
               shadow-sm
             "
           >
-            C
+            Q
             <div
               className="
                 absolute inset-0
@@ -59,13 +59,9 @@ export const Header: React.FC = () => {
             />
           </div>
 
-          <span
-            className="
-              font-serif font-black text-2xl tracking-tighter
-              text-[hsl(222.2_84%_4.9%)]
-            "
-          >
-            qwikBite
+          <span className="font-serif font-black text-2xl tracking-tighter">
+            <span className="text-[hsl(24_85%_55%)]">qwik</span>
+            <span className="text-[hsl(222.2_84%_4.9%)]">Bite</span>
           </span>
         </Link>
 

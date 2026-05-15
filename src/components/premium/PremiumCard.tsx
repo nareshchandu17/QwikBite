@@ -6,7 +6,7 @@ import { Star, Heart } from 'lucide-react';
 import { useCartStore } from '@/stores/cartStore';
 import { useFavorites } from '@/context/FavoritesContext';
 
-export default function PremiumCard({ item, compact }: { item: unknown; compact?: boolean }) {
+export default function PremiumCard({ item, compact }: { item: any; compact?: boolean }) {
   const { items, addItem, removeItem } = useCartStore();
   const isInCart = items.some((cartItem) => cartItem.id === item.id);
   const { toggleFavorite, isFavorite } = useFavorites();

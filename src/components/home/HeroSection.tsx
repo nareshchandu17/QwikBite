@@ -1,6 +1,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { useAuthModal } from "@/context/AuthModalContext";
+import Image from "next/image";
 
 export const HeroSection: React.FC = () => {
   const { openModal } = useAuthModal();
@@ -116,11 +117,14 @@ export const HeroSection: React.FC = () => {
           <motion.div
             animate={{ y: [0, -18, 0] }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="relative w-[120%] max-w-[760px] -translate-x-6"
+            className="relative w-[120%] max-w-[760px] translate-x-12"
           >
-            <img
+            <Image
               src="/images/heroimage.png"
               alt="qwikBite App Preview"
+              width={760}
+              height={500}
+              priority
               className="w-full drop-shadow-[0_60px_80px_rgba(0,0,0,0.35)]"
             />
           </motion.div>

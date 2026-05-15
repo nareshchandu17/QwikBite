@@ -2,6 +2,7 @@ import { motion, Variants } from "framer-motion";
 import { ArrowRight, Sparkles } from "lucide-react";
 import React from "react";
 import { useAuthModal } from "@/context/AuthModalContext";
+import Image from "next/image";
 
 const fadeScaleVariant: Variants = {
   hidden: { opacity: 0, scale: 0.8 },
@@ -28,8 +29,8 @@ export const CTASection: React.FC = () => {
 
   return (
     <section className="relative overflow-hidden bg-[#1A1A1A] min-h-screen">
-      <div className="mx-auto max-w-7xl px-2 sm:px-4 lg:px-6 flex items-center justify-between min-h-screen">
-        <div className="relative flex flex-col items-start gap-24 lg:flex-row lg:items-center">
+      <div className="mx-auto max-w-[1600px] px-6 sm:px-12 lg:px-20 flex items-center justify-between min-h-screen">
+        <div className="relative flex flex-col items-start gap-24 lg:flex-row lg:items-center lg:gap-48">
           
           {/* Left Text Content */}
           <motion.div
@@ -37,7 +38,7 @@ export const CTASection: React.FC = () => {
             initial="hidden"
             whileInView="visible"
             viewport={{ amount: 0.3 }}
-            className="flex-1 text-center lg:text-left pr-8"
+            className="flex-[0.65] text-center lg:text-left lg:pr-24"
           >
             {/* Badge */}
             <motion.div
@@ -74,19 +75,22 @@ export const CTASection: React.FC = () => {
             <div className="flex flex-col items-center gap-8 sm:flex-row lg:items-center">
               <button
                 onClick={() => openModal('signup')}
-                className="flex w-full items-center justify-center gap-3 rounded-full bg-[hsl(24_85%_55%)] px-12 py-6 text-lg font-black text-white transition-all hover:scale-105 shadow-2xl shadow-[hsl(24_85%_55%)]/20 sm:w-auto cursor-pointer"
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-[hsl(24_85%_55%)] px-8 py-4 text-base font-black text-white transition-all hover:scale-105 shadow-2xl shadow-[hsl(24_85%_55%)]/20 sm:w-auto cursor-pointer"
               >
-                Get Started <ArrowRight className="h-6 w-6" />
+                Get Started <ArrowRight className="h-5 w-5" />
               </button>
 
               {/* Avatars */}
               <div className="flex flex-col items-center gap-3 sm:items-start">
                 <div className="flex -space-x-3">
                   {["alice", "bob", "carol", "dave"].map((seed) => (
-                    <img
+                    <Image
                       key={seed}
                       src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`}
                       alt=""
+                      width={48}
+                      height={48}
+                      unoptimized
                       className="h-12 w-12 rounded-full border-4 border-[#1A1A1A] bg-gray-200 shadow-lg"
                     />
                   ))}
@@ -107,15 +111,16 @@ export const CTASection: React.FC = () => {
             initial="hidden"
             whileInView="visible"
             viewport={{ amount: 0.3 }}
-            className="flex-1 w-full max-w-sm ml-auto"
+            className="flex-[1.35] w-full max-w-3xl lg:max-w-5xl ml-auto"
           >
-            <div className="relative mx-auto">
+            <div className="relative mx-auto lg:scale-[1.65] lg:translate-x-56 origin-right transition-transform duration-700">
               <div className="rounded-[3rem] border-8 border-white/10 bg-white/5 p-4 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)]">
                 <div className="relative aspect-[9/15] overflow-hidden rounded-[2rem] bg-white">
-                  <img
+                  <Image
                     src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&h=1000&fit=crop"
                     alt="Healthy bowl"
-                    className="h-full w-full object-cover"
+                    fill
+                    className="object-cover"
                   />
                   <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black via-black/20 to-transparent p-8">
                     <p className="mb-2 text-3xl font-black leading-tight text-white">

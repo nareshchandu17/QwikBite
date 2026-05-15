@@ -3,6 +3,8 @@ import { Plus, Star } from "lucide-react";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
 
 /* =======================
    Inline Types (replaced import)
@@ -141,12 +143,12 @@ export const TrendingSection: React.FC = () => {
           </p>
         </div>
 
-        <a
-          href="#"
+        <Link
+          href="/menu"
           className="hidden md:block font-bold text-[#FF5E1E] hover:underline"
         >
           View Full Menu
-        </a>
+        </Link>
       </div>
 
       {/* Horizontal Scroll */}
@@ -157,10 +159,11 @@ export const TrendingSection: React.FC = () => {
             className="min-w-[280px] md:min-w-[320px] bg-[#F4F4F5] rounded-3xl snap-center group hover:bg-white hover:shadow-[0_0_0_1px_rgba(255,94,30,0.2),0_0_20px_rgba(255,94,30,0.15),0_0_40px_rgba(255,94,30,0.1)] transition-all duration-300 relative overflow-hidden"
           >
             <div className="relative h-48 rounded-t-3xl overflow-hidden">
-              <img
+              <Image
                 src={item.image}
                 alt={item.name}
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                fill
+                className="object-cover transition-transform duration-500 group-hover:scale-110"
               />
 
               <div className="

@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Heart, MessageCircle, Share2, Star } from "lucide-react";
 import React from "react";
+import Image from "next/image";
 
 const testimonials = [
   {
@@ -115,10 +116,13 @@ export const SocialProofSection: React.FC = () => {
               "
             >
               <div className="mb-6 flex items-center gap-4">
-                <img
+                <Image
                   src={testimonial.avatar}
                   alt={testimonial.name}
-                  className="h-14 w-14 rounded-full bg-gray-100 ring-4 ring-gray-200"
+                  width={56}
+                  height={56}
+                  unoptimized
+                  className="rounded-full bg-gray-100 ring-4 ring-gray-200"
                 />
                 <div>
                   <p className="text-lg font-bold text-[#1A1A1A]">

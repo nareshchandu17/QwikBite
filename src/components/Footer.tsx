@@ -14,8 +14,8 @@ const Footer = () => {
                 <div className="h-8 w-8 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
                   <ShoppingBag className="h-5 w-5 text-white" />
                 </div>
-                <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-amber-600 to-orange-600">
-                  Canteen<span className="text-orange-600">Buddy</span>
+                <span className="text-xl font-bold tracking-tight">
+                  <span className="text-amber-600">qwik</span><span className="text-black">Bite</span>
                 </span>
               </div>
             </Link>

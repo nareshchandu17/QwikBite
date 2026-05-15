@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Instagram, Twitter, Youtube, Mail, MapPin, Phone } from "lucide-react";
 import React from "react";
+import Link from "next/link";
 
 const footerLinks = {
   product: [
@@ -54,10 +55,11 @@ export const Footer: React.FC = () => {
             <div className="mb-8 flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-2xl 
                 bg-gradient-to-br from-[#FF512F] via-[#F09819] to-[#FFD700] text-2xl font-black text-white shadow-lg shadow-[#FF512F]/30">
-                C
+                Q
               </div>
-              <span className="font-serif text-3xl font-black tracking-tighter text-[#1A1A1A]">
-                qwikBite
+              <span className="font-serif text-3xl font-black tracking-tighter">
+                <span className="text-[#F09819]">qwik</span>
+                <span className="text-black">Bite</span>
               </span>
             </div>
 
@@ -97,7 +99,7 @@ export const Footer: React.FC = () => {
               <ul className="space-y-4">
                 {links.map((link) => (
                   <li key={link.label}>
-                    <a
+                    <Link
                       href={link.href}
                       className="
                         inline-block text-base font-semibold text-gray-700
@@ -106,7 +108,7 @@ export const Footer: React.FC = () => {
                       "
                     >
                       {link.label}
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -128,7 +130,7 @@ export const Footer: React.FC = () => {
 
           <div className="flex items-center gap-6">
             {socialLinks.map((social) => (
-              <a
+              <Link
                 key={social.label}
                 href={social.href}
                 aria-label={social.label}
@@ -141,7 +143,7 @@ export const Footer: React.FC = () => {
                 "
               >
                 <social.icon className="h-6 w-6" />
-              </a>
+              </Link>
             ))}
           </div>
         </motion.div>
