@@ -21,7 +21,7 @@ const simulateOrderUpdates = (orderId: string, sendUpdate: (data: unknown) => vo
       // Update the order in our mock data
       const orderIndex = ORDERS.findIndex(o => o.id === orderId);
       if (orderIndex !== -1) {
-        ORDERS[orderIndex].status = newStatus as MockOrder['status'];
+        ORDERS[orderIndex].status = newStatus as any;
         
         // Send update to client
         sendUpdate({

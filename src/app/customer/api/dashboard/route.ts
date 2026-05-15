@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     let decoded;
     try {
       decoded = verifyToken(token);
-    } catch (tokenError: unknown) {
+    } catch (tokenError: any) {
       console.error('Token verification error:', tokenError);
       return NextResponse.json(
         { error: "Invalid or expired token" },
@@ -57,7 +57,7 @@ export async function GET(req: NextRequest) {
     // Connect to database
     try {
       await connectDB();
-    } catch (dbError: unknown) {
+    } catch (dbError: any) {
       console.error('Database connection error:', dbError);
       return NextResponse.json(
         { error: "Database connection failed" },
@@ -86,7 +86,7 @@ export async function GET(req: NextRequest) {
       if (decoded.role === 'customer') {
         userOrders = await Order.find({ userId: decoded.id }).sort({ createdAt: -1 }).limit(5).lean();
       }
-    } catch (queryError: unknown) {
+    } catch (queryError: any) {
       console.error('Database query error:', queryError);
       return NextResponse.json(
         { error: "Failed to fetch dashboard data" },
@@ -97,8 +97,8 @@ export async function GET(req: NextRequest) {
     // Calculate user-specific stats
     const userOrderStats = {
       totalOrders: decoded.role === 'customer' ? userOrders.length : 0,
-      pendingOrders: userOrders.filter((o: unknown) => o.status === 'pending' || o.status === 'received').length,
-      completedOrders: userOrders.filter((o: unknown) => o.status === 'completed').length,
+      pendingOrders: userOrders.filter((o: any) => o.status === 'pending' || o.status === 'received').length,
+      completedOrders: userOrders.filter((o: any) => o.status === 'completed').length,
     };
 
     return NextResponse.json(
@@ -116,7 +116,7 @@ export async function GET(req: NextRequest) {
           },
           orders: {
             total: totalOrders,
-            recent: recentOrders.map((order: unknown) => ({
+            recent: recentOrders.map((order: any) => ({
               id: order.id || order._id?.toString(),
               total: order.total || 0,
               status: order.status || 'unknown',
@@ -130,7 +130,7 @@ export async function GET(req: NextRequest) {
           favorites: {
             total: totalFavorites
           },
-          userOrders: userOrders.map((order: unknown) => ({
+          userOrders: userOrders.map((order: any) => ({
             id: order.id || order._id?.toString(),
             total: order.total || 0,
             status: order.status || 'unknown',
@@ -143,7 +143,7 @@ export async function GET(req: NextRequest) {
       },
       { headers: corsHeaders }
     );
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error("Dashboard error:", err);
     return NextResponse.json(
       {

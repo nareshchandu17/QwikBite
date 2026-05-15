@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     console.log("User created successfully");
 
     return NextResponse.json({ success: true, message: "User created successfully. Please sign in to continue." });
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error("Signup error:", err);
     console.error("Error stack:", err.stack);
     return NextResponse.json({ 

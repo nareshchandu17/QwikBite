@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
@@ -47,7 +48,7 @@ export async function GET(req: NextRequest) {
         role: userData.role
       }
     });
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error("Profile error:", err);
     return NextResponse.json({ 
       error: "Server error", 
@@ -111,7 +112,7 @@ export async function PUT(req: NextRequest) {
         role: userData.role
       }
     });
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error("Update profile error:", err);
     return NextResponse.json({ 
       error: "Failed to update profile", 

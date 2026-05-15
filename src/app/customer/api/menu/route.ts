@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from 'next/server'
 import { connectDB } from '@/lib/db';
 import { MenuItem } from '@/lib/models/MenuItem';
@@ -11,7 +12,7 @@ export async function GET(request: Request) {
     const category = url.searchParams.get('category') || ''
 
     // Build query
-    const query: unknown = { available: true };
+    const query: any = { available: true };
     
     if (search) {
       query.$or = [

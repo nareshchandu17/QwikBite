@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 
 // Initialize Stripe with your secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-10-29.clover', // Use the latest API version compatible with Stripe v19
+  apiVersion: '2025-10-29.clover' as any, // Use the latest API version compatible with Stripe v19
 });
 
 export async function POST(request: Request) {

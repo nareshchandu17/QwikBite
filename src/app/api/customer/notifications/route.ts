@@ -1,39 +1,23 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import { Notification } from '@/lib/models';
 import { getToken } from 'next-auth/jwt';
 import mongoose from 'mongoose';
 
-// Helper to get user ID from NextAuth token
-const getUserId = async (req: NextRequest): Promise<string | null> => {
-  try {
-    const token = await getToken({
-      req,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-    
-    if (!token?.id) {
-      console.log('[Notifications] No token found');
-      return null;
-    }
-    
-    return token.id as string;
-  } catch (error) {
-    console.error('[Notifications] Error getting token:', error);
-    return null;
-  }
-};
+import { getAuthenticatedUser } from '@/lib/auth-helper';
 
 // GET /api/customer/notifications - Get customer's notifications
 export async function GET(req: NextRequest) {
   try {
-    const userId = await getUserId(req);
+    const user = await getAuthenticatedUser(req);
     
-    if (!userId) {
+    if (!user?.id) {
       console.log('[Notifications GET] Unauthorized - no user ID');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const userId = user.id;
     await connectToDatabase();
     console.log('[Notifications GET] Fetching for user:', userId);
 

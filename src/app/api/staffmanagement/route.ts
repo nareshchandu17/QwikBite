@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       message: 'Staff member added successfully'
     });
     
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Error adding staff member:', error);
     return NextResponse.json(
       { 
@@ -39,7 +39,7 @@ export async function GET() {
       data: staff,
       count: staff.length
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Error fetching staff:', error);
     return NextResponse.json(
       { success: false, error: error.message },

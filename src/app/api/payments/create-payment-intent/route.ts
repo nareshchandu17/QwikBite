@@ -27,7 +27,7 @@ function getStripeInstance(): Stripe {
       throw new Error('STRIPE_SECRET_KEY is not set in environment variables');
     }
     stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2025-10-29.clover',
+      apiVersion: '2025-10-29.clover' as any,
     });
   }
   return stripe;
@@ -99,7 +99,7 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { 
           error: 'Failed to create payment intent',
-          message: stripeError?.message || 'Unknown error'
+          message: (stripeError as any)?.message || 'Unknown error'
         },
         { status: 500, headers: corsHeaders }
       );
@@ -121,7 +121,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { 
         error: 'Failed to create payment intent',
-        message: error?.message || 'Unknown error'
+        message: (error as any)?.message || 'Unknown error'
       },
       { status: 500, headers: corsHeaders }
     );

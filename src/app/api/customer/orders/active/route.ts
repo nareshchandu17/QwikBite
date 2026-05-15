@@ -1,7 +1,8 @@
+export const dynamic = "force-dynamic";
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getAuthCookie, verifyToken } from '@/lib/auth';
-import connectDB from '@/lib/mongodb';
+import { getAuthenticatedUser } from '@/lib/auth-helper';
+import { connectDB } from '@/lib/db';
 import { Order } from '@/lib/models/Order';
 
 // Types
@@ -37,29 +38,23 @@ interface ApiResponse {
 export async function GET(request: NextRequest): Promise<NextResponse<ApiResponse>> {
   try {
     // Authentication
-    const token = getAuthCookie(request);
-    if (!token) {
+    const user = await getAuthenticatedUser(request);
+    
+    if (!user?.id) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    // Verify token
-    const decoded = verifyToken(token) as { id?: string } | null;
-    if (!decoded || !decoded.id) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
+    const userId = user.id;
 
     // Connect to database
     await connectDB();
 
     // Find active orders (not completed or cancelled)
     const activeOrder = await Order.findOne({
-      userId: decoded.id,
+      userId: userId,
       status: { $nin: ['completed', 'cancelled'] }
     })
     .sort({ createdAt: -1 }) // Get the most recent active order

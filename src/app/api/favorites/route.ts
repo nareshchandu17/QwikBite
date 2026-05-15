@@ -7,7 +7,7 @@ import mongoose from 'mongoose';
 import { Favorite } from '@/models/favorite.model';
 
 // Helper to handle API errors consistently
-const handleApiError = (error: unknown, context: string) => {
+const handleApiError = (error: any, context: string) => {
   console.error(`API Error [${context}]:`, error);
   const status = error.code === 11000 ? 409 : 500;
   const message = error.code === 11000
@@ -59,13 +59,13 @@ export async function GET(req: NextRequest) {
     console.log('[Favorites API] Found', favorites.length, 'favorites for user:', userId);
 
     return NextResponse.json({
-      data: favorites.map((fav: unknown) => ({
+      data: favorites.map((fav: any) => ({
         itemId: fav.menuItem.toString(),
         itemType: 'menu' // Default to menu as per the new model
       }))
     }, { status: 200 });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[Favorites API] Error:', error);
     return NextResponse.json({ 
       error: error.message || 'Internal Server Error' 
@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
       data: { itemId, itemType }
     }, { status: 201 });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[Favorites API] POST error:', error);
     return handleApiError(error, 'POST /favorites');
   }
@@ -173,7 +173,7 @@ export async function DELETE(req: NextRequest) {
       data: { itemId }
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[Favorites API] DELETE error:', error);
     return handleApiError(error, 'DELETE /favorites');
   }

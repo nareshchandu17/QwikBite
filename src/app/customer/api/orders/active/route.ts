@@ -4,6 +4,8 @@ import { Order, IOrder } from '@/lib/models/Order';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/auth';
 
+export const dynamic = "force-dynamic";
+
 interface OrderDocument extends Omit<IOrder, '_id'> {
   _id: string;
   createdAt: Date;

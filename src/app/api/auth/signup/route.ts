@@ -98,7 +98,7 @@ export async function POST(req: Request) {
 
     return response;
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[signup] Error:', error);
 
     // Check for Mongoose duplicate key error (code 11000)

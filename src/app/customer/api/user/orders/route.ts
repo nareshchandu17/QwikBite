@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
@@ -25,11 +26,11 @@ export async function GET(req: NextRequest) {
     await connectDB();
 
     // Get user's orders
-    const orders = await Order.find({ userId: decoded.id }).sort({ createdAt: -1 });
+    const orders = await (Order as any).find({ userId: decoded.id } as any).sort({ createdAt: -1 });
 
     return NextResponse.json({ 
       success: true,
-      orders: orders.map(order => ({
+      orders: orders.map((order: any) => ({
         id: order.id,
         total: order.total,
         status: order.status,
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest) {
         }))
       }))
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("User orders error:", error);
     return NextResponse.json({ 
       error: "Server error", 

@@ -1,4 +1,4 @@
-// src/app/api/feedbacks/route.ts
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Feedback, { IFeedback } from '@/models/feedback';
@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
     const sortOrder = searchParams.get('sortOrder') || 'desc';
 
     // Build query
-    const query: unknown = { userId };
+    const query: any = { userId };
     if (category) query.category = category;
     if (minRating) query.starRating = { $gte: parseInt(minRating) };
 

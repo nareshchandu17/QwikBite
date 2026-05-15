@@ -49,7 +49,7 @@ export async function GET(
   }
 }
 
-function generateInvoiceHTML(order: unknown) {
+function generateInvoiceHTML(order: any) {
   const orderDate = new Date(order.createdAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -58,7 +58,7 @@ function generateInvoiceHTML(order: unknown) {
 
   const items = Array.isArray(order.items) ? order.items : [];
   
-  const subtotal = items.reduce((sum: number, item: unknown) => {
+  const subtotal = items.reduce((sum: number, item: any) => {
     const price = typeof item.price === 'number' ? item.price : parseFloat(item.price?.toString() || '0');
     const quantity = item.quantity || 1;
     return sum + (price * quantity);
@@ -312,7 +312,7 @@ function generateInvoiceHTML(order: unknown) {
                     </tr>
                 </thead>
                 <tbody>
-                    ${items.map((item: unknown, index: number) => {
+                    ${items.map((item: any, index: number) => {
                         const itemName = typeof item === 'string' ? item : item.name;
                         const quantity = typeof item === 'string' ? 1 : (item.quantity || 1);
                         const price = typeof item === 'string' ? 0 : (typeof item.price === 'number' ? item.price : parseFloat(item.price?.toString() || '0'));

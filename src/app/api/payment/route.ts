@@ -100,10 +100,10 @@ export async function POST(request: Request) {
         throw new Error(`Invalid item at index ${index}`);
       }
       return {
-        id: String(item.id || `item-${index}`),
-        name: String(item.name || 'Unknown Item').trim(),
-        quantity: Math.max(1, Math.floor(Number(item.quantity) || 1)),
-        price: Math.max(0, Number(item.price) || 0),
+        id: String((item as any).id || `item-${index}`),
+        name: String((item as any).name || 'Unknown Item').trim(),
+        quantity: Math.max(1, Math.floor(Number((item as any).quantity) || 1)),
+        price: Math.max(0, Number((item as any).price) || 0),
       };
     });
 
@@ -137,7 +137,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { 
         error: "Failed to create payment order",
-        message: error?.message || 'Unknown error'
+        message: (error as any)?.message || 'Unknown error'
       },
       { status: 500, headers: corsHeaders }
     );
@@ -180,7 +180,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       { 
         error: "Failed to fetch payment order",
-        message: error?.message || 'Unknown error'
+        message: (error as any)?.message || 'Unknown error'
       },
       { status: 500, headers: corsHeaders }
     );
@@ -239,7 +239,7 @@ export async function PUT(request: Request) {
     return NextResponse.json(
       { 
         error: "Failed to update payment order",
-        message: error?.message || 'Unknown error'
+        message: (error as any)?.message || 'Unknown error'
       },
       { status: 500, headers: corsHeaders }
     );

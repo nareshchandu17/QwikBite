@@ -16,11 +16,11 @@ export async function GET(request: NextRequest) {
     // Get user ID from auth cookie
     const token = getAuthCookie(request);
     
-    const query: unknown = {};
+    const query: any = {};
     
     // If token exists, verify it and filter by user
     if (token) {
-      const decoded = verifyToken(token);
+      const decoded = verifyToken(token) as any;
       if (decoded && decoded.id) {
         query.userId = decoded.id;
       }
@@ -43,10 +43,10 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    const orders = await Order.find(query).sort({ createdAt: -1 });
+    const orders = await (Order as any).find(query as any).sort({ createdAt: -1 });
 
     return NextResponse.json({ orders });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("Error fetching orders:", error);
     return NextResponse.json({ error: "Failed to fetch orders" }, { status: 500 });
   }
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
     }
 
     // Calculate subtotal
-    const subtotal = items.reduce((s: number, it: unknown) => s + (it.price || 0) * (it.quantity || 1), 0);
+    const subtotal = items.reduce((s: number, it: any) => s + (it.price || 0) * (it.quantity || 1), 0);
     
     // Generate order ID
     const orderId = `ORD-${Date.now()}`;
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
       id: orderId,
       userId: userId || "anonymous",
       createdAt: new Date(),
-      items: items.map((it: unknown) => ({ 
+      items: items.map((it: any) => ({ 
         id: it.id || String(Date.now()),
         name: it.name || it.title, 
         quantity: it.quantity || 1, 
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
     console.log('✅ Time slot usage synced successfully');
     
     return NextResponse.json({ order }, { status: 201 });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("Error creating order:", error);
     return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
   }
@@ -134,7 +134,7 @@ export async function PATCH(request: Request) {
     console.log(' Time slot usage synced successfully');
     
     return NextResponse.json({ order });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("Error updating order:", error);
     return NextResponse.json({ error: "Failed to update order" }, { status: 500 });
   }
@@ -169,7 +169,7 @@ export async function PUT(request: Request) {
     await order.save();
     
     return NextResponse.json({ order });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("Error submitting feedback:", error);
     return NextResponse.json({ error: "Failed to submit feedback" }, { status: 500 });
   }

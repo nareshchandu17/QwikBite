@@ -42,7 +42,7 @@ export async function POST(req: Request) {
         role: user.role
       }
     });
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error("User login save error:", err);
     return NextResponse.json({ 
       error: "Server error", 

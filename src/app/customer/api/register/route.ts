@@ -41,7 +41,7 @@ export async function POST(request: Request) {
       { user: userWithoutPassword, message: 'User registered successfully' },
       { status: 201 }
     );
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Registration error:', error);
     return NextResponse.json(
       { error: error.message || 'Error registering user' },

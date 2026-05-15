@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Verify token
-    const decoded = verifyToken(token);
+    const decoded = verifyToken(token) as any;
     
     if (!decoded) {
       return NextResponse.json({ error: "Invalid or expired token" }, { status: 401 });
@@ -25,10 +26,10 @@ export async function GET(req: NextRequest) {
     await connectDB();
 
     // Get user's favorites
-    const favorites = await Favorite.find({ userId: decoded.id, itemType: 'menu' });
+    const favorites = await (Favorite as any).find({ userId: decoded.id, itemType: 'menu' } as any);
     
     // Get the actual menu items for these favorites
-    const menuItemIds = favorites.map(fav => fav.itemId);
+    const menuItemIds = favorites.map((fav: any) => fav.itemId);
     const menuItems = await MenuItem.find({ id: { $in: menuItemIds } });
 
     return NextResponse.json({ 
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
         category: item.category
       }))
     });
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error("User favorites error:", err);
     return NextResponse.json({ 
       error: "Server error", 
