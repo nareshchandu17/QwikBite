@@ -34,7 +34,10 @@ const nextConfig = {
       'res.cloudinary.com',
       'lh3.googleusercontent.com',
       'avatars.githubusercontent.com',
+      'api.dicebear.com',
     ],
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   webpack: (config, { isServer }) => {
     // Fixes npm packages that depend on `net` and other Node.js modules
