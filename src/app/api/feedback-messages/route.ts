@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
     const status = url.searchParams.get('status');
 
     // Build query
-    const query: unknown = {};
+    const query: any = {};
     if (status && status !== 'all') {
       query.status = status;
     }

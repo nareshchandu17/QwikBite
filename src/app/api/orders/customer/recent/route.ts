@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { getAuthCookie, verifyToken } from '@/lib/auth';
@@ -119,7 +120,7 @@ export async function GET(req: NextRequest) {
       }
     }, { status: 200 });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[Recent Orders API] Error:', error);
     return NextResponse.json({
       success: false,

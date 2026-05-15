@@ -73,7 +73,7 @@ export async function PUT(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           orderId: order.id,
-          userId: order.userId.toString(),
+          userId: order.user?.toString() || '',
           status,
           message: message || `Your order is now ${status}`
         })

@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
 
         // 5. Async Logging (non-blocking)
         const responseTime = Date.now() - startTime;
-        logInteraction(userId, userMessage, assistantResponse, pageContext, responseTime);
+        logInteraction(userId as string, userMessage, assistantResponse, pageContext, responseTime);
 
         return successResponse(assistantResponse);
 

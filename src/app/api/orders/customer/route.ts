@@ -54,9 +54,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { orderId, items, price, timeSlot, paymentMethod } = body;
 
+    const generatedOrderId = orderId || `ORD-${Date.now()}`;
+    
     // Map fields to consolidated model
     const newOrder = await Order.create({
-      orderId: orderId || `ORD-${Date.now()}`,
+      orderId: generatedOrderId,
       user: session.user.id,
       items: Array.isArray(items) ? items.map((item: any) => ({
         menuItem: item.menuItem || item.id,
@@ -72,14 +74,31 @@ export async function POST(request: NextRequest) {
     });
 
     console.log(`✅ Customer Order Created: ${newOrder.orderId}`);
+
+    // Notify Admins in Real-time and Store in DB
+    try {
+      const { NotificationService } = await import('@/lib/services/notificationService');
+      await NotificationService.notifyAdminsNewOrder(newOrder);
+    } catch (notifErr) {
+      console.error('[Customer Orders POST] Notification error:', notifErr);
+    }
+
     return jsonResponse(newOrder, 201);
 
   } catch (error) {
-    console.error('[Customer Orders POST] Error:', error);
+    console.error('❌ [Customer Orders POST] Detailed Error:', {
+      message: error instanceof Error ? error.message : String(error),
+      name: error instanceof Error ? error.name : 'UnknownError',
+      code: (error as any).code,
+      keyPattern: (error as any).keyPattern,
+      keyValue: (error as any).keyValue,
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    
     return jsonResponse({ 
       error: 'Failed to create order', 
       details: error instanceof Error ? error.message : String(error),
-      stack: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
+      code: (error as any).code
     }, 500);
   }
 }

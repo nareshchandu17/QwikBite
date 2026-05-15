@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken, getAuthCookie } from '@/lib/auth';
 import connectDB from '@/lib/db';
@@ -10,7 +11,7 @@ function handleError(error: unknown, context: string) {
   return NextResponse.json(
     { 
       error: 'Internal Server Error',
-      message: error.message || 'An unexpected error occurred',
+      message: (error as any).message || 'An unexpected error occurred',
       context
     },
     { status: 500 }
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest) {
       const unreadOnly = url.searchParams.get('unreadOnly') === 'true';
 
       // Build query filter
-      const filter: unknown = { role: session.role };
+      const filter: any = { role: session.role };
       
       // Customers can only see their own notifications
       if (session.role === 'customer') {
@@ -136,7 +137,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Valid notification IDs required' }, { status: 400 });
     }
 
-    const filter: unknown = {
+    const filter: any = {
       _id: { $in: validIds.map(id => new Types.ObjectId(id)) },
       role: session.role
     };

@@ -27,7 +27,7 @@ export async function GET(
       success: true,
       data: feedback,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[GET /api/feedbacks/:id] ❌ Error fetching feedback:', {
       id: params.id,
       error: error.message,
@@ -92,7 +92,7 @@ export async function PATCH(
       data: feedback,
       message: 'Reply added successfully'
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[PATCH /api/feedbacks/:id] ❌ Error updating feedback:', {
       id: params.id,
       error: error.message,

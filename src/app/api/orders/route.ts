@@ -34,8 +34,14 @@ export async function GET(req: NextRequest) {
       .limit(limit)
       .lean();
 
+    // Map MongoDB _id and orderId to the 'id' field expected by the frontend
+    const mappedOrders = orders.map(order => ({
+      ...order,
+      id: order.orderId || (order as any)._id.toString(),
+    }));
+
     return successResponse({ 
-      orders,
+      orders: mappedOrders,
       pagination: { page, limit }
     });
   } catch (err) {
@@ -87,6 +93,7 @@ export async function POST(req: NextRequest) {
         items: items.map((item: any) => ({
             menuItem: item.id || item.menuItem,
             name: item.name,
+            image: item.image || item.imageUrl || '/placeholder-food.jpg',
             quantity: item.quantity,
             price: item.price,
             prepTime: item.prepTime || 5
@@ -100,12 +107,17 @@ export async function POST(req: NextRequest) {
       logger.info(`New Order Created: ${order.orderId}`, { userId: session.user.id });
       
       // 4. Notifications & Cache Busting
-      socketManager.emitToAll('admin:new_order', order);
+      try {
+        const { NotificationService } = await import('@/lib/services/notificationService');
+        await NotificationService.notifyAdminsNewOrder(order);
+      } catch (notifErr) {
+        console.error('[Orders POST] Notification error:', notifErr);
+      }
       cache.del('slots:available');
 
       return successResponse(order, 201);
 
-    } catch (orderError: unknown) {
+    } catch (orderError: any) {
       await SlotService.releaseSlot(timeSlot, todayStr, orderLoad);
       throw orderError;
     }

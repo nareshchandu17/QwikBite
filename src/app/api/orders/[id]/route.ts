@@ -74,6 +74,16 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       { new: true }
     ).lean();
 
+    // Notify Customer about status change
+    if (updated && body.status && body.status !== order.status) {
+      try {
+        const { NotificationService } = await import('@/lib/services/notificationService');
+        await NotificationService.notifyOrderStatusChange(updated);
+      } catch (notifErr) {
+        console.error('[Order Patch] Notification error:', notifErr);
+      }
+    }
+
     return jsonResponse({ data: updated });
   } catch (err) {
     console.error('PATCH /api/orders/[id] error:', err);

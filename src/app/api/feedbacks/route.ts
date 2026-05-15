@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Create feedback data matching the actual database schema
-    const feedbackData: IFeedbackDocument & Record<string, unknown> = {
+    const feedbackData: any = {
       _id: new Types.ObjectId(),
       name: name || "Anonymous",
       studentId: studentId || "",
@@ -170,7 +170,7 @@ export async function POST(req: NextRequest) {
         title: 'New Feedback Submitted',
         message: `New feedback received from ${feedbackData.name} (${feedbackData.studentId}) - Rating: ${feedbackData.starRating}/5`,
         type: 'feedback',
-        priority: feedbackData.starRating <= 2 ? 'high' : 'normal',
+        priority: (feedbackData.starRating || 5) <= 2 ? 'high' : 'normal',
         isRead: false,
         createdAt: new Date(),
         data: {

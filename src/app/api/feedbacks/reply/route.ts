@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
       message: 'Reply added successfully' 
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('Error adding reply:', error);
     return NextResponse.json({ 
       success: false, 
