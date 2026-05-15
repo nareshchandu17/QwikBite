@@ -20,7 +20,7 @@ interface BlendConfig {
 /**
  * Blends real and mock analytics data using sophisticated algorithms
  * 
- * The blending follows these principles:
+ * The blending follows these principles:  
  * 1. Visual consistency - Charts look realistic at any blend percentage
  * 2. Smooth transitions - No sudden spikes or drops
  * 3. Trend preservation - Real data trends influence the blended result
@@ -31,11 +31,11 @@ export function blendAnalyticsData(
   mockData: AnalyticsData,
   config: Partial<BlendConfig> = {}
 ): BlendedAnalyticsData {
-  const realDataPercentage = config.realDataPercentage ?? 
+  const realDataPercentage = config.realDataPercentage ??
     parseFloat(process.env.NEXT_PUBLIC_ANALYTICS_REAL_DATA_PERCENT || '0');
-  
+
   const mockDataPercentage = 100 - realDataPercentage;
-  
+
   const finalConfig: BlendConfig = {
     realDataPercentage,
     mockDataPercentage,
@@ -153,21 +153,21 @@ function blendArrayData<T extends Record<string, unknown>>(
             // Primary value - weighted average with trend adjustment
             const realValue = realVal;
             const mockValue = mockVal;
-            
+
             let blendedValue = realValue * realWeight + mockValue * mockWeight;
-            
+
             // Add slight natural variance (±2%)
             if (config.smoothTransitions) {
               const variance = 0.02 * blendedValue * (Math.random() - 0.5);
               blendedValue += variance;
             }
-            
+
             blendedItem[key] = Math.max(0, Math.round(blendedValue));
           } else if (key === 'revenue') {
             // Revenue - calculated from orders if available
             const orders = (blendedItem['orders'] as number) || 0;
-            const avgOrderValue = (realVal / ((realItem['orders'] as number) || 1)) * realWeight + 
-                                 (mockVal / ((mockItem['orders'] as number) || 1)) * mockWeight;
+            const avgOrderValue = (realVal / ((realItem['orders'] as number) || 1)) * realWeight +
+              (mockVal / ((mockItem['orders'] as number) || 1)) * mockWeight;
             blendedItem[key] = Math.round(orders * avgOrderValue);
           } else {
             // Other numeric values
@@ -201,21 +201,21 @@ function blendInsights(
     // Text-based insights - prefer real data if available
     studentFavorites: realInsights.studentFavorites || mockInsights.studentFavorites,
     busiestTime: realInsights.busiestTime || mockInsights.busiestTime,
-    
+
     // Percentage values - blend with care
     cancellationRatio: blendPercentage(
       realInsights.cancellationRatio,
       mockInsights.cancellationRatio,
       config
     ),
-    
+
     // Currency values - weighted average
     avgOrderValue: blendCurrency(
       realInsights.avgOrderValue,
       mockInsights.avgOrderValue,
       config
     ),
-    
+
     // Numeric values - weighted average
     totalRevenue: Math.round(
       realInsights.totalRevenue * realWeight + mockInsights.totalRevenue * mockWeight
@@ -235,13 +235,13 @@ function blendInsights(
 function blendPercentage(real: string, mock: string, config: BlendConfig): string {
   const realValue = parseFloat(real.replace('%', ''));
   const mockValue = parseFloat(mock.replace('%', ''));
-  
+
   if (isNaN(realValue)) return mock;
   if (isNaN(mockValue)) return real;
-  
+
   const realWeight = config.realDataPercentage / 100;
   const mockWeight = config.mockDataPercentage / 100;
-  
+
   const blended = realValue * realWeight + mockValue * mockWeight;
   return blended.toFixed(1) + '%';
 }
@@ -252,13 +252,13 @@ function blendPercentage(real: string, mock: string, config: BlendConfig): strin
 function blendCurrency(real: string, mock: string, config: BlendConfig): string {
   const realValue = parseFloat(real.replace('₹', '').replace(',', ''));
   const mockValue = parseFloat(mock.replace('₹', '').replace(',', ''));
-  
+
   if (isNaN(realValue)) return mock;
   if (isNaN(mockValue)) return real;
-  
+
   const realWeight = config.realDataPercentage / 100;
   const mockWeight = config.mockDataPercentage / 100;
-  
+
   const blended = realValue * realWeight + mockValue * mockWeight;
   return '₹' + Math.round(blended).toLocaleString();
 }
@@ -270,7 +270,7 @@ export function getBlendConfig(): BlendConfig {
   const realDataPercentage = parseFloat(
     process.env.NEXT_PUBLIC_ANALYTICS_REAL_DATA_PERCENT || '0'
   );
-  
+
   return {
     realDataPercentage: Math.min(100, Math.max(0, realDataPercentage)),
     mockDataPercentage: Math.max(0, 100 - realDataPercentage),

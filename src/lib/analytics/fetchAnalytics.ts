@@ -157,12 +157,12 @@ function isValidAnalyticsData(data: unknown): data is AnalyticsData {
  * Creates a fallback partial data structure when real data is incomplete
  */
 export function createPartialAnalyticsData(partialData: unknown): AnalyticsData {
-  const p = partialData as Record<string, unknown>;
-  const pi = (p.insights || {}) as Record<string, unknown>;
+  const p = partialData as Record<string, any>;
+  const pi = (p.insights || {}) as Record<string, any>;
   return {
-    dailySales: (p.dailySales as unknown[]) || [],
-    topDishes: (p.topDishes as unknown[]) || [],
-    peakHours: (p.peakHours as unknown[]) || [],
+    dailySales: (p.dailySales as AnalyticsData['dailySales']) || [],
+    topDishes: (p.topDishes as AnalyticsData['topDishes']) || [],
+    peakHours: (p.peakHours as AnalyticsData['peakHours']) || [],
     insights: {
       studentFavorites: (pi.studentFavorites as string) || 'Loading...',
       cancellationRatio: (pi.cancellationRatio as string) || '0%',
