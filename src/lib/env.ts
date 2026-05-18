@@ -22,7 +22,7 @@ export function validateEnv() {
   if (missing.length > 0) {
     const errorMsg = `❌ Missing required environment variables: ${missing.join(', ')}`;
     logger.error(errorMsg);
-    
+
     if (process.env.NODE_ENV === 'production') {
       throw new Error(errorMsg);
     }

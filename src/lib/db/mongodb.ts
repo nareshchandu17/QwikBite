@@ -1,11 +1,19 @@
 import { MongoClient, Db } from 'mongodb';
 
 if (!process.env.MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable');
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    console.warn('⚠️ MONGODB_URI is missing at build time. Using placeholder for build safety.');
+  } else {
+    throw new Error('Please define the MONGODB_URI environment variable');
+  }
 }
 
 if (!process.env.MONGODB_DB) {
-  throw new Error('Please define the MONGODB_DB environment variable');
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    console.warn('⚠️ MONGODB_DB is missing at build time. Using placeholder for build safety.');
+  } else {
+    throw new Error('Please define the MONGODB_DB environment variable');
+  }
 }
 
 let cachedClient: MongoClient;
