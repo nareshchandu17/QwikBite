@@ -19,12 +19,14 @@ if (!NEXTAUTH_SECRET && process.env.NODE_ENV === 'production') {
   throw new Error('NEXTAUTH_SECRET is required in production');
 }
 
+const FINAL_NEXTAUTH_SECRET = NEXTAUTH_SECRET || 'development-fallback-key-only-for-local';
+
 export async function verifyAuth(request: NextRequest): Promise<AuthResult> {
   try {
     // 1. Try NextAuth session first (Production standard)
     const nextAuthToken = await getToken({ 
       req: request, 
-      secret: NEXTAUTH_SECRET 
+      secret: FINAL_NEXTAUTH_SECRET 
     });
 
     if (nextAuthToken) {
