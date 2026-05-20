@@ -11,7 +11,29 @@ import React, {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut as nextAuthSignOut, useSession, signIn } from 'next-auth/react';
-import { getAuthCookie, verifyToken } from '@/lib/auth';
+
+// Client-safe JWT payload decoder (extracts metadata without requiring server-only verification)
+function decodeJwtPayload(token: string): any {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    
+    // Decode base64url payload safely in browser
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      window.atob(base64)
+        .split('')
+        .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('[AuthContext] Error decoding custom token payload:', error);
+    return null;
+  }
+}
 
 interface User {
   id: string;
@@ -111,11 +133,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         if (authToken) {
-          console.log('[AuthContext] Found auth token, attempting verification:', authToken.substring(0, 20) + '...');
-          const decoded = verifyToken(authToken);
-          console.log('[AuthContext] Token verification result:', decoded);
+          console.log('[AuthContext] Found auth token, decoding payload:', authToken.substring(0, 20) + '...');
+          const decoded = decodeJwtPayload(authToken);
+          console.log('[AuthContext] Token decoding result:', decoded);
           if (decoded?.id) {
-            console.log('[AuthContext] Token valid, setting user:', decoded);
+            console.log('[AuthContext] Token payload parsed, setting user:', decoded);
             setUser({
               id: decoded.id,
               name: decoded.name || '',

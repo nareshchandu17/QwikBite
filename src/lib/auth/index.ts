@@ -1,3 +1,4 @@
+import 'server-only';
 import jwt from 'jsonwebtoken';
 import { NextRequest, NextResponse } from 'next/server';
 import { serialize, parse } from 'cookie';
