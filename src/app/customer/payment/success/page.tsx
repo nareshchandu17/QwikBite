@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useOrders, type Order, type OrderStatus } from "@/context/OrderContext";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 // Dynamically import Confetti with no SSR to avoid window is not defined errors
 const Confetti = dynamic(() => import('react-confetti'), {
@@ -191,15 +192,50 @@ export default function PaymentSuccessPage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [orderId, setOrderId] = useState<string>('');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('online');
   const orderIdRef = useRef<string>('');
   const { addOrder } = useOrders();
   const router = useRouter();
   const orderProcessedRef = useRef(false);
-  const [paymentMethod, setPaymentMethod] = useState('Card');
+  const { token } = useAuth();
+
+  const displayPaymentMethod = (method: string | null | undefined) => {
+    const m = (method || '').toLowerCase().trim();
+    if (m === 'cod' || m === 'cash' || m === 'cash on delivery') return 'Cash on Delivery';
+    if (m === 'card' || m === 'debit/credit' || m === 'debit' || m === 'credit') return 'Card';
+    if (m === 'upi') return 'UPI';
+    if (m === 'wallet') return 'Wallet';
+    if (m === 'online') return 'Online';
+    return method || 'Online';
+  };
 
   // Initialize orderId from localStorage on mount
   useEffect(() => {
     const savedOrderId = localStorage.getItem('lastOrderId') || localStorage.getItem('orderId');
+    const storedMethod = localStorage.getItem('selectedPaymentMethod');
+    const storedOrderData = localStorage.getItem('orderData');
+
+    if (storedMethod) {
+      setSelectedPaymentMethod(storedMethod);
+    }
+
+    if (storedOrderData) {
+      try {
+        const parsed = JSON.parse(storedOrderData);
+        const localTotal = Number(parsed?.total ?? 0);
+        const localItems = Array.isArray(parsed?.items) ? parsed.items : [];
+        setOrderData((prev) => ({
+          items: prev?.items?.length ? prev.items : localItems,
+          total: Number.isFinite(localTotal) ? localTotal : (prev?.total ?? 0),
+          timeSlot: parsed?.timeSlot || prev?.timeSlot || 'ASAP',
+          paymentMethod: storedMethod || prev?.paymentMethod || parsed?.paymentMethod || 'online',
+          username: parsed?.username || prev?.username || 'Customer',
+        }));
+      } catch (error) {
+        console.warn('[Payment Success] Failed to parse local orderData:', error);
+      }
+    }
+
     if (savedOrderId) {
       console.log('📦 Loaded order ID from localStorage:', savedOrderId);
       setOrderId(savedOrderId);
@@ -217,12 +253,15 @@ export default function PaymentSuccessPage() {
         console.log('[Payment Success] 📦 Fetching most recent order from database...');
         
         // Fetch the most recent order from the database
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json'
+        };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
         const response = await fetch('/api/orders/customer/recent', {
           method: 'GET',
           credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json'
-          }
+          headers
         });
         
         if (response.ok) {
@@ -230,27 +269,26 @@ export default function PaymentSuccessPage() {
           console.log('[Payment Success] ✅ Recent order fetched:', data);
           
           if (data.success && data.order) {
-            const orderData = {
-              items: data.order.items || [],
-              total: data.order.total || 0,
-              timeSlot: data.order.timeSlot || 'ASAP',
-              paymentMethod: data.order.paymentMethod || 'online',
-              username: data.order.username || 'Customer'
-            };
-            
-            console.log('[Payment Success] ✅ Order data prepared:', orderData);
-            setOrderData(orderData);
+            const apiTotal = Number(data.order.total ?? data.order.totalAmount ?? data.order.price ?? 0);
+            const apiItems = Array.isArray(data.order.items) ? data.order.items : [];
+            const apiPaymentMethod = data.order.paymentMethod;
+
+            setOrderData((prev) => {
+              const prevTotal = Number(prev?.total ?? 0);
+              const mergedOrderData = {
+                items: apiItems.length > 0 ? apiItems : (prev?.items || []),
+                // Never overwrite a valid local total with 0 from stale/incomplete API data.
+                total: apiTotal > 0 ? apiTotal : prevTotal,
+                timeSlot: data.order.timeSlot || prev?.timeSlot || 'ASAP',
+                paymentMethod: apiPaymentMethod || prev?.paymentMethod || selectedPaymentMethod || 'online',
+                username: data.order.username || prev?.username || 'Customer'
+              };
+              console.log('[Payment Success] ✅ Order data prepared:', mergedOrderData);
+              return mergedOrderData;
+            });
             setOrderId(data.order.id || data.order.orderId || `#${Math.floor(10000000 + Math.random() * 90000000)}`);
           } else {
             console.log('[Payment Success] ⚠️ No recent order found');
-            // Set default empty order data
-            setOrderData({
-              items: [],
-              total: 0,
-              timeSlot: 'ASAP',
-              paymentMethod: 'online',
-              username: 'Customer'
-            });
           }
         } else {
           console.log('[Payment Success] ❌ Failed to fetch recent order');
@@ -260,21 +298,13 @@ export default function PaymentSuccessPage() {
         
       } catch (error) {
         console.error('[Payment Success] ❌ Error fetching recent order:', error);
-        // Set default empty order data
-        setOrderData({
-          items: [],
-          total: 0,
-          timeSlot: 'ASAP',
-          paymentMethod: 'online',
-          username: 'Customer'
-        });
       }
       
       setShowConfetti(true);
     };
 
     fetchRecentOrder();
-  }, []);
+  }, [token, selectedPaymentMethod]);
 
   // Define processOrder as a memoized callback
   const processOrder = useCallback(async () => {
@@ -289,7 +319,8 @@ export default function PaymentSuccessPage() {
     orderProcessedRef.current = true;
 
     // Get payment method with fallback - check multiple sources
-    const currentPaymentMethod = paymentMethod || orderData.paymentMethod || 'Card';
+    const storedMethod = typeof window !== 'undefined' ? localStorage.getItem('selectedPaymentMethod') : null;
+    const currentPaymentMethod = storedMethod || orderData.paymentMethod || selectedPaymentMethod || 'online';
 
     console.log('[Payment Success] Order validation passed, paymentMethod:', currentPaymentMethod);
 
@@ -298,10 +329,10 @@ export default function PaymentSuccessPage() {
       username: 'You',
       status: 'Preparing' as const,
       items: orderData.items.map(item => `${item.quantity}x ${item.name}`).join(', '),
-      price: `$${orderData.total.toFixed(2)}`,
+      price: `₹${orderData.total.toFixed(2)}`,
       total: orderData.total,
       imageUrl: orderData.items[0]?.image || '/images/default-food.jpg',
-      originalPrice: `$${orderData.total.toFixed(2)}`,
+      originalPrice: `₹${orderData.total.toFixed(2)}`,
       itemsArray: orderData.items.map(item => ({
         id: item.id,
         name: item.name,
@@ -367,7 +398,7 @@ export default function PaymentSuccessPage() {
     } catch (error: unknown) {
       console.error('[Payment Success] Error processing order:', error);
     }
-  }, [orderData, orderProcessedRef, addOrder, router, paymentMethod]);
+  }, [orderData, orderProcessedRef, addOrder, router, selectedPaymentMethod]);
 
   // Effect: Process order ONLY if it hasn't been created yet
   useEffect(() => {
@@ -411,10 +442,10 @@ export default function PaymentSuccessPage() {
       }
     }
     
-    // Final check - navigate to order status if we have a valid ID
+    // Final check - navigate to customer order status if we have a valid ID
     if (finalOrderId && !finalOrderId.startsWith('#') && finalOrderId !== '') {
-      console.log('✅ Navigating to order status:', `/customer/order-status/${finalOrderId}`);
-      router.push(`/customer/order-status/${finalOrderId}`);
+      console.log('✅ Navigating to order status:', `/customer/orders/${finalOrderId}`);
+      router.push('/customer/orders/');
       return;
     }
     
@@ -445,14 +476,16 @@ export default function PaymentSuccessPage() {
   });
 
   // Calculate total amount
-  const totalAmount = orderData ? `$${orderData.total.toFixed(2)}` : '$0.00';
+  const resolvedTotal = Number(orderData?.total ?? 0);
+  const totalAmount = Number.isFinite(resolvedTotal) ? `₹${resolvedTotal.toFixed(2)}` : '₹0.00';
+  const resolvedPaymentMethod = orderData?.paymentMethod || selectedPaymentMethod || 'online';
 
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center bg-gray-100 p-4 overflow-hidden">
       {showConfetti && <Confetti numberOfPieces={200} recycle={false} gravity={0.4} />}
       <OrderConfirmationCard
         orderId={orderId}
-        paymentMethod={orderData?.paymentMethod || 'Card'}
+        paymentMethod={displayPaymentMethod(resolvedPaymentMethod)}
         dateTime={dateTime}
         totalAmount={totalAmount}
         onGoToAccount={handleGoToAccount}

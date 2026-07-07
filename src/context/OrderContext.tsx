@@ -57,7 +57,7 @@ export interface Order {
   status: OrderStatus;
   statusText?: string;
   date: string;
-  items: string;
+  items: string | Array<{ quantity: number; name: string; imageUrl?: string; image?: string; id?: string | number; price?: number }>;
   price: string;
   total: number;
   imageUrl: string;
@@ -77,9 +77,10 @@ interface RawOrder {
   status: string;
   statusText?: string;
   createdAt: string;
-  items: Array<string | { quantity: number; name: string }> | string;
+  items: Array<string | { quantity: number; name: string; imageUrl?: string; image?: string; id?: string | number; price?: number }> | string;
   price: string | number;
   total?: number;
+  totalAmount?: number;
   originalPrice?: string | number;
   progressStep?: number;
   timeSlot?: string;
@@ -87,6 +88,31 @@ interface RawOrder {
   paymentMethod?: string;
   paymentStatus?: string;
 }
+
+const normalizeOrderItems = (
+  items: RawOrder['items']
+): Array<{ quantity: number; name: string; imageUrl?: string; image?: string; id?: string | number; price?: number }> | string => {
+  if (!Array.isArray(items)) return items;
+
+  return items.map((item, index) => {
+    if (typeof item === 'string') {
+      const match = item.match(/(\d+)x\s*(.+)/);
+      return {
+        quantity: match ? parseInt(match[1], 10) : 1,
+        name: match ? match[2] : item,
+        id: `parsed-${index}`,
+      };
+    }
+    return {
+      quantity: item.quantity || 1,
+      name: item.name,
+      imageUrl: item.imageUrl,
+      image: item.image,
+      id: item.id,
+      price: item.price,
+    };
+  });
+};
 
 interface OrderContextType {
   orders: Order[];
@@ -204,6 +230,16 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         // Format and set orders
         const formattedOrders = (data as RawOrder[]).map((order) => {
           console.log('[OrderContext] Processing order:', order);
+          const normalizedItems = normalizeOrderItems(order.items);
+          const numericTotal =
+            typeof order.total === 'number'
+              ? order.total
+              : typeof order.totalAmount === 'number'
+                ? order.totalAmount
+                : typeof order.price === 'number'
+                  ? order.price
+                  : parseFloat(String(order.price || '0').replace(/[^0-9.]/g, '')) || 0;
+
           return {
             id: order.id || order.orderId || '',
             username: order.username,
@@ -214,13 +250,9 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               month: 'short',
               day: 'numeric',
             }),
-            items: Array.isArray(order.items)
-              ? order.items.map((item) =>
-                typeof item === 'string' ? item : `${item.quantity}x ${item.name}`
-              ).join(', ')
-              : order.items,
+            items: normalizedItems,
             price: typeof order.price === 'number' ? `$${order.price.toFixed(2)}` : String(order.price || ''),
-            total: typeof order.total === 'number' ? order.total : (typeof order.price === 'number' ? order.price : parseFloat(order.price?.replace('$', '') || '0')),
+            total: numericTotal,
             imageUrl: getRealItemImage(order) || '/images/order.jpg',
             originalPrice: typeof order.originalPrice === 'number' 
               ? `$${order.originalPrice.toFixed(2)}` 
@@ -310,14 +342,24 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         headers['Authorization'] = `Bearer ${authToken}`;
       }
       
+      const resolvedTotal =
+        typeof (order as any).total === 'number' && !Number.isNaN((order as any).total)
+          ? (order as any).total
+          : numericPrice;
+
+      const resolvedPaymentMethod =
+        (order as any).paymentMethod
+          ? String((order as any).paymentMethod)
+          : 'online';
+
       const requestBody = {
         id: uniqueId,
         orderId: uniqueId,
         userId: 'customer', // This should be the actual user ID from auth
         username: order.username,
         items: order.itemsArray || [], // Use itemsArray as items
-        total: numericPrice,
-        price: numericPrice,
+        total: resolvedTotal,
+        price: resolvedTotal,
         status: 'preparing',
         imageUrl: getRealItemImage(order) || '/images/order.jpg',
         originalPrice: numericOriginalPrice,
@@ -325,8 +367,8 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         progressStep: 0,
         timeSlot: order.timeSlot || (window as unknown as { selectedTimeSlot?: string }).selectedTimeSlot || 'ASAP',
         pickupDate: pickupDate,
-        paymentMethod: 'online',
-        paymentStatus: 'completed'
+        paymentMethod: resolvedPaymentMethod,
+        paymentStatus: resolvedPaymentMethod === 'cod' ? 'pending' : 'completed'
       };
 
       console.log('[OrderContext] POST /api/orders/customer with body:', requestBody);

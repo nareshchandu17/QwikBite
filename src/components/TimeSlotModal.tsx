@@ -43,7 +43,6 @@ const TimeSlotModal: React.FC<TimeSlotModalProps> = ({ isOpen, onClose, item: in
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [itemCount, setItemCount] = useState(1);
   const [addedItems, setAddedItems] = useState<Array<{ item: any, quantity: number }>>([]);
   const [currentItem, setCurrentItem] = useState<any>(initialItem);
   const [showValidation, setShowValidation] = useState(false);
@@ -123,9 +122,13 @@ const TimeSlotModal: React.FC<TimeSlotModalProps> = ({ isOpen, onClose, item: in
   useEffect(() => {
     setCurrentItem(initialItem);
     setQuantity(1);
+    setAddedItems([]);
   }, [initialItem]);
 
   const { morning, afternoon, evening } = groupSlotsByBlock(slots);
+  // Count distinct order entries shown in the modal, not quantity units.
+  // Quantity changes with +/- should not change this count.
+  const totalItemCount = addedItems.length + 1;
 
   const handleConfirm = async () => {
     if (!selectedSlot) {
@@ -162,7 +165,6 @@ const TimeSlotModal: React.FC<TimeSlotModalProps> = ({ isOpen, onClose, item: in
 
   const handleAddAnotherItem = () => {
     setAddedItems(prev => [...prev, { item: currentItem, quantity }]);
-    setItemCount(prev => prev + 1);
     setQuantity(1);
     toast.success(`Item added to order!`);
   };
@@ -211,7 +213,7 @@ const TimeSlotModal: React.FC<TimeSlotModalProps> = ({ isOpen, onClose, item: in
             {/* Ordering Preview */}
             <div className="mb-8 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
               <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-                <h3 className="font-semibold text-lg text-gray-900 dark:text-white">Current Order ({itemCount} items)</h3>
+                <h3 className="font-semibold text-lg text-gray-900 dark:text-white">Current Order ({totalItemCount} items)</h3>
                 <Button variant="outline" size="sm" className="font-semibold text-lg text-gray-900 dark:text-white" onClick={onClose}>Add More Items</Button>
               </div>
 
@@ -258,20 +260,23 @@ const TimeSlotModal: React.FC<TimeSlotModalProps> = ({ isOpen, onClose, item: in
                     </div>
 
                     <div className="flex items-center justify-between gap-4 mt-auto">
-                      <div className="flex items-center gap-1 bg-white dark:bg-gray-800 rounded-xl p-1.5 border-2 border-orange-100 shadow-inner">
-                        <button
-                          onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                          className="w-8 h-8 flex items-center justify-center font-bold text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-                        >
-                          <Minus className="h-4 w-4" />
-                        </button>
-                        <span className="w-10 text-center font-black text-lg">{quantity}</span>
-                        <button
-                          onClick={() => setQuantity(q => q + 1)}
-                          className="w-8 h-8 flex items-center justify-center font-bold text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-                        >
-                          <Plus className="h-4 w-4" />
-                        </button>
+                      <div className="flex flex-col items-start gap-2">
+                        <span className="text-sm font-semibold text-orange-700 dark:text-orange-400">Qty: {quantity}</span>
+                        <div className="flex items-center gap-1 bg-white dark:bg-gray-800 rounded-xl p-1.5 border-2 border-orange-100 shadow-inner">
+                          <button
+                            onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                            className="w-8 h-8 flex items-center justify-center font-bold text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </button>
+                          <span className="w-10 text-center font-black text-lg">{quantity}</span>
+                          <button
+                            onClick={() => setQuantity(q => q + 1)}
+                            className="w-8 h-8 flex items-center justify-center font-bold text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
 
                       <Button
