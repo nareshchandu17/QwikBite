@@ -79,10 +79,12 @@ export async function GET(req: NextRequest) {
 
     await connectDB();
 
-    // Find the most recent order for this user
-    const recentOrder = await Order.findOne({
-      userId: new mongoose.Types.ObjectId(userId)
-    })
+    // Find the most recent order for this user (schema field is `user`, not `userId`)
+    const userQueryValue = mongoose.Types.ObjectId.isValid(String(userId))
+      ? new mongoose.Types.ObjectId(String(userId))
+      : String(userId);
+
+    const recentOrder = await Order.findOne({ user: userQueryValue })
       .sort({ createdAt: -1 })
       .limit(1);
 
@@ -109,8 +111,8 @@ export async function GET(req: NextRequest) {
         orderId: recentOrder.orderId,
         status: recentOrder.status,
         items: recentOrder.items,
-        total: recentOrder.total,
-        price: recentOrder.price,
+        total: recentOrder.total ?? recentOrder.totalAmount ?? recentOrder.price ?? 0,
+        price: recentOrder.price ?? recentOrder.total ?? recentOrder.totalAmount ?? 0,
         username: recentOrder.username,
         timeSlot: recentOrder.timeSlot,
         paymentMethod: recentOrder.paymentMethod,

@@ -52,9 +52,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { orderId, items, price, timeSlot, paymentMethod } = body;
+    const { orderId, items, price, total, timeSlot, paymentMethod, username } = body;
 
     const generatedOrderId = orderId || `ORD-${Date.now()}`;
+
+    const numericTotal =
+      typeof total === 'number'
+        ? total
+        : typeof price === 'number'
+          ? price
+          : parseFloat(String(total ?? price ?? 0).replace(/[^0-9.]/g, '')) || 0;
     
     // Map fields to consolidated model
     const newOrder = await Order.create({
@@ -67,10 +74,15 @@ export async function POST(request: NextRequest) {
         price: item.price,
         prepTime: item.prepTime || 5
       })) : [],
-      totalAmount: price || 0,
+      totalAmount: numericTotal,
+      total: numericTotal,
+      price: numericTotal,
       status: OrderStatus.PENDING,
-      paymentStatus: PaymentStatus.PENDING,
+      paymentStatus: (paymentMethod === 'cod' || paymentMethod === 'cash') ? PaymentStatus.PENDING : PaymentStatus.PAID,
+      paymentMethod: paymentMethod || 'online',
       pickupTime: timeSlot ? new Date() : undefined, // Placeholder for now, should be parsed correctly
+      timeSlot: timeSlot || undefined,
+      username: username || session.user.name || session.user.email || 'Customer',
     });
 
     console.log(`✅ Customer Order Created: ${newOrder.orderId}`);

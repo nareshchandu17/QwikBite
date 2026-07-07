@@ -8,9 +8,20 @@ import QwikBiteEliteTracker from '@/components/orders/QwikBiteEliteTracker';
 import { useCartStore } from '@/stores/cartStore';
 import { OrderHistorySkeleton } from '@/components/OrderHistorySkeleton';
 import { toast } from 'sonner';
+import { menuItems } from '@/data/menu';
 
 // --- Types ---
 type OrderStatus = 'Preparing' | 'Delivered' | 'Cancelled' | 'Received';
+
+interface OrderItem {
+  id?: string | number;
+  name: string;
+  quantity: number;
+  price?: number;
+  description?: string;
+  imageUrl?: string;
+  image?: string;
+}
 
 interface Order {
   id: string;
@@ -18,7 +29,7 @@ interface Order {
   status: OrderStatus;
   statusText?: string;
   date: string;
-  items: string | Array<{ id: string; name: string; quantity: number; price: number; description?: string; imageUrl?: string; image?: string }>;
+  items: string | OrderItem[];
   price: string;
   imageUrl: string;
   originalPrice?: string;
@@ -35,6 +46,37 @@ interface Order {
 }
 
 type FilterType = 'All' | 'Active' | 'Completed' | 'Cancelled';
+
+const getMenuImageForItem = (itemName: string): string | null => {
+  const normalized = itemName?.toLowerCase().trim();
+  if (!normalized) return null;
+
+  const menuItem = menuItems.find((item) =>
+    item.name.toLowerCase() === normalized ||
+    normalized.includes(item.name.toLowerCase()) ||
+    item.name.toLowerCase().includes(normalized)
+  );
+
+  return menuItem?.image || null;
+};
+
+const getOrderItemImages = (order: Order): string[] => {
+  const fallbackImage = order.imageUrl || '/images/order.jpg';
+
+  if (!Array.isArray(order.items) || order.items.length === 0) {
+    return [fallbackImage];
+  }
+
+  const resolvedImages = order.items
+    .map((item) => item.imageUrl || item.image || getMenuImageForItem(item.name))
+    .filter((src): src is string => Boolean(src));
+
+  if (resolvedImages.length === 0) {
+    return [fallbackImage];
+  }
+
+  return Array.from(new Set(resolvedImages));
+};
 
 // --- Sub-Components ---
 
@@ -256,69 +298,19 @@ const OrderCard: React.FC<{
         {/* Main Content */}
         <div className="flex gap-4 flex-1">
           <div className="shrink-0 relative">
-            <div className="w-20 h-20 rounded-2xl bg-gray-100 overflow-hidden shadow-sm">
-              {(() => {
-                console.log('Order data:', order);
-                console.log('Order items:', order.items);
-                console.log('First item:', Array.isArray(order.items) && order.items.length > 0 ? order.items[0] : 'No items');
-
-                const firstItem = Array.isArray(order.items) && order.items.length > 0 ? order.items[0] : null;
-
-                // Try to get real image from menu items first
-                const getMenuImageForItem = (itemName: string) => {
-                  try {
-                    // Using dynamic require inside the helper, but since it's a small JSON
-                    // we wrap it for safety. In production, this should be pre-loaded.
-                    const { menuItems } = require('@/data/menu');
-                    const menuItem = menuItems.find((item: any) =>
-                      item.name.toLowerCase() === itemName.toLowerCase() ||
-                      itemName.toLowerCase().includes(item.name.toLowerCase()) ||
-                      item.name.toLowerCase().includes(itemName.toLowerCase())
-                    );
-                    return menuItem?.image;
-                  } catch (e) {
-                    return null;
-                  }
-                };
-
-                // Use order.imageUrl first (set during payment), then fallback logic
-                let imageSrc = order.imageUrl || '/images/order.jpg'; // Use order.imageUrl as primary source
-                console.log('Order imageUrl:', order.imageUrl);
-                console.log('Initial imageSrc:', imageSrc);
-
-                if (firstItem && !order.imageUrl) {
-                  // Only use fallback logic if order.imageUrl is not available
-                  // Try item's own image first
-                  const itemImage = firstItem.imageUrl || firstItem.image;
-                  if (itemImage) {
-                    imageSrc = itemImage;
-                  } else {
-                    // Try to find matching menu item
-                    const menuImage = getMenuImageForItem(firstItem.name || '');
-                    if (menuImage) {
-                      imageSrc = menuImage;
-                    }
-                  }
-                }
-
-                console.log('Final image source:', imageSrc);
-
-                return (
+            <div className="flex items-center gap-2">
+              {getOrderItemImages(order).slice(0, 3).map((imageSrc, index) => (
+                <div key={`${order.id}-${index}`} className="w-20 h-20 rounded-2xl bg-gray-100 overflow-hidden shadow-sm">
                   <img
-                    alt={`${order.username} Meal`}
-                    className={`w-full h-full object-cover ${isCancelled ? 'grayscale' : 'grayscale group-hover:grayscale-0 transition-all duration-500'} ${isPreparing ? '' : ''}`}
+                    alt={`${order.username} meal ${index + 1}`}
+                    className={`w-full h-full object-cover ${isCancelled ? 'grayscale' : 'grayscale group-hover:grayscale-0 transition-all duration-500'}`}
                     src={imageSrc}
-                    onLoad={() => console.log('Order image loaded successfully:', imageSrc)}
                     onError={(e) => {
-                      console.log('Order image failed to load:', imageSrc);
-                      // Try fallback to a generic food image
-                      if (imageSrc !== '/images/order.jpg') {
-                        e.currentTarget.src = '/images/order.jpg';
-                      }
+                      e.currentTarget.src = '/images/order.jpg';
                     }}
                   />
-                );
-              })()}
+                </div>
+              ))}
             </div>
           </div>
           <div className="flex flex-col justify-between py-0 flex-1">
@@ -771,7 +763,7 @@ const OrdersPage = () => {
       processedItems = order.items.map((item, index) => {
         console.log(`Processing item ${index}:`, item);
         return {
-          id: item.id || `item-${index}`,
+          id: String(item.id ?? `item-${index}`),
           name: item.name || 'Unknown Item',
           quantity: item.quantity || 1,
           price: item.price || 0,
