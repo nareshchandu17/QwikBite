@@ -1,7 +1,23 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models";
+import { z } from "zod";
+
+const resetConfirmSchema = z.object({
+  token: z.string().trim().min(1, "Token is required"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+  confirmPassword: z.string().min(1, "Confirm password is required")
+}).superRefine((data, ctx) => {
+  if (data.password !== data.confirmPassword) {
+    ctx.addIssue({ path: ['confirmPassword'], code: z.ZodIssueCode.custom, message: 'Passwords do not match' });
+  }
+
+  if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/.test(data.password)) {
+    ctx.addIssue({ path: ['password'], code: z.ZodIssueCode.custom, message: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character' });
+  }
+});
 
 /**
  * POST /api/auth/reset-password/confirm
@@ -12,58 +28,30 @@ import { User } from "@/lib/models";
  */
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { token, password, confirmPassword } = body;
+    const body = await req.json().catch(() => ({}));
+    const parsed = resetConfirmSchema.safeParse(body);
 
-    // Validate input
-    if (!token || !password || !confirmPassword) {
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
       return NextResponse.json(
         {
           success: false,
-          error: "Token, password, and confirm password are required"
+          error: issue?.message || "Invalid reset request"
         },
         { status: 400 }
       );
     }
 
-    if (password !== confirmPassword) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Passwords do not match"
-        },
-        { status: 400 }
-      );
-    }
-
-    // Password strength validation
-    if (password.length < 8) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Password must be at least 8 characters long"
-        },
-        { status: 400 }
-      );
-    }
-
-    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>])/.test(password)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
-        },
-        { status: 400 }
-      );
-    }
+    const { token, password } = parsed.data;
 
     // Connect to database
     await connectDB();
 
-    // 1. Find user with a valid, non-expired reset token
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
     const user = await User.findOne({
-      resetToken: token,
-      resetTokenExpiry: { $gt: new Date() } // Token must be in the future
+      resetToken: tokenHash,
+      resetTokenExpiry: { $gt: new Date() }
     });
 
     if (!user) {

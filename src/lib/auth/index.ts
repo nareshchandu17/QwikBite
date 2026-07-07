@@ -2,6 +2,7 @@ import 'server-only';
 import jwt from 'jsonwebtoken';
 import { NextRequest, NextResponse } from 'next/server';
 import { serialize, parse } from 'cookie';
+import { getRequiredEnvVar } from '@/lib/env';
 
 // Parse cookies from cookie header string
 export function parseCookies(cookieHeader?: string | null): Record<string, string> {
@@ -56,16 +57,9 @@ const _safeConsoleError = (..._args: unknown[]) => {
   }
 };
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = getRequiredEnvVar('JWT_SECRET', { allowEmptyInDevelopment: false, requiredInProduction: true });
 
-if (!JWT_SECRET) {
-  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PHASE !== 'phase-production-build') {
-    throw new Error('❌ JWT_SECRET must be set in production environment');
-  }
-  console.warn('⚠️ JWT_SECRET is not set. Using a temporary secret for development.');
-}
-
-const FINAL_SECRET = JWT_SECRET || 'dev-only-fallback-secret-6723-4567-8901';
+const FINAL_SECRET = JWT_SECRET;
 const TOKEN_NAME = 'auth_token';
 const TOKEN_MAX_AGE = 60 * 60 * 24; // 24 hours
 
@@ -80,13 +74,6 @@ export interface JwtPayload {
 }
 
 export const generateToken = (payload: JwtPayload): string => {
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Generating token with FINAL_SECRET:', {
-      hasEnvSecret: !!process.env.JWT_SECRET,
-      secretLength: FINAL_SECRET.length,
-      secretPreview: FINAL_SECRET.substring(0, 10) + '...',
-    });
-  }
   return jwt.sign(payload, FINAL_SECRET, { expiresIn: '1d' });
 };
 

@@ -16,6 +16,25 @@ const OPTIONAL_ENV_VARS = [
   'NODE_ENV',
 ];
 
+export function getRequiredEnvVar(key: string, options?: { allowEmptyInDevelopment?: boolean; requiredInProduction?: boolean }) {
+  const value = process.env[key];
+  const isProduction = process.env.NODE_ENV === 'production';
+  const required = options?.requiredInProduction ?? true;
+  const allowEmptyInDevelopment = options?.allowEmptyInDevelopment ?? false;
+
+  if (!value) {
+    if (isProduction && required) {
+      throw new Error(`Missing required environment variable: ${key}`);
+    }
+
+    if (!isProduction && !allowEmptyInDevelopment) {
+      throw new Error(`Missing required environment variable: ${key}`);
+    }
+  }
+
+  return value || '';
+}
+
 export function validateEnv() {
   const missing = REQUIRED_ENV_VARS.filter(key => !process.env[key]);
 
