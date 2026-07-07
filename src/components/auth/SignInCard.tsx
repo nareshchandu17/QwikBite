@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { Eye, EyeOff, Loader2, User, Lock, Mail, Key, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthModal } from '@/context/AuthModalContext';
+import { useAuth } from '@/context/AuthContext';
 import { cn } from "@/lib/utils";
 
 type SignInCardProps = {
@@ -28,6 +29,7 @@ export function SignInCard({
   const searchParams = useSearchParams();
   const { data: session, update: updateSession } = useSession();
   const { closeModal, openModal } = useAuthModal();
+  const { login } = useAuth();
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
@@ -202,15 +204,20 @@ export function SignInCard({
         return;
       }
 
-      // Step 2: Update session to get fresh role info
-      console.log("🔐 Step 3: Calling updateSession()...");
       const updatedSession = await updateSession();
-      
-      console.log("🔐 Step 4: Updated session:", updatedSession);
-      console.log("🔐 Step 4: User role:", updatedSession?.user?.role);
-      
+
+      // Sync with our global context first
+      if (updatedSession?.user) {
+        await login({
+          id: updatedSession.user.id,
+          name: updatedSession.user.name || '',
+          email: updatedSession.user.email || '',
+          role: updatedSession.user.role || 'customer',
+        });
+      }
+
       toast.success("Welcome back! Redirecting...", {
-        duration: 2000,
+        duration: 3000,
         style: {
           background: 'rgba(34, 197, 94, 0.9)',
           backdropFilter: 'blur(10px)',
@@ -219,12 +226,6 @@ export function SignInCard({
           color: '#ffffff',
         },
       });
-      
-      // Step 3: Immediate redirect to be as fast as possible
-      // We use window.location.href for a full page navigation which ensures 
-      // the middleware runs correctly and redirects to the appropriate dashboard
-      // based on the newly set session cookie. This is often faster and more reliable
-      // than waiting for client-side state synchronization.
       
       // Determine redirect path
       let redirectPath = '/';
@@ -245,8 +246,11 @@ export function SignInCard({
         }
       }
       
+      // Start navigation first using next/navigation router.replace
+      router.replace(redirectPath);
+      
+      // Close the modal only after navigation is initiated
       onSuccess?.();
-      window.location.href = redirectPath;
     } catch (err) {
       toast.error("Something went wrong. Please try again later.", {
         duration: 3000,

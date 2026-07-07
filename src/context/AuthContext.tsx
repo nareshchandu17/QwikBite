@@ -246,7 +246,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       isAuthenticated,
-      loading: status === 'loading' || isInitialSync,
+      loading: (status === 'loading' && !isAuthenticated) || isInitialSync,
     }),
     [user, token, login, logout, isAuthenticated, status, isInitialSync]
   );

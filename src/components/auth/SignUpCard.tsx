@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 interface SignUpCardProps {
   onSuccess?: () => void;
@@ -29,6 +30,7 @@ const regNoRegex = /^[a-zA-Z0-9]+$/;
 export function SignUpCard({ onSuccess, onSwitchToSignIn, className }: SignUpCardProps) {
   const { update: updateSession } = useSession();
   const router = useRouter();
+  const { login } = useAuth();
 
   const [form, setForm] = useState({
     name: '',
@@ -164,8 +166,27 @@ export function SignUpCard({ onSuccess, onSwitchToSignIn, className }: SignUpCar
 
       // Step 2: Update session to get fresh role info
       const updatedSession = await updateSession();
+
+      // Sync with our global context first
+      if (updatedSession?.user) {
+        await login({
+          id: updatedSession.user.id,
+          name: updatedSession.user.name || '',
+          email: updatedSession.user.email || '',
+          role: updatedSession.user.role || form.role,
+        });
+      }
       
-      toast.success('Signed in successfully! Redirecting...');
+      toast.success('Signed in successfully! Redirecting...', {
+        duration: 3000,
+        style: {
+          background: 'rgba(34, 197, 94, 0.9)',
+          backdropFilter: 'blur(10px)',
+          WebkitBackdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          color: '#ffffff',
+        },
+      });
 
       // Determine redirect path
       let redirectPath = '/';
@@ -177,15 +198,11 @@ export function SignUpCard({ onSuccess, onSwitchToSignIn, className }: SignUpCar
         redirectPath = '/customer';
       }
       
-      // Step 3: Fast and smooth transition
-      // We trigger the navigation FIRST so the browser starts loading the new page
-      window.location.href = redirectPath;
+      // Step 3: Client-side routing transition
+      router.replace(redirectPath);
       
-      // We delay closing the modal slightly so it covers the "/" screen flash 
-      // while the new page is being prepared by the browser
-      setTimeout(() => {
-        onSuccess?.();
-      }, 100);
+      // Close modal
+      onSuccess?.();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Signup failed';
       setError(message);

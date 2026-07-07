@@ -61,7 +61,7 @@ export default function UserDropdown({ user }: UserDropdownProps) {
         <div className="w-8 h-8 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold">
           {user.name.charAt(0).toUpperCase()}
         </div>
-        <span className="text-sm font-medium hidden md:inline-block">{user.name}</span>
+        <span className="text-sm font-medium text-gray-900 dark:text-gray-900 hidden md:inline-block">{user.name}</span>
         <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
       </button>
 
@@ -125,4 +125,4 @@ export default function UserDropdown({ user }: UserDropdownProps) {
       )}
     </div>
   );
-}
+}
