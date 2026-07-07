@@ -2,7 +2,7 @@ import mongoose, { Document, Schema, Types, Model } from 'mongoose';
 
 export interface IFavorite extends Document {
   user: Types.ObjectId;
-  menuItem: Types.ObjectId;
+  menuItem: string | Types.ObjectId;
 
   createdAt: Date;
 }
@@ -17,8 +17,7 @@ const favoriteSchema = new Schema<IFavorite>(
     },
 
     menuItem: {
-      type: Schema.Types.ObjectId,
-      ref: 'MenuItem',
+      type: Schema.Types.Mixed,
       required: true,
       index: true,
     },
@@ -46,6 +45,9 @@ favoriteSchema.index({ user: 1, createdAt: -1 });
 /**
  * MODEL EXPORT (Next.js safe)
  */
+if (mongoose.models.Favorite) {
+  delete mongoose.connection.models.Favorite;
+}
+
 export const Favorite: Model<IFavorite> =
-  mongoose.models.Favorite ||
   mongoose.model<IFavorite>('Favorite', favoriteSchema);

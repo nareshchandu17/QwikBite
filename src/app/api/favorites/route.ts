@@ -5,15 +5,17 @@ import { authConfig } from '@/auth';
 import mongoose from 'mongoose';
 
 import { Favorite } from '@/models/favorite.model';
+import { normalizeFavoriteItemId } from '@/lib/favorites';
 
 // Helper to handle API errors consistently
 const handleApiError = (error: any, context: string) => {
   console.error(`API Error [${context}]:`, error);
-  const status = error.code === 11000 ? 409 : 500;
-  const message = error.code === 11000
+  const isDuplicate = error.code === 11000;
+  const status = isDuplicate ? 200 : 500;
+  const message = isDuplicate
     ? 'This item is already in your favorites'
     : error.message || 'Internal Server Error';
-  return NextResponse.json({ error: message }, { status });
+  return NextResponse.json({ error: message, message }, { status });
 };
 
 // Helper to get user ID from NextAuth session
@@ -88,11 +90,15 @@ export async function POST(req: NextRequest) {
     
     console.log('[Favorites API] User authenticated:', userId);
 
+    await connectDB();
+
     const body = await req.json();
     const { itemId, itemType = 'menu' } = body;
 
-    // Strict validation
-    if (!itemId || !mongoose.Types.ObjectId.isValid(itemId)) {
+    const normalizedItemId = normalizeFavoriteItemId(itemId);
+
+    // Accept either Mongo ObjectIds or the string IDs used by the app's menu items.
+    if (!normalizedItemId) {
       return NextResponse.json({ error: 'Invalid Item ID' }, { status: 400 });
     }
 
@@ -101,21 +107,20 @@ export async function POST(req: NextRequest) {
     }
 
     const userIdObj = new mongoose.Types.ObjectId(userId);
-    const itemIdObj = new mongoose.Types.ObjectId(itemId);
 
     // Check for existing to prevent duplicates
-    const existing = await Favorite.findOne({ user: userIdObj, menuItem: itemIdObj });
+    const existing = await Favorite.findOne({ user: userIdObj, menuItem: normalizedItemId });
     if (existing) {
       return NextResponse.json({
         message: 'Already in favorites',
         data: { itemId, itemType }
-      });
+      }, { status: 200 });
     }
 
     // Create new favorite
     const favorite = new Favorite({
       user: userIdObj,
-      menuItem: itemIdObj
+      menuItem: normalizedItemId
     });
 
     await favorite.save();
@@ -147,11 +152,14 @@ export async function DELETE(req: NextRequest) {
     
     console.log('[Favorites API] User authenticated:', userId);
 
+    await connectDB();
+
     // Handle both query params and body for backward compatibility
     const url = new URL(req.url);
     const itemId = url.searchParams.get('itemId') || (await req.json().catch(() => ({}))).itemId;
+    const normalizedItemId = normalizeFavoriteItemId(itemId);
 
-    if (!itemId || !mongoose.Types.ObjectId.isValid(itemId)) {
+    if (!normalizedItemId) {
       return NextResponse.json({ error: 'Invalid Item ID' }, { status: 400 });
     }
 
@@ -159,7 +167,7 @@ export async function DELETE(req: NextRequest) {
 
     const result = await Favorite.findOneAndDelete({
       user: new mongoose.Types.ObjectId(userId),
-      menuItem: new mongoose.Types.ObjectId(itemId)
+      menuItem: normalizedItemId
     });
 
     if (!result) {

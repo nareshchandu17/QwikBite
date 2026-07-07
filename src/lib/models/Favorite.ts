@@ -12,7 +12,7 @@ export interface IFavorite extends Document {
 
 const favoriteSchema = new Schema<IFavorite>({
   userId: { type: String, required: true, ref: 'User' },
-  menuItemId: { type: String, required: true, ref: 'MenuItem' },
+  menuItemId: { type: String, required: true },
   menuItemName: { type: String },
   menuItemImage: { type: String },
   menuItemPrice: { type: Number }
