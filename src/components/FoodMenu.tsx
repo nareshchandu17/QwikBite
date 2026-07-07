@@ -160,7 +160,7 @@ const FoodMenu = ({ categories: categoryList = ['All', 'Tiffins', 'Fast Food', '
                     Popular
                   </div>
                 )}
-                <button
+                <motion.button
                   onClick={async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -168,46 +168,61 @@ const FoodMenu = ({ categories: categoryList = ['All', 'Tiffins', 'Fast Food', '
                     if (!item.available) return;
 
                     try {
+                      // FavoritesContext is the single source of toast notifications.
                       await toggleFavorite(item.id);
-
-                      // Show success feedback
-                      if (typeof window !== 'undefined' && 'toast' in window) {
-                        (window as any).toast.success(
-                          isFavorite(item.id)
-                            ? 'Added to favorites!'
-                            : 'Removed from favorites!'
-                        );
-                      }
                     } catch (err) {
-                      const error = err as Error;
-                      console.error('Error toggling favorite:', error);
-
-                      // Show error feedback
-                      if (typeof window !== 'undefined' && 'toast' in window) {
-                        (window as any).toast.error(
-                          error.message || 'Failed to update favorites'
-                        );
-                      }
+                      console.error('[FoodMenu] Error toggling favorite:', err);
                     }
                   }}
-                  className={`absolute top-3 right-3 z-10 p-2 rounded-full transition-all duration-300 ${isFavorite(item.id)
-                      ? 'text-red-500 bg-white/90 hover:bg-red-100 scale-110'
-                      : 'text-gray-700 bg-white/80 hover:bg-white hover:text-red-500'
-                    } ${!item.available ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                  title={!item.available
-                    ? 'This item is not available'
-                    : isFavorite(item.id)
-                      ? 'Remove from favorites'
-                      : 'Add to favorites'}
+                  className={`absolute top-3 right-3 z-10 p-2.5 rounded-full shadow-sm transition-colors duration-200 ${
+                    isFavorite(item.id)
+                      ? 'bg-red-50 text-red-500 hover:bg-red-100'
+                      : 'bg-white/90 text-gray-400 hover:text-red-400 hover:bg-white'
+                  } ${!item.available ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  title={
+                    !item.available
+                      ? 'This item is not available'
+                      : isFavorite(item.id)
+                        ? 'Remove from favorites'
+                        : 'Add to favorites'
+                  }
                   disabled={!item.available}
+                  whileTap={item.available ? { scale: 0.80 } : {}}
+                  whileHover={item.available ? { scale: 1.18 } : {}}
+                  animate={item.available
+                    ? { scale: isFavorite(item.id) ? 1.08 : 1 }
+                    : { scale: 1 }
+                  }
+                  transition={{
+                    type: 'spring',
+                    stiffness: 450,
+                    damping: 15,
+                    mass: 0.8,
+                  }}
                 >
-                  <Heart
-                    className={`h-5 w-5 transition-colors ${isFavorite(item.id) ? 'fill-current' : ''}`}
-                  />
+                  <motion.div
+                    animate={{ scale: isFavorite(item.id) ? 1 : 0.95 }}
+                    transition={{ duration: 0.15 }}
+                  >
+                    <Heart
+                      className={`h-5 w-5 transition-all duration-200 ${
+                        isFavorite(item.id)
+                          ? 'fill-red-500 text-red-500 drop-shadow-sm'
+                          : 'fill-transparent text-gray-400'
+                      }`}
+                      strokeWidth={isFavorite(item.id) ? 0 : 1.75}
+                    />
+                  </motion.div>
+                  {/* Pulse ring on active state */}
                   {isFavorite(item.id) && (
-                    <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-20"></span>
+                    <motion.span
+                      className="absolute inset-0 rounded-full bg-red-400"
+                      initial={{ scale: 0.8, opacity: 0.4 }}
+                      animate={{ scale: 1.6, opacity: 0 }}
+                      transition={{ duration: 0.5, ease: 'easeOut' }}
+                    />
                   )}
-                </button>
+                </motion.button>
               </div>
 
               <div className="p-5">

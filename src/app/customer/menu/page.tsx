@@ -25,7 +25,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import TimeSlotModal from '@/components/TimeSlotModal';
 import AnimatedGlowingSearchBar from '@/components/ui/animated-glowing-search-bar';
 import MenuSkeletonLoader from '@/components/MenuSkeletonLoader';
-import { toast } from 'sonner';
+
 
 // Categories for rotating text
 const searchCategories = [
@@ -89,6 +89,67 @@ const categoryButtonClasses = (isActive: boolean) =>
   } whitespace-nowrap`;
 
 export default function MenuPage() {
+  const isValidObjectId = (value: unknown): boolean =>
+    typeof value === 'string' && /^[a-fA-F0-9]{24}$/.test(value);
+
+  const resolveFavoriteId = (item: MenuItem): string | null => {
+    const candidates = [item._id, item.id, (item as any)?.menuItemId, (item as any)?.itemId];
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.trim()) {
+        const trimmed = candidate.trim();
+        if (isValidObjectId(trimmed) || trimmed.length > 0) {
+          return trimmed;
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const findDbIdForItem = async (item: MenuItem): Promise<string | null> => {
+    const directId = resolveFavoriteId(item);
+    if (directId) return directId;
+
+    try {
+      const res = await fetch('/api/menu?limit=200', { cache: 'no-store', credentials: 'include' });
+      if (!res.ok) return null;
+      const payload = await res.json();
+      const apiItems = extractMenuItemsFromResponse(payload);
+
+      const match = apiItems.find((candidate) =>
+        candidate.name?.toLowerCase() === item.name?.toLowerCase() &&
+        candidate.category?.toLowerCase() === item.category?.toLowerCase() &&
+        Number(candidate.price) === Number(item.price)
+      );
+
+      const matchId = match ? resolveFavoriteId(match) : null;
+      if (!matchId || !match) {
+        return item.id || null;
+      }
+
+      setMenuItems((prev) =>
+        prev.map((menuItem) =>
+          menuItem.id === item.id
+            ? { ...menuItem, _id: matchId } as MenuItem
+            : menuItem
+        )
+      );
+
+      return matchId;
+    } catch {
+      return item.id || null;
+    }
+  };
+
+  const extractMenuItemsFromResponse = (payload: any): MenuItem[] => {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data?.data)) return payload.data.data;
+    if (Array.isArray(payload?.data?.items)) return payload.data.items;
+    if (Array.isArray(payload?.data)) return payload.data;
+    if (Array.isArray(payload?.items)) return payload.items;
+    return [];
+  };
   // All hooks must be called in the same order every render
   
   // State hooks
@@ -200,8 +261,7 @@ export default function MenuPage() {
       const res = await fetch('/api/menu?limit=200', { cache: 'no-store', credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
-
-        const items = Array.isArray(data) ? data : data?.data || data?.items || [];
+        const items = extractMenuItemsFromResponse(data);
         if (items && items.length > 0) {
           setMenuItems(items);
           setFilteredItems(items);
@@ -354,36 +414,10 @@ export default function MenuPage() {
   const handleToggleFavorite = async (itemId: string, itemType: string = 'menu') => {
     setIsFavoriteLoading(itemId);
 
-    const wasFavorite = isFavorite(itemId);
-
     try {
       await toggleFavorite(itemId, itemType);
-
-      // Show success toast using Sonner
-      if (!wasFavorite) {
-        toast.success('Added to favorites! ❤️', {
-          description: 'This item has been added to your favorites list.',
-          duration: 3000,
-        });
-      } else {
-        toast('Removed from favorites', {
-          description: 'This item has been removed from your favorites list.',
-          duration: 3000,
-        });
-      }
-
-      console.log(!wasFavorite ? 'Added to favorites!' : 'Removed from favorites!');
     } catch (error) {
       console.error('Error toggling favorite:', error);
-      
-      // Show error toast using Sonner
-      toast.error('Failed to update favorites', {
-        description: 'Please try again.',
-        duration: 5000,
-      });
-      
-      // Re-throw the error to be caught by the error boundary
-      throw error;
     } finally {
       setIsFavoriteLoading(null);
     }
@@ -552,34 +586,66 @@ export default function MenuPage() {
                   style={{ minHeight: '300px', height: '100%' }}
                 >
                   <div className="relative h-48 overflow-hidden">
-                    <button
+                    {(() => {
+                      const favoriteId = resolveFavoriteId(item);
+                      const isFav = favoriteId ? isFavorite(favoriteId) : false;
+                      const isLoadingFav = favoriteId ? isFavoriteLoading === favoriteId : false;
+
+                      return (
+                    <motion.button
                       onClick={async (e) => {
                         e.stopPropagation();
-                        // Use _id from DB if available, otherwise we can&apos;t favorite it in DB
-                        const idToUse = item._id;
+                        const idToUse = favoriteId || (await findDbIdForItem(item)) || item.id;
                         if (!idToUse) {
-                          console.warn("Item cannot be favorited: Missing database ID (likely local data)");
-                          return; // Do not attempt to toggle if no DB ID
+                          console.warn('[Menu] Could not resolve favorite ID for item:', item.name);
+                          return;
                         }
                         await handleToggleFavorite(idToUse);
                       }}
-                      disabled={!!(item._id && isFavoriteLoading === item._id)}
-                      className={`absolute top-3 right-3 z-10 p-2 rounded-full transition-all duration-300 ${item._id && isFavorite(item._id)
-                        ? 'text-red-500 bg-white/90 hover:bg-red-100 scale-110'
-                        : 'text-gray-700 bg-white/80 hover:bg-white hover:text-red-500'
-                        } ${item._id && isFavoriteLoading === item._id ? 'opacity-70 cursor-wait' : ''}`}
-                      title={item._id && isFavorite(item._id) ? 'Remove from favorites' : 'Add to favorites'}
-                      aria-label={item._id && isFavorite(item._id) ? 'Remove from favorites' : 'Add to favorites'}
+                      disabled={isLoadingFav}
+                      className={`absolute top-3 right-3 z-10 p-2.5 rounded-full shadow-sm transition-colors duration-200 ${isFav
+                        ? 'bg-red-50 text-red-500 hover:bg-red-100'
+                        : 'bg-white/90 text-gray-400 hover:text-red-400 hover:bg-white'
+                        } ${isLoadingFav ? 'opacity-60 cursor-wait' : 'cursor-pointer'}`}
+                      title={isFav ? 'Remove from favorites' : 'Add to favorites'}
+                      aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
+                      whileTap={{ scale: 0.80 }}
+                      whileHover={{ scale: 1.18 }}
+                      animate={!isLoadingFav
+                        ? { scale: isFav ? 1.08 : 1 }
+                        : { scale: 1 }
+                      }
+                      transition={{
+                        type: 'spring',
+                        stiffness: 450,
+                        damping: 15,
+                        mass: 0.8,
+                      }}
                       suppressHydrationWarning
                     >
-                      <Heart
-                        className={`h-5 w-5 transition-colors ${item._id && isFavorite(item._id) ? 'fill-current' : ''}`}
-                        strokeWidth={item._id && isFavorite(item._id) ? 2 : 1.5}
-                      />
-                      {item._id && isFavorite(item._id) && (
-                        <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-20"></span>
+                      <motion.div
+                        animate={{ scale: isFav ? 1 : 0.95 }}
+                        transition={{ duration: 0.15 }}
+                      >
+                        <Heart
+                          className={`h-5 w-5 transition-all duration-200 ${isFav
+                            ? 'fill-red-500 text-red-500 drop-shadow-sm'
+                            : 'fill-transparent text-gray-400'}`}
+                          strokeWidth={isFav ? 0 : 1.75}
+                        />
+                      </motion.div>
+                      {/* Pulse ring on active state */}
+                      {isFav && (
+                        <motion.span
+                          className="absolute inset-0 rounded-full bg-red-400"
+                          initial={{ scale: 0.8, opacity: 0.4 }}
+                          animate={{ scale: 1.6, opacity: 0 }}
+                          transition={{ duration: 0.5, ease: 'easeOut' }}
+                        />
                       )}
-                    </button>
+                    </motion.button>
+                      );
+                    })()}
 
                     <div className="relative h-full w-full">
                       <Image
