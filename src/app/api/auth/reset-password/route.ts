@@ -3,6 +3,11 @@ import { connectDB } from "@/lib/db";
 import { User } from "@/lib/models";
 import crypto from "crypto";
 import { sendEmail } from "@/lib/email";
+import { z } from "zod";
+
+const resetPasswordSchema = z.object({
+  email: z.string().trim().email("Invalid email format")
+});
 
 /**
  * POST /api/auth/reset-password
@@ -12,23 +17,10 @@ import { sendEmail } from "@/lib/email";
  */
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { email } = body;
+    const body = await req.json().catch(() => ({}));
+    const parsed = resetPasswordSchema.safeParse(body);
 
-    // Validate input
-    if (!email) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Email is required"
-        },
-        { status: 400 }
-      );
-    }
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!parsed.success) {
       return NextResponse.json(
         {
           success: false,
@@ -37,6 +29,8 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    const { email } = parsed.data;
 
     // Connect to database (connectDB uses connection pooling and caching)
     await connectDB();
@@ -57,14 +51,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // Generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
     const resetTokenExpiry = new Date();
-    resetTokenExpiry.setHours(resetTokenExpiry.getHours() + 1); // Token expires in 1 hour
+    resetTokenExpiry.setHours(resetTokenExpiry.getHours() + 1);
 
-    // Save reset token to user document
-    // Note: You may need to add resetToken and resetTokenExpiry fields to your User model
-    user.resetToken = resetToken;
+    user.resetToken = resetTokenHash;
     user.resetTokenExpiry = resetTokenExpiry;
     await user.save();
 

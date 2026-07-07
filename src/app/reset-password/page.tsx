@@ -2,16 +2,15 @@
 
 import React, { useState, FormEvent } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ArrowLeft, Send, Mail, Shield, RotateCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function ResetPasswordPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,25 +28,25 @@ export default function ResetPasswordPage() {
     }
 
     setLoading(true);
+    setSubmitted(false);
 
     try {
-      // TODO: Replace with actual API call
       const response = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
 
+      const data = await response.json().catch(() => null);
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to send reset link');
+        throw new Error(data?.message || 'Failed to send reset link');
       }
 
-      toast.success('Reset link sent! Please check your email.');
-      // Optionally redirect to a confirmation page
-      // router.push('/reset-password/sent');
+      setSubmitted(true);
+      toast.success(data?.message || 'If an account exists, a reset link has been sent to your email.');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Something went wrong. Please try again.';
       toast.error(errorMessage);
@@ -189,6 +188,12 @@ export default function ResetPasswordPage() {
                 </>
               )}
             </button>
+
+            {submitted && (
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                If an account exists for <span className="font-semibold">{email.trim().toLowerCase()}</span>, a reset link has been sent. Please check your inbox and spam folder.
+              </div>
+            )}
 
             <div className="text-center">
               <Link
