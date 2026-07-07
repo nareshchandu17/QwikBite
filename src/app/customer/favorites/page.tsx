@@ -129,6 +129,28 @@ const cardGlowStyle = `
 `;
 
 export default function FavouritesPage() {
+  const normalizeFavoriteId = (value: unknown): string | null => {
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      return trimmed ? trimmed : null;
+    }
+
+    if (typeof value === 'number') {
+      return String(value);
+    }
+
+    return null;
+  };
+
+  const extractMenuItemsFromResponse = (payload: any): MenuItem[] => {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data?.data)) return payload.data.data;
+    if (Array.isArray(payload?.data?.items)) return payload.data.items;
+    if (Array.isArray(payload?.data)) return payload.data;
+    if (Array.isArray(payload?.items)) return payload.items;
+    return [];
+  };
+
   // Authentication and state management
   const { isAuthenticated, loading: authLoading } = useCustomerGuard();
   const {
@@ -172,7 +194,7 @@ export default function FavouritesPage() {
         const res = await fetch('/api/menu?limit=200');
         if (res.ok) {
           const data = await res.json();
-          const items = Array.isArray(data) ? data : data?.data || data?.items || [];
+          const items = extractMenuItemsFromResponse(data);
           if (items.length > 0) {
             setAllMenuItems(items);
             return;
@@ -188,12 +210,9 @@ export default function FavouritesPage() {
     fetchMenuItems();
   }, []);
 
-  // Fetch favorites from database on mount or when authenticated
-  useEffect(() => {
-    if (isAuthenticated && !authLoading) {
-      fetchFavorites();
-    }
-  }, [isAuthenticated, authLoading, fetchFavorites]);
+  // NOTE: FavoritesContext already fetches favorites on mount.
+  // Calling fetchFavorites() here again would cause a duplicate API request.
+  // The context's favorites state is the source of truth — no extra fetch needed.
 
   // Set isClient to true after component mounts (client-side only)
   useEffect(() => {
@@ -222,14 +241,20 @@ export default function FavouritesPage() {
       e.stopPropagation();
     }
 
+    const normalizedId = normalizeFavoriteId(id);
+    if (!normalizedId) {
+      console.warn('[Favorites] Attempted toggle with invalid item id:', id);
+      return;
+    }
+
     try {
       setIsFavoriteLoading(id);
-      await toggleFavorite(id);
-      const message = isFavorite(id) ? 'Removed from favorites' : 'Added to favorites';
-      toast.success(message);
+      // FavoritesContext.toggleFavorite is the single source of toast notifications.
+      // Do NOT call toast() here — the context handles success & error toasts.
+      await toggleFavorite(normalizedId);
     } catch (error) {
-      console.error('Error toggling favorite:', error);
-      toast.error('Failed to update favorites');
+      // Context already shows an error toast; just log here.
+      console.error('[Favorites] Error toggling favorite:', error);
     } finally {
       setIsFavoriteLoading(null);
     }
@@ -283,13 +308,16 @@ export default function FavouritesPage() {
     const favoriteItems = allMenuItems
       .filter((item): item is MenuItem & { id: string } => {
         if (!item) return false;
-        // Use _id from DB if available (API data), otherwise fall back to id (local data)
-        // Favorites match against the string stored in context
-        const itemId = item._id ? item._id.toString() : item.id;
-        return favorites.includes(itemId);
+        
+        // Resolve ID similarly to how menu/page.tsx does it
+        const dbId = normalizeFavoriteId(item._id) || normalizeFavoriteId(item.id);
+
+        return dbId !== null && favorites.includes(dbId);
       })
       .map(item => {
-        const itemId = item._id ? item._id.toString() : item.id;
+        // Resolve ID similarly
+        const itemId = normalizeFavoriteId(item._id) || normalizeFavoriteId(item.id) || '';
+
         return {
           id: itemId,
           name: item.name,
@@ -350,12 +378,7 @@ export default function FavouritesPage() {
     };
   }, []);
 
-  // Show error toast if there's an error with favorites
-  useEffect(() => {
-    if (favoritesError) {
-      toast.error(favoritesError);
-    }
-  }, [favoritesError]);
+
 
 
 
@@ -395,15 +418,12 @@ export default function FavouritesPage() {
     return () => clearTimeout(timer);
   }, [favourites, debouncedSearchQuery, isMounted, startLoading, stopLoading]);
 
-  const removeFromFavourites = async (id: string | number) => {
-    try {
-      await toggleFavorite(id.toString());
-      toast.success('Removed from favourites');
-    } catch (error) {
-      console.error('Error removing from favorites:', error);
-      toast.error('Failed to remove from favorites');
-    }
-  };
+  // NOTE: removeFromFavourites is intentionally not used in the JSX.
+  // The heart button's onClick calls handleToggleFavorite directly, which
+  // delegates to FavoritesContext — the single source of toast notifications.
+  // Keeping this function would produce duplicate toasts.
+  //
+  // If you need a named removal handler, use handleToggleFavorite(id) instead.
 
 
   // Pagination
@@ -516,37 +536,64 @@ export default function FavouritesPage() {
             <FavoritesSkeleton />
           ) : filteredFavourites.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 w-full max-w-7xl mx-auto px-4">
-              <AnimatePresence>
+              <AnimatePresence mode="popLayout">
                 {currentItems.map((item, index) => (
                   <motion.div
                     key={`favorite-item-${item.id}`}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 10, transition: { duration: 0.2 } }}
+                    layout
+                    transition={{ duration: 0.3 }}
                     className={`${premiumCardClasses} hover:shadow-md`}
                   >
                     <div className="relative h-48 overflow-hidden">
-                      <button
+                      <motion.button
                         onClick={async (e) => {
                           e.stopPropagation();
                           await handleToggleFavorite(item.id, e);
                         }}
                         disabled={isFavoriteLoading === item.id}
-                        className={`absolute top-3 right-3 z-10 p-2 rounded-full transition-all duration-300 ${isFavorite(item.id)
-                          ? 'text-red-500 bg-white/90 hover:bg-red-100 scale-110'
-                          : 'text-gray-700 bg-white/80 hover:bg-white hover:text-red-500'
-                          } ${isFavoriteLoading === item.id ? 'opacity-70 cursor-wait' : ''}`}
+                        className={`absolute top-3 right-3 z-10 p-2.5 rounded-full shadow-sm transition-colors duration-200 ${isFavorite(item.id)
+                          ? 'bg-red-50 text-red-500 hover:bg-red-100'
+                          : 'bg-white/90 text-gray-400 hover:text-red-400 hover:bg-white'
+                          } ${isFavoriteLoading === item.id ? 'opacity-60 cursor-wait' : 'cursor-pointer'}`}
                         title={isFavorite(item.id) ? 'Remove from favorites' : 'Add to favorites'}
                         aria-label={isFavorite(item.id) ? 'Remove from favorites' : 'Add to favorites'}
+                        whileTap={{ scale: 0.80 }}
+                        whileHover={{ scale: 1.18 }}
+                        animate={isFavoriteLoading !== item.id
+                          ? { scale: isFavorite(item.id) ? 1.08 : 1 }
+                          : { scale: 1 }
+                        }
+                        transition={{
+                          type: 'spring',
+                          stiffness: 450,
+                          damping: 15,
+                          mass: 0.8,
+                        }}
                       >
-                        <Heart
-                          className={`h-5 w-5 transition-colors ${isFavorite(item.id) ? 'fill-current' : ''}`}
-                          strokeWidth={isFavorite(item.id) ? 2 : 1.5}
-                        />
+                        <motion.div
+                          animate={{ scale: isFavorite(item.id) ? 1 : 0.95 }}
+                          transition={{ duration: 0.15 }}
+                        >
+                          <Heart
+                            className={`h-5 w-5 transition-all duration-200 ${isFavorite(item.id)
+                              ? 'fill-red-500 text-red-500 drop-shadow-sm'
+                              : 'fill-transparent text-gray-400'}`}
+                            strokeWidth={isFavorite(item.id) ? 0 : 1.75}
+                          />
+                        </motion.div>
+                        {/* Pulse ring on active state */}
                         {isFavorite(item.id) && (
-                          <span className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-20"></span>
+                          <motion.span
+                            className="absolute inset-0 rounded-full bg-red-400"
+                            initial={{ scale: 0.8, opacity: 0.4 }}
+                            animate={{ scale: 1.6, opacity: 0 }}
+                            transition={{ duration: 0.5, ease: 'easeOut' }}
+                          />
                         )}
-                      </button>
+                      </motion.button>
 
                       <div className="relative h-full w-full">
                         <Image
