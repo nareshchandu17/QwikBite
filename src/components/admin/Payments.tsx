@@ -5,15 +5,15 @@ import { Transaction, PaymentStatus, PaymentMethod } from '@/types/payment';
 import { X } from 'lucide-react';
 import { usePusher } from '@/context/PusherContext';
 
-
 const PaymentStatusBadge: React.FC<{ status: PaymentStatus }> = ({ status }) => {
   const styles = {
     'Success': 'bg-[#4CAF50]/20 text-[#4CAF50]',
     'Pending': 'bg-[#FF9800]/20 text-[#FF9800]',
     'Failed': 'bg-[#FF3D00]/20 text-[#FF3D00]',
+    'Refunded': 'bg-[#9C27B0]/20 text-[#9C27B0]',
   };
   return (
-    <span className={`px-3 py-1 rounded-full text-xs font-bold ${styles[status]}`}>
+    <span className={`px-3 py-1 rounded-full text-xs font-bold ${styles[status] || styles['Pending']}`}>
       {status}
     </span>
   );
@@ -39,7 +39,6 @@ interface TransactionDetailsModalProps {
 
 const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({ txn, onClose }) => {
   const downloadReceipt = () => {
-    // Create receipt content
     const receiptContent = `
 ╔══════════════════════════════════════════════════════════════╗
 ║                      PAYMENT RECEIPT                         ║
@@ -57,31 +56,20 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({ txn, 
 ╚══════════════════════════════════════════════════════════════╝
     `.trim();
 
-    // Create a blob with the receipt content
     const blob = new Blob([receiptContent], { type: 'text/plain;charset=utf-8' });
-    
-    // Create download link
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
     link.download = `receipt_${txn.transactionId}_${new Date().toISOString().split('T')[0]}.txt`;
-    
-    // Trigger download
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    // Clean up
     window.URL.revokeObjectURL(url);
   };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in-up">
-      <div className="bg-[rgba(20,20,20,0.6)]
-  backdrop-blur-[24px] [-webkit-backdrop-filter:blur(24px)]
-  border border-[rgba(255,255,255,0.08)]
-  shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] w-full max-w-md rounded-3xl overflow-hidden relative animate-scale-in border border-white/10 shadow-2xl">
-        {/* Header */}
+      <div className={`bg-[rgba(20,20,20,0.6)] backdrop-blur-[24px] border border-[rgba(255,255,255,0.08)] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] w-full max-w-md rounded-3xl overflow-hidden relative animate-scale-in border border-white/10 shadow-2xl`}>
         <div className="p-6 border-b border-white/10 flex justify-between items-center bg-white/5">
           <h3 className="text-xl font-bold text-white">Transaction Details</h3>
           <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors text-white">
@@ -89,15 +77,16 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({ txn, 
           </button>
         </div>
 
-        {/* Receipt Content */}
         <div className="p-8 flex flex-col items-center">
           <div className={`w-16 h-16 rounded-full flex items-center justify-center mb-4 ${
             txn.status === 'Success' ? 'bg-[#FF512F]/20 text-[#4CAF50]' :
-            txn.status === 'Pending' ? 'bg-[#FF9800]/20 text-[#FF9800]' : 'bg-[#FF3D00]/20 text-[#FF3D00]'
+            txn.status === 'Pending' ? 'bg-[#FF9800]/20 text-[#FF9800]' : 
+            txn.status === 'Refunded' ? 'bg-[#9C27B0]/20 text-[#9C27B0]' : 'bg-[#FF3D00]/20 text-[#FF3D00]'
           }`}>
             <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               {txn.status === 'Success' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />}
               {txn.status === 'Pending' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />}
+              {txn.status === 'Refunded' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />}
               {txn.status === 'Failed' && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />}
             </svg>
           </div>
@@ -136,7 +125,8 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({ txn, 
               <span className="text-[#9ca3af] text-sm">Status</span>
               <span className={`font-bold text-sm ${
                 txn.status === 'Success' ? 'text-[#4CAF50]' :
-                txn.status === 'Pending' ? 'text-[#FF9800]' : 'text-[#FF3D00]'
+                txn.status === 'Pending' ? 'text-[#FF9800]' :
+                txn.status === 'Refunded' ? 'text-[#9C27B0]' : 'text-[#FF3D00]'
               }`}>{txn.status}</span>
             </div>
             <div className="flex justify-between py-3">
@@ -164,13 +154,92 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({ txn, 
 
 const Payments: React.FC = () => {
   const [selectedTxn, setSelectedTxn] = useState<Transaction | null>(null);
-  const { transactions } = usePusher();
-  
-  // Format transactions with proper date formatting
-  const formattedTransactions = transactions.map(txn => ({
-    ...txn,
-    date: txn.date ? new Date(txn.date).toLocaleString() : 'N/A'
-  }));
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [statistics, setStatistics] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { transactions: pusherTransactions } = usePusher();
+
+  useEffect(() => {
+    fetchPayments();
+    fetchStatistics();
+  }, []);
+
+  useEffect(() => {
+    if (pusherTransactions.length > 0) {
+      setTransactions(pusherTransactions);
+    }
+  }, [pusherTransactions]);
+
+  const fetchPayments = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/admin/payments?page=1&limit=50');
+      if (!res.ok) throw new Error('Failed to fetch payments');
+      const data = await res.json();
+      const formattedTransactions = data.data.map((payment: any) => ({
+        id: payment.id,
+        transactionId: payment.transactionId,
+        orderId: payment.orderId,
+        customer: payment.customer,
+        amount: payment.amount,
+        method: payment.method,
+        status: payment.status,
+        date: payment.date ? new Date(payment.date).toLocaleString() : 'N/A',
+      }));
+      setTransactions(formattedTransactions);
+    } catch (err) {
+      setError('Failed to load payments');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStatistics = async () => {
+    try {
+      const res = await fetch('/api/admin/payments/statistics?days=7');
+      if (!res.ok) throw new Error('Failed to fetch statistics');
+      const data = await res.json();
+      setStatistics(data.statistics);
+    } catch (err) {
+      console.error('Failed to fetch statistics:', err);
+    }
+  };
+
+  const exportCSV = async () => {
+    try {
+      const res = await fetch('/api/admin/payments/export-csv');
+      if (!res.ok) throw new Error('Failed to export CSV');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `payments_export_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to export CSV:', err);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-white text-lg">Loading payments...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-red-500 text-lg">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -183,47 +252,35 @@ const Payments: React.FC = () => {
 
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Payments & Transactions</h1>
-        <button className="bg-[rgba(20,20,20,0.6)]
-  backdrop-blur-[24px] [-webkit-backdrop-filter:blur(24px)]
-  border border-[rgba(255,255,255,0.08)]
-  shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
+        <button 
+          onClick={exportCSV}
+          className={`bg-[rgba(20,20,20,0.6)] backdrop-blur-[24px] border border-[rgba(255,255,255,0.08)] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] hover:bg-white/10 px-4 py-2 rounded-lg text-sm font-semibold transition-colors`}
+        >
           Export CSV
         </button>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-[rgba(20,20,20,0.6)]
-  backdrop-blur-[24px] [-webkit-backdrop-filter:blur(24px)]
-  border border-[rgba(255,255,255,0.08)]
-  shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] p-6 rounded-2xl hover:bg-gradient-to-br from-[#FF512F]/20 to-transparent border border-[#FF512F]/20">
-          <p className="text-[#9ca3af] text-sm font-medium">Total Revenue Today</p>
-          <p className="text-3xl font-bold mt-2 text-white">₹12,540</p>
-          <p className="text-[#4CAF50] text-xs mt-1 font-bold">+8% vs yesterday</p>
+        <div className={`bg-[rgba(20,20,20,0.6)] backdrop-blur-[24px] border border-[rgba(255,255,255,0.08)] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] p-6 rounded-2xl hover:bg-gradient-to-br from-[#FF512F]/20 to-transparent border border-[#FF512F]/20`}>
+          <p className="text-[#9ca3af] text-sm font-medium">Total Revenue (7 days)</p>
+          <p className="text-3xl font-bold mt-2 text-white">₹{statistics?.totalRevenue?.toFixed(2) || '0.00'}</p>
+          <p className="text-[#4CAF50] text-xs mt-1 font-bold">{statistics?.completedTransactions || 0} completed transactions</p>
         </div>
-        <div className="bg-[rgba(20,20,20,0.6)]
-  backdrop-blur-[24px] [-webkit-backdrop-filter:blur(24px)]
-  border border-[rgba(255,255,255,0.08)]
-  shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] p-6 rounded-2xl hover:bg-gradient-to-br from-[#FF512F]/20 to-transparent border border-[#FF512F]/20">
+        <div className={`bg-[rgba(20,20,20,0.6)] backdrop-blur-[24px] border border-[rgba(255,255,255,0.08)] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] p-6 rounded-2xl hover:bg-gradient-to-br from-[#FF512F]/20 to-transparent border border-[#FF512F]/20`}>
           <p className="text-[#9ca3af] text-sm font-medium">Pending Settlements</p>
-          <p className="text-3xl font-bold mt-2 text-white">₹1,200</p>
-          <p className="text-[#FF9800] text-xs mt-1 font-bold">4 transactions processing</p>
+          <p className="text-3xl font-bold mt-2 text-white">₹{statistics?.pendingSettlements?.toFixed(2) || '0.00'}</p>
+          <p className="text-[#FF9800] text-xs mt-1 font-bold">Awaiting processing</p>
         </div>
-        <div className="bg-[rgba(20,20,20,0.6)]
-  backdrop-blur-[24px] [-webkit-backdrop-filter:blur(24px)]
-  border border-[rgba(255,255,255,0.08)]
-  shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] p-6 rounded-2xl hover:bg-gradient-to-br from-[#FF512F]/20 to-transparent border border-[#FF512F]/20">
+        <div className={`bg-[rgba(20,20,20,0.6)] backdrop-blur-[24px] border border-[rgba(255,255,255,0.08)] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] p-6 rounded-2xl hover:bg-gradient-to-br from-[#FF512F]/20 to-transparent border border-[#FF512F]/20`}>
           <p className="text-[#9ca3af] text-sm font-medium">Failed Transactions</p>
-          <p className="text-3xl font-bold mt-2 text-white">3</p>
+          <p className="text-3xl font-bold mt-2 text-white">{statistics?.failedTransactions || 0}</p>
           <p className="text-[#FF3D00] text-xs mt-1 font-bold">Requires attention</p>
         </div>
       </div>
 
       {/* Transactions Table */}
-      <div className="bg-[rgba(20,20,20,0.6)]
-  backdrop-blur-[24px] [-webkit-backdrop-filter:blur(24px)]
-  border border-[rgba(255,255,255,0.08)]
-  shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] rounded-2xl overflow-hidden">
+      <div className={`bg-[rgba(20,20,20,0.6)] backdrop-blur-[24px] border border-[rgba(255,255,255,0.08)] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] rounded-2xl overflow-hidden`}>
         <div className="p-6 border-b border-white/10">
           <h3 className="text-lg font-bold">Recent Transactions</h3>
         </div>
@@ -242,25 +299,33 @@ const Payments: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {formattedTransactions.map((txn, index) => (
-                <tr key={txn.id || txn.transactionId || `txn-${index}`} className="hover:bg-white/5 transition-colors group">
-                  <td className="p-6 font-mono text-sm text-white font-semibold">{txn.transactionId}</td>
-                  <td className="p-6 font-medium text-[#FF521F]">{txn.orderId}</td>
-                  <td className="p-6 text-white font-semibold">{txn.customer}</td>
-                  <td className="p-6"><MethodIcon method={txn.method} /></td>
-                  <td className="p-6 font-bold text-white">₹{txn.amount.toFixed(2)}</td>
-                  <td className="p-6"><PaymentStatusBadge status={txn.status} /></td>
-                  <td className="p-6 text-sm text-[#9ca3af]">{txn.date}</td>
-                  <td className="p-6 text-right">
-                    <button 
-                      onClick={() => setSelectedTxn(txn)}
-                      className="text-xs bg-white/5 hover:bg-[#FF521F] hover:text-white px-4 py-2 rounded-lg transition-all shadow-sm border border-white/5 hover:border-[#FF521F]/50 cursor-pointer"
-                    >
-                      Details
-                    </button>
+              {transactions.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="p-6 text-center text-[#9ca3af]">
+                    No transactions found
                   </td>
                 </tr>
-              ))}
+              ) : (
+                transactions.map((txn, index) => (
+                  <tr key={txn.id || txn.transactionId || `txn-${index}`} className="hover:bg-white/5 transition-colors group">
+                    <td className="p-6 font-mono text-sm text-white font-semibold">{txn.transactionId}</td>
+                    <td className="p-6 font-medium text-[#FF521F]">{txn.orderId}</td>
+                    <td className="p-6 text-white font-semibold">{txn.customer}</td>
+                    <td className="p-6"><MethodIcon method={txn.method as PaymentMethod} /></td>
+                    <td className="p-6 font-bold text-white">₹{txn.amount.toFixed(2)}</td>
+                    <td className="p-6"><PaymentStatusBadge status={txn.status as PaymentStatus} /></td>
+                    <td className="p-6 text-sm text-[#9ca3af]">{txn.date}</td>
+                    <td className="p-6 text-right">
+                      <button 
+                        onClick={() => setSelectedTxn(txn)}
+                        className="text-xs bg-white/5 hover:bg-[#FF521F] hover:text-white px-4 py-2 rounded-lg transition-all shadow-sm border border-white/5 hover:border-[#FF521F]/50 cursor-pointer"
+                      >
+                        Details
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

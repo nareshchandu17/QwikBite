@@ -141,7 +141,7 @@ const statusConfig = {
   },
 };
 
-export default function qwikBiteEliteTracker({ order, isOpen, onClose }: qwikBiteEliteTrackerProps) {
+export default function QwikBiteEliteTracker({ order, isOpen, onClose }: qwikBiteEliteTrackerProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [copied, setCopied] = useState(false);

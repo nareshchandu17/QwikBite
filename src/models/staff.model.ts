@@ -8,6 +8,16 @@ export enum StaffRole {
   CHEF = 'Chef',
   CASHIER = 'Cashier',
   SERVER = 'Server',
+  CLEANER = 'Cleaner',
+}
+
+/**
+ * Status Enum for staff availability
+ */
+export enum StaffStatus {
+  ACTIVE = 'Active',
+  ON_LEAVE = 'On Leave',
+  OFF_SHIFT = 'Off Shift',
 }
 
 /**
@@ -20,6 +30,8 @@ export interface IStaff extends Document {
   phone: string;
   shift: string;
   salary?: number;
+  performance?: number;
+  status?: StaffStatus;
   isActive: boolean;
   isDeleted?: boolean;
   deletedAt?: Date;
@@ -76,6 +88,19 @@ const staffSchema = new Schema<IStaff>(
       default: 0,
     },
 
+    performance: {
+      type: Number,
+      min: 0,
+      max: 100,
+      default: 100,
+    },
+
+    status: {
+      type: String,
+      enum: Object.values(StaffStatus),
+      default: StaffStatus.ACTIVE,
+    },
+
     isActive: {
       type: Boolean,
       default: true, // soft delete / active staff tracking
@@ -108,6 +133,7 @@ const staffSchema = new Schema<IStaff>(
  */
 staffSchema.index({ role: 1 });
 staffSchema.index({ shift: 1 });
+staffSchema.index({ status: 1 });
 staffSchema.index({ isActive: 1 });
 staffSchema.index({ createdAt: -1 });
 
@@ -115,6 +141,7 @@ staffSchema.index({ createdAt: -1 });
  * COMPOUND INDEX (common admin filtering)
  */
 staffSchema.index({ role: 1, isActive: 1 });
+staffSchema.index({ status: 1, isActive: 1 });
 
 /**
  * PRE-SAVE HOOK (optional formatting / normalization)

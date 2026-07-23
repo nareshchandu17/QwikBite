@@ -171,7 +171,7 @@ export default function OrderDetail({ params }: { params: Promise<{ orderId: str
     </div>
   );
 
-  const isDelivered = order.status === "delivered";
+  const isDelivered = order.status === "completed" || (order.status as string) === "delivered";
   const canGiveFeedback = isDelivered && !order.feedbackGiven;
 
   return (
@@ -291,7 +291,7 @@ export default function OrderDetail({ params }: { params: Promise<{ orderId: str
         <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl p-6 border border-slate-700/50">
           <OrderTimeline status={order.status} />
           
-          {order.etaMinutes && order.status !== "delivered" && (
+          {order.etaMinutes && order.status !== "completed" && (order.status as string) !== "delivered" && (
             <div className="mt-6 p-4 bg-amber-500/10 rounded-lg border border-amber-500/20 flex items-center">
               <Clock className="w-5 h-5 text-amber-400 mr-2" />
               <span className="text-amber-300">

@@ -1,13 +1,23 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { aggregateTimeSlots } from '@/lib/slot-utils';
 import { getStatusMessage } from '@/lib/slotCalculations';
 import { cache } from '@/lib/cache';
 import { successResponse, errorResponse } from '@/lib/api-response';
 import logger from '@/lib/logger';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { checkRateLimit, getRateLimitIdentifier, RateLimitPresets } from '@/lib/security/rateLimiter';
 
 export async function GET(req: NextRequest) {
   try {
+    // Rate limiting (public endpoint - use lenient limits)
+    const identifier = getRateLimitIdentifier(req as Request);
+    const rateLimitResult = checkRateLimit(identifier, RateLimitPresets.LENIENT.limit, RateLimitPresets.LENIENT.windowMs);
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+    }
+
     const CACHE_KEY = 'slots:available';
 
     // 1. Check Cache
@@ -45,6 +55,25 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    // Authentication check for cache invalidation
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Authorization check - only admin can invalidate cache
+    const userRole = (session.user as { role?: string }).role;
+    if (!['admin', 'canteen_staff'].includes(userRole as any)) {
+      return NextResponse.json({ error: 'Forbidden - Insufficient permissions' }, { status: 403 });
+    }
+
+    // Rate limiting
+    const identifier = getRateLimitIdentifier(req as Request);
+    const rateLimitResult = checkRateLimit(identifier, RateLimitPresets.STANDARD.limit, RateLimitPresets.STANDARD.windowMs);
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+    }
+
     // Force invalidation manually
     cache.del('slots:available');
     logger.info('Slot cache manually invalidated');

@@ -17,7 +17,8 @@ export function useAdminGuard() {
         sessionStorage.setItem('redirectAfterLogin', currentPath);
       }
       // Use the canonical sign-in route used across the app/middleware
-      router.push('/signin');
+      const targetUrl = currentPath && currentPath !== '/signin' ? currentPath : '/admin/dashboard';
+      router.push(`/signin?callbackUrl=${encodeURIComponent(targetUrl)}`);
     }
   }, [isAuthenticated, loading, router]);
 

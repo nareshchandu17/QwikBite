@@ -226,7 +226,7 @@ export default function SignIn() {
               <span className="text-gray-700">Remember me</span>
             </label>
             <Link
-              href="/forgot-password"
+              href="/reset-password"
               className="text-amber-600 hover:text-amber-500 hover:underline cursor-pointer transition-colors"
             >
               Forgot password?

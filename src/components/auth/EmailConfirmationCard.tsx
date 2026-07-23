@@ -87,7 +87,7 @@ export function EmailConfirmationCard({
         </h1>
 
         <p className="text-gray-600 dark:text-gray-300 text-base leading-relaxed mb-8">
-          We've sent a password reset link to{" "}
+          We&apos;ve sent a password reset link to{" "}
           <span className="font-bold text-[#111827] dark:text-white">{email}</span>.
           It should arrive in a few minutes.
         </p>

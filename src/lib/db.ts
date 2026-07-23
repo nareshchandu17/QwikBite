@@ -36,6 +36,7 @@ export async function connectDB(): Promise<typeof mongoose> {
       bufferCommands: false,
       serverSelectionTimeoutMS: 10000,
       maxPoolSize: 10,
+      family: 4, // Force IPv4 to fix querySrv ECONNREFUSED issues
     });
   }
 

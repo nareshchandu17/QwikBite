@@ -12,7 +12,7 @@ export const STANDARD_SLOTS = [
 /**
  * Utility to parse slot string into start/end dates
  */
-function parseSlotToDates(slotStr: string, dateStr: string): { start: Date, end: Date } {
+export function parseSlotToDates(slotStr: string, dateStr: string): { start: Date, end: Date } {
     const [dateY, dateM, dateD] = dateStr.split('-').map(Number);
     const start = new Date(dateY, dateM - 1, dateD);
     const end = new Date(dateY, dateM - 1, dateD);

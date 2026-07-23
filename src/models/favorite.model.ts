@@ -46,7 +46,8 @@ favoriteSchema.index({ user: 1, createdAt: -1 });
  * MODEL EXPORT (Next.js safe)
  */
 if (mongoose.models.Favorite) {
-  delete mongoose.connection.models.Favorite;
+  delete (mongoose.connection.models as any).Favorite;
+  delete (mongoose.models as any).Favorite;
 }
 
 export const Favorite: Model<IFavorite> =

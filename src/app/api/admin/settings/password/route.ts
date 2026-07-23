@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { connectDB } from '@/lib/db';
+import { User } from '@/lib/models';
 
 export async function PUT(req: NextRequest) {
   try {
     const { currentPassword, newPassword } = await req.json();
-
-    // console.log(...);
 
     if (!currentPassword || !newPassword) {
       return NextResponse.json({
@@ -32,16 +32,26 @@ export async function PUT(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // In a real app, you would:
-    // 1. Verify current password against database
-    // 2. Hash the new password
-    // 3. Update password in database
-    // 4. Log the password change
+    await connectDB();
+    const user = await User.findById(session.user.id).select('+password');
+    if (!user) {
+      return NextResponse.json({
+        success: false,
+        error: 'User account not found'
+      }, { status: 404 });
+    }
 
-    // console.log(...);
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return NextResponse.json({
+        success: false,
+        error: 'Current password is incorrect'
+      }, { status: 400 });
+    }
 
-    // Simulate password update
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Update password (the pre('save') hook in User model automatically hashes modified passwords)
+    user.password = newPassword;
+    await user.save();
 
     return NextResponse.json({
       success: true,

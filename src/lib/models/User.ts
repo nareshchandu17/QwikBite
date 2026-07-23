@@ -15,6 +15,7 @@ export interface IUser extends Document {
   addresses?: unknown[];
   resetToken?: string;
   resetTokenExpiry?: Date;
+  settings?: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -37,7 +38,8 @@ const userSchema = new Schema<IUser>({
   address: { type: String },
   addresses: { type: [Schema.Types.Mixed], default: [] },
   resetToken: { type: String },
-  resetTokenExpiry: { type: Date }
+  resetTokenExpiry: { type: Date },
+  settings: { type: Schema.Types.Mixed, default: {} }
 }, {
   timestamps: true
 });

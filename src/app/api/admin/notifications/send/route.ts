@@ -5,6 +5,10 @@ import { User } from '@/lib/models';
 import { verifyToken, parseCookies } from '@/lib/auth';
 import mongoose from 'mongoose';
 import { pusherServer } from '@/lib/pusher';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { checkRateLimit, getRateLimitIdentifier, RateLimitPresets } from '@/lib/security/rateLimiter';
+import { sanitizeString, sanitizeObject } from '@/lib/security/sanitizer';
 
 // Helper to get user ID and verify admin
 const getAdminUser = async (req: NextRequest): Promise<any | null> => {
@@ -27,15 +31,31 @@ const getAdminUser = async (req: NextRequest): Promise<any | null> => {
 // POST /api/admin/notifications/send - Send notification to customer(s)
 export async function POST(req: NextRequest) {
   await connectToDatabase();
-  const adminUser = await getAdminUser(req);
   
-  if (!adminUser) {
+  // Check NextAuth session first
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized - Admin access required' }, { status: 401 });
+  }
+
+  const userRole = (session.user as { role?: string }).role;
+  if (!['admin', 'canteen_staff'].includes(userRole as any)) {
+    return NextResponse.json({ error: 'Forbidden - Insufficient permissions' }, { status: 403 });
+  }
+
+  // Rate limiting
+  const identifier = getRateLimitIdentifier(req as Request);
+  const rateLimitResult = checkRateLimit(identifier, RateLimitPresets.STANDARD.limit, RateLimitPresets.STANDARD.windowMs);
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   }
 
   try {
     const body = await req.json();
-    const { userId, title, message, type = 'system', priority = 'normal', icon, data, ctaLink } = body;
+    
+    // Sanitize inputs
+    const sanitizedBody = sanitizeObject(body);
+    const { userId, title, message, type = 'system', priority = 'normal', icon, data, ctaLink } = sanitizedBody;
 
     if (!userId || !title || !message) {
       return NextResponse.json({ 
@@ -50,8 +70,8 @@ export async function POST(req: NextRequest) {
     // Create notification in database
     const notification = await Notification.create({
       userId,
-      title,
-      message,
+      title: sanitizeString(title),
+      message: sanitizeString(message),
       type,
       priority,
       icon,
@@ -59,7 +79,7 @@ export async function POST(req: NextRequest) {
       ctaLink,
       isRead: false,
       createdAt: new Date(),
-      sentBy: adminUser._id
+      sentBy: session.user.id
     });
 
     // Emit WebSocket event to notify customer in real-time
@@ -95,15 +115,31 @@ export async function POST(req: NextRequest) {
 // POST /api/admin/notifications/broadcast - Send notification to all customers
 export async function PUT(req: NextRequest) {
   await connectToDatabase();
-  const adminUser = await getAdminUser(req);
   
-  if (!adminUser) {
+  // Check NextAuth session first
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
     return NextResponse.json({ error: 'Unauthorized - Admin access required' }, { status: 401 });
+  }
+
+  const userRole = (session.user as { role?: string }).role;
+  if (!['admin', 'canteen_staff'].includes(userRole as any)) {
+    return NextResponse.json({ error: 'Forbidden - Insufficient permissions' }, { status: 403 });
+  }
+
+  // Rate limiting
+  const identifier = getRateLimitIdentifier(req as Request);
+  const rateLimitResult = checkRateLimit(identifier, RateLimitPresets.STANDARD.limit, RateLimitPresets.STANDARD.windowMs);
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
   }
 
   try {
     const body = await req.json();
-    const { title, message, type = 'system', priority = 'normal', icon, data, ctaLink } = body;
+    
+    // Sanitize inputs
+    const sanitizedBody = sanitizeObject(body);
+    const { title, message, type = 'system', priority = 'normal', icon, data, ctaLink } = sanitizedBody;
 
     if (!title || !message) {
       return NextResponse.json({ 
@@ -122,8 +158,8 @@ export async function PUT(req: NextRequest) {
     const notifications = await Notification.insertMany(
       customers.map(customer => ({
         userId: customer._id,
-        title,
-        message,
+        title: sanitizeString(title),
+        message: sanitizeString(message),
         type,
         priority,
         icon,
@@ -131,7 +167,7 @@ export async function PUT(req: NextRequest) {
         ctaLink,
         isRead: false,
         createdAt: new Date(),
-        sentBy: adminUser._id
+        sentBy: session.user.id
       }))
     );
 

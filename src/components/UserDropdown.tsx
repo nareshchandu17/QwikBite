@@ -90,25 +90,6 @@ export default function UserDropdown({ user }: UserDropdownProps) {
             Settings
           </Link>
           
-          <button
-            onClick={toggleTheme}
-            className="flex items-center justify-between w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-          >
-            <div className="flex items-center">
-              {theme === "dark" ? (
-                <>
-                  <Sun className="w-4 h-4 mr-3 text-amber-600" />
-                  <span>Light Mode</span>
-                </>
-              ) : (
-                <>
-                  <Moon className="w-4 h-4 mr-3 text-amber-600" />
-                  <span>Dark Mode</span>
-                </>
-              )}
-            </div>
-          </button>
-          
           <div className="border-t border-amber-100 dark:border-gray-700 mt-1 pt-1">
             <button
               onClick={() => {

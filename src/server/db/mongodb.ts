@@ -17,7 +17,10 @@ class MongoDBService {
       }
       const dbName = process.env.MONGODB_DB || 'qwikbite';
 
-      this.client = new MongoClient(uri);
+      this.client = new MongoClient(uri, {
+        serverSelectionTimeoutMS: 10000,
+        family: 4
+      });
       await this.client.connect();
       this.db = this.client.db(dbName);
       this.isConnected = true;

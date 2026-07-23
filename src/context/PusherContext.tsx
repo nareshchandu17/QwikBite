@@ -62,7 +62,29 @@ export function PusherProvider({ children }: { children: ReactNode }) {
 
     setIsConnected(pusherClient.connection.state === 'connected');
 
+    // Subscribe to payment updates channel
+    const paymentChannel = pusherClient.subscribe('admin');
+    
+    paymentChannel.bind('payment_update', (data: any) => {
+      console.log('[PUSHER] Payment update received:', data);
+      if (data.type === 'payment_created' || data.type === 'payment_updated') {
+        const newTransaction = {
+          id: data.payment._id,
+          transactionId: data.payment.transactionId,
+          orderId: data.payment.orderId,
+          customer: data.payment.customerName,
+          amount: data.payment.amount,
+          method: data.payment.method,
+          status: data.payment.status.charAt(0).toUpperCase() + data.payment.status.slice(1),
+          date: data.payment.createdAt,
+        };
+        setTransactions(prev => [newTransaction, ...prev]);
+      }
+    });
+
     return () => {
+      paymentChannel.unbind('payment_update');
+      paymentChannel.unsubscribe();
       pusherClient.connection.unbind('connected', handleConnect);
       pusherClient.connection.unbind('disconnected', handleDisconnect);
       pusherClient.connection.unbind('error', handleError);
@@ -72,8 +94,19 @@ export function PusherProvider({ children }: { children: ReactNode }) {
   const sendFeedback = (feedback: any) => console.log('Feedback via realtime disabled in Pusher mode', feedback);
   const updateFeedback = (id: string, updates: any) => console.log('Feedback update disabled', id);
   const sendNotification = (notification: any) => console.log('Notification disabled', notification);
-  const addTransaction = useCallback((transaction: any) => console.log('Transaction disabled', transaction), []);
-  const updateTransaction = useCallback((id: string, updates: any) => console.log('Transaction update disabled', id), []);
+  const addTransaction = useCallback((transaction: Omit<Transaction, 'id' | 'date'>) => {
+    const newTransaction: Transaction = {
+      ...transaction,
+      id: `temp-${Date.now()}`,
+      date: new Date().toISOString(),
+    };
+    setTransactions(prev => [newTransaction, ...prev]);
+  }, []);
+  const updateTransaction = useCallback((id: string, updates: Partial<Transaction>) => {
+    setTransactions(prev => prev.map(txn => 
+      txn.id === id || txn.transactionId === id ? { ...txn, ...updates } : txn
+    ));
+  }, []);
 
   return (
     <PusherContext.Provider value={{

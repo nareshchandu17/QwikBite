@@ -54,7 +54,7 @@ export default function OrderCard({ order }: Props) {
 
   const showMore = order.items.length > 2;
 
-  const statusColors: Record<OrderStatus, string> = {
+  const statusColors: Record<string, string> = {
     received: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
     preparing: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
     almost_ready: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
@@ -82,7 +82,7 @@ export default function OrderCard({ order }: Props) {
 
   // Get status display text
   const getStatusText = (status: OrderStatus) => {
-    const statusMap: Record<OrderStatus, string> = {
+    const statusMap: Record<string, string> = {
       'received': 'Order Placed',
       'preparing': 'Preparing',
       'ready': 'Ready for Pickup',
@@ -100,7 +100,7 @@ export default function OrderCard({ order }: Props) {
 
   // Get status icon
   const getStatusIcon = (status: OrderStatus) => {
-    const icons: Record<OrderStatus, React.ReactNode> = {
+    const icons: Record<string, React.ReactNode> = {
       received: <div className="w-2 h-2 rounded-full bg-amber-500 mr-2"></div>,
       preparing: <div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div>,
       almost_ready: <div className="w-2 h-2 rounded-full bg-purple-400 mr-2"></div>,
@@ -195,7 +195,7 @@ export default function OrderCard({ order }: Props) {
           <span className={`${order.status === 'pending' ? 'text-amber-600 font-medium' : ''}`}>Placed</span>
           <span className={`${order.status === 'preparing' ? 'text-amber-600 font-medium' : ''}`}>Preparing</span>
           <span className={`${order.status === 'ready' ? 'text-amber-600 font-medium' : ''}`}>Ready</span>
-          <span className={`${order.status === 'collected' ? 'text-amber-600 font-medium' : ''}`}>Picked Up</span>
+          <span className={`${order.status === 'completed' || (order.status as string) === 'collected' ? 'text-amber-600 font-medium' : ''}`}>Picked Up</span>
         </div>
       </div>
 

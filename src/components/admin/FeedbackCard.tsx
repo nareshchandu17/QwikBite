@@ -46,10 +46,10 @@ export function FeedbackCard({ feedback, onReply }: FeedbackCardProps) {
         <div className="flex justify-between items-start mb-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-bold">
-              {feedback.name.charAt(0).toUpperCase()}
+              {feedback.name?.charAt(0)?.toUpperCase() || 'U'}
             </div>
             <div>
-              <h3 className="font-medium text-white">{feedback.name}</h3>
+              <h3 className="font-medium text-white">{feedback.name || 'Unknown User'}</h3>
               <div className="flex items-center gap-2 text-xs text-[#9ca3af]">
                 <span>{formatDistanceToNow(new Date(feedback.createdAt), { addSuffix: true })}</span>
                 {feedback.orderReference && (
@@ -152,10 +152,10 @@ export function FeedbackCard({ feedback, onReply }: FeedbackCardProps) {
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white font-bold text-xl">
-                    {feedback.name.charAt(0).toUpperCase()}
+                    {feedback.name?.charAt(0)?.toUpperCase() || 'U'}
                   </div>
                   <div>
-                    <h3 className="font-bold text-white">{feedback.name}</h3>
+                    <h3 className="font-bold text-white">{feedback.name || 'Unknown User'}</h3>
                     <p className="text-sm text-[#9ca3af]">
                       {formatDistanceToNow(new Date(feedback.createdAt), { addSuffix: true })}
                     </p>

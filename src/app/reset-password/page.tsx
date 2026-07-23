@@ -2,11 +2,14 @@
 
 import React, { useState, FormEvent } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ArrowLeft, Send, Mail, Shield, RotateCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { EmailConfirmationCard } from '@/components/auth';
 
 export default function ResetPasswordPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -52,6 +55,21 @@ export default function ResetPasswordPage() {
       toast.error(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    const response = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email: email.trim().toLowerCase() }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json().catch(() => null);
+      throw new Error(data?.message || 'Failed to resend reset link');
     }
   };
 
@@ -112,128 +130,133 @@ export default function ResetPasswordPage() {
           transition={{ duration: 0.5 }}
           className="bg-white w-full max-w-[480px] rounded-[2.5rem] p-8 md:p-12 shadow-[0_20px_50px_rgba(45,27,20,0.08)] relative z-10 border border-orange-50/50"
         >
-          {/* Icon */}
-          <div className="flex justify-center mb-8">
-            <div className="w-20 h-20 rounded-[2rem] bg-[#fff7ed] flex items-center justify-center text-[#f96124] shadow-inner">
-              <RotateCcw className="w-10 h-10" />
-            </div>
-          </div>
-
-          {/* Title and Description */}
-          <div className="text-center mb-10">
-            <h2 className="text-[#2d1b14] tracking-tight text-3xl font-bold leading-tight mb-3">
-              Reset your password
-            </h2>
-            <p className="text-[#5c4d47] text-base font-medium leading-relaxed max-w-[320px] mx-auto">
-              No worries! It happens to the best of us. Let&apos;s get you back to your food.
-            </p>
-          </div>
-
-          {/* Form */}
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div className="relative group">
-              <div
-                className={`flex flex-col transition-all rounded-2xl bg-orange-50/30 border ${
-                  isFocused
-                    ? 'bg-white border-[#f96124]/30 shadow-[0_0_0_4px_rgba(249,97,36,0.1)]'
-                    : 'border-orange-100/50'
-                }`}
-              >
-                <div className="relative flex items-center px-4 h-16">
-                  <input
-                    className="block w-full bg-transparent border-none text-[#2d1b14] font-medium focus:ring-0 peer h-full pt-4 placeholder:opacity-0"
-                    id="email"
-                    type="email"
-                    placeholder=" "
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-                    required
-                  />
-                  <label
-                    className={`absolute left-4 top-0 transition-all duration-200 pointer-events-none text-xs font-bold uppercase tracking-widest ${
-                      email || isFocused
-                        ? 'translate-y-0.5 scale-[0.85] text-[#f96124]'
-                        : 'translate-y-[1.2rem] scale-100 text-gray-400'
-                    }`}
-                    htmlFor="email"
-                  >
-                    College Email Address
-                  </label>
-                  <Mail
-                    className={`ml-auto pr-2 transition-colors ${
-                      isFocused ? 'text-[#f96124]' : 'text-[#f96124]/40'
-                    }`}
-                    size={20}
-                  />
+          {submitted ? (
+            <EmailConfirmationCard
+              email={email}
+              onBackToSignIn={() => router.push('/auth/signin')}
+              onResend={handleResend}
+              className="shadow-none border-none max-w-full p-0 rounded-none bg-transparent dark:bg-transparent"
+            />
+          ) : (
+            <>
+              {/* Icon */}
+              <div className="flex justify-center mb-8">
+                <div className="w-20 h-20 rounded-[2rem] bg-[#fff7ed] flex items-center justify-center text-[#f96124] shadow-inner">
+                  <RotateCcw className="w-10 h-10" />
                 </div>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full h-14 bg-gradient-to-r from-[#f96124] to-[#ffb347] hover:brightness-105 active:scale-[0.98] transition-all rounded-full text-white text-base font-bold flex items-center justify-center gap-2 shadow-xl shadow-orange-200 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Sending...</span>
-                </>
-              ) : (
-                <>
-                  <span>Send Reset Link</span>
-                  <Send className="text-xl" />
-                </>
-              )}
-            </button>
-
-            {submitted && (
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                If an account exists for <span className="font-semibold">{email.trim().toLowerCase()}</span>, a reset link has been sent. Please check your inbox and spam folder.
+              {/* Title and Description */}
+              <div className="text-center mb-10">
+                <h2 className="text-[#2d1b14] tracking-tight text-3xl font-bold leading-tight mb-3">
+                  Reset your password
+                </h2>
+                <p className="text-[#5c4d47] text-base font-medium leading-relaxed max-w-[320px] mx-auto">
+                  No worries! It happens to the best of us. Let&apos;s get you back to your food.
+                </p>
               </div>
-            )}
 
-            <div className="text-center">
-              <Link
-                href="#"
-                className="text-[#f96124] hover:text-orange-700 text-sm font-bold transition-colors"
-                onClick={(e) => {
-                  e.preventDefault();
-                  toast.info('Alternative reset methods coming soon!');
-                }}
-              >
-                Try another way
-              </Link>
-            </div>
-          </form>
+              {/* Form */}
+              <form className="space-y-6" onSubmit={handleSubmit}>
+                <div className="relative group">
+                  <div
+                    className={`flex flex-col transition-all rounded-2xl bg-orange-50/30 border ${
+                      isFocused
+                        ? 'bg-white border-[#f96124]/30 shadow-[0_0_0_4px_rgba(249,97,36,0.1)]'
+                        : 'border-orange-100/50'
+                    }`}
+                  >
+                    <div className="relative flex items-center px-4 h-16">
+                      <input
+                        className="block w-full bg-transparent border-none text-[#2d1b14] font-medium focus:ring-0 peer h-full pt-4 placeholder:opacity-0"
+                        id="email"
+                        type="email"
+                        placeholder=" "
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        onFocus={() => setIsFocused(true)}
+                        onBlur={() => setIsFocused(false)}
+                        required
+                      />
+                      <label
+                        className={`absolute left-4 top-0 transition-all duration-200 pointer-events-none text-xs font-bold uppercase tracking-widest ${
+                          email || isFocused
+                            ? 'translate-y-0.5 scale-[0.85] text-[#f96124]'
+                            : 'translate-y-[1.2rem] scale-100 text-gray-400'
+                        }`}
+                        htmlFor="email"
+                      >
+                        College Email Address
+                      </label>
+                      <Mail
+                        className={`ml-auto pr-2 transition-colors ${
+                          isFocused ? 'text-[#f96124]' : 'text-[#f96124]/40'
+                        }`}
+                        size={20}
+                      />
+                    </div>
+                  </div>
+                </div>
 
-          {/* Divider */}
-          <div className="my-10 flex items-center gap-4">
-            <div className="h-[1px] flex-1 bg-orange-100"></div>
-            <span className="text-orange-300 text-[10px] font-bold uppercase tracking-[0.2em]">Or</span>
-            <div className="h-[1px] flex-1 bg-orange-100"></div>
-          </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-14 bg-gradient-to-r from-[#f96124] to-[#ffb347] hover:brightness-105 active:scale-[0.98] transition-all rounded-full text-white text-base font-bold flex items-center justify-center gap-2 shadow-xl shadow-orange-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Sending...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Send Reset Link</span>
+                      <Send className="text-xl" />
+                    </>
+                  )}
+                </button>
 
-          {/* Back to Login */}
-          <div className="space-y-6">
-            <Link
-              href="/auth/signin"
-              className="w-full py-3.5 rounded-full border-2 border-orange-50 hover:bg-orange-50 hover:border-orange-100 text-[#5c4d47] text-sm font-bold flex items-center justify-center gap-2 transition-all"
-            >
-              <ArrowLeft className="text-lg" />
-              Go back to login
-            </Link>
+                <div className="text-center">
+                  <Link
+                    href="#"
+                    className="text-[#f96124] hover:text-orange-700 text-sm font-bold transition-colors"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      toast.info('Alternative reset methods coming soon!');
+                    }}
+                  >
+                    Try another way
+                  </Link>
+                </div>
+              </form>
 
-            {/* Security Message */}
-            <div className="flex items-center justify-center gap-2.5 px-6 py-3 bg-stone-50 rounded-2xl">
-              <Shield className="text-[#f96124]/60 text-lg" />
-              <p className="text-[10px] font-bold text-stone-500 leading-tight text-center uppercase tracking-widest">
-                Security first: We&apos;ll verify your identity before resetting.
-              </p>
-            </div>
-          </div>
+              {/* Divider */}
+              <div className="my-10 flex items-center gap-4">
+                <div className="h-[1px] flex-1 bg-orange-100"></div>
+                <span className="text-orange-300 text-[10px] font-bold uppercase tracking-[0.2em]">Or</span>
+                <div className="h-[1px] flex-1 bg-orange-100"></div>
+              </div>
+
+              {/* Back to Login */}
+              <div className="space-y-6">
+                <Link
+                  href="/auth/signin"
+                  className="w-full py-3.5 rounded-full border-2 border-orange-50 hover:bg-orange-50 hover:border-orange-100 text-[#5c4d47] text-sm font-bold flex items-center justify-center gap-2 transition-all"
+                >
+                  <ArrowLeft className="text-lg" />
+                  Go back to login
+                </Link>
+
+                {/* Security Message */}
+                <div className="flex items-center justify-center gap-2.5 px-6 py-3 bg-stone-50 rounded-2xl">
+                  <Shield className="text-[#f96124]/60 text-lg" />
+                  <p className="text-[10px] font-bold text-stone-500 leading-tight text-center uppercase tracking-widest">
+                    Security first: We&apos;ll verify your identity before resetting.
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
         </motion.div>
       </main>
     </div>

@@ -7,12 +7,14 @@ interface FeedbackFiltersProps {
   onCategoryChange: (category: string) => void;
   onRatingChange: (rating: number | null) => void;
   onDateRangeChange: (range: string) => void;
+  onCustomDateRangeChange?: (startDate: string, endDate: string) => void;
 }
 
 const FeedbackFilters: React.FC<FeedbackFiltersProps> = ({
   onCategoryChange,
   onRatingChange,
   onDateRangeChange,
+  onCustomDateRangeChange,
 }) => {
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
@@ -20,6 +22,9 @@ const FeedbackFilters: React.FC<FeedbackFiltersProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('All Categories');
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
   const [selectedDateRange, setSelectedDateRange] = useState<string>('All Time');
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
 
   const categories = ['Food', 'Service', 'Cleanliness', 'Other'];
   const ratings = [5, 4, 3, 2, 1];
@@ -40,7 +45,21 @@ const FeedbackFilters: React.FC<FeedbackFiltersProps> = ({
   const handleDateRangeSelect = (range: string) => {
     setSelectedDateRange(range);
     setDateRangeOpen(false);
-    onDateRangeChange(range);
+    
+    if (range === 'Custom Range') {
+      setShowCustomDatePicker(true);
+    } else {
+      setShowCustomDatePicker(false);
+      onDateRangeChange(range);
+    }
+  };
+
+  const handleCustomDateRangeApply = () => {
+    if (customStartDate && customEndDate && onCustomDateRangeChange) {
+      onCustomDateRangeChange(customStartDate, customEndDate);
+      setSelectedDateRange(`Custom: ${customStartDate} to ${customEndDate}`);
+      setShowCustomDatePicker(false);
+    }
   };
 
   const renderStars = (rating: number) => {
@@ -174,6 +193,47 @@ const FeedbackFilters: React.FC<FeedbackFiltersProps> = ({
                   <span className="text-gray-700">{range}</span>
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* Custom Date Range Picker */}
+          {showCustomDatePicker && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 p-4">
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(e) => setCustomStartDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(e) => setCustomEndDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={() => setShowCustomDatePicker(false)}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCustomDateRangeApply}
+                    disabled={!customStartDate || !customEndDate}
+                    className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>

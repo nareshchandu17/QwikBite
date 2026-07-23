@@ -73,11 +73,7 @@ const RatingStars: React.FC<{ rating: number }> = ({ rating }) => {
 
 const FeedbackCard: React.FC<{ feedback: Feedback }> = ({ feedback }) => {
     return (
-        <div className="background: rgba(20, 20, 20, 0.6)
-        backdrop-filter: blur(24px)
-        -webkit-backdrop-filter: blur(24px)
-        border: 1px solid rgba(255, 255, 255, 0.08)
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) p-5 rounded-xl border border-transparent hover:border-[#FF512F] transition-all duration-300 transform hover:-translate-y-1">
+        <div className="bg-gray-900/60 backdrop-blur-md p-5 rounded-xl border border-transparent hover:border-[#FF512F] transition-all duration-300 transform hover:-translate-y-1">
             <div className="flex items-start gap-4">
                 <img 
                     src={feedback.avatar} 
@@ -191,7 +187,7 @@ const FeedbackConsole: React.FC = () => {
                     onClick={() => setActiveFilter('Positive')}
                     className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
                         activeFilter === 'Positive' 
-                                ? 'bg-[#4CAF50]/20 text-[#4CAF50] border border-[#4CAF50/30' 
+                                ? 'bg-[#4CAF50]/20 text-[#4CAF50] border border-[#4CAF50]/30' 
                             : 'bg-white/5 text-[#9ca3af] hover:bg-white/10'
                     }`}
                 >
@@ -211,7 +207,7 @@ const FeedbackConsole: React.FC = () => {
                     onClick={() => setActiveFilter('Negative')}
                     className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap ${
                         activeFilter === 'Negative' 
-                                        ? 'bg-[#FF3D00/20 text-[#FF3D00] border border-[#FF3D00]/30' 
+                                        ? 'bg-[#FF3D00]/20 text-[#FF3D00] border border-[#FF3D00]/30' 
                             : 'bg-white/5 text-[#9ca3af] hover:bg-white/10'
                     }`}
                 >

@@ -28,7 +28,8 @@ const FoodMenu = ({ categories: categoryList = ['All', 'Tiffins', 'Fast Food', '
       const response = await fetch('/api/menu', { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to fetch menu items');
       const data = await response.json();
-      setMenuItems(data);
+      const list = data?.data?.data ?? data?.data ?? data;
+      setMenuItems(Array.isArray(list) ? list : []);
     } catch (error) {
       console.error('Error fetching menu items:', error);
       toast.error('Failed to load menu items');

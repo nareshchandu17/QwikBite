@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useAuth } from '@/context/AuthContext';
 import { Toaster } from '@/components/ui/toaster';
 
 import Sidebar from '@/components/admin/Sidebar';
@@ -44,34 +45,32 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const { data: session, status } = useSession();
+  const { user: authUser, isAuthenticated, loading: authLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
 
+  const isAuthChecking = status === 'loading' || authLoading;
+  const hasUser = !!session?.user || isAuthenticated || !!authUser;
+  const userRole = (session?.user as { role?: string })?.role || authUser?.role;
+
   /* ----------------------------- AUTH GUARD ----------------------------- */
   useEffect(() => {
-    if (status === 'loading') return;
+    if (isAuthChecking) return;
 
-    if (!session?.user) {
-      router.push('/signin?callbackUrl=/admin/dashboard');
+    if (!hasUser) {
+      const targetUrl = pathname && pathname !== '/admin' ? pathname : '/admin/dashboard';
+      router.push(`/signin?callbackUrl=${encodeURIComponent(targetUrl)}`);
       return;
     }
 
-    if (session.user.role !== 'admin' && session.user.role !== 'canteen_staff') {
+    if (userRole && userRole !== 'admin' && userRole !== 'canteen_staff') {
       router.push('/customer');
     }
-  }, [session, status, router]);
+  }, [hasUser, userRole, isAuthChecking, router, pathname]);
 
-  if (status === 'loading' || !session?.user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-black">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500" />
-      </div>
-    );
-  }
-
-  if (session.user.role !== 'admin' && session.user.role !== 'canteen_staff') {
+  if (hasUser && userRole && userRole !== 'admin' && userRole !== 'canteen_staff') {
     return null;
   }
 

@@ -6,6 +6,7 @@ import { MongoError } from 'mongodb';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/auth';
 import StaffValidator from '@/lib/validation/staffValidator';
+import { pusherServer } from '@/lib/pusher';
 
 // Connect to the database
 await connectDB();
@@ -130,6 +131,18 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     // Log the action (audit trail)
     console.log(`Staff updated: ${updatedStaff.name} by ${request.headers.get('x-user-email')}`);
 
+    // Emit real-time notification to admins
+    try {
+      await pusherServer.trigger('admin', 'staff_update', {
+        type: 'staff_updated',
+        staff: updatedStaff,
+        timestamp: new Date()
+      });
+    } catch (pusherError) {
+      console.error('Failed to send Pusher notification:', pusherError);
+      // Don't fail the request if Pusher fails
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Staff member updated successfully',
@@ -198,6 +211,18 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     // Log the action (audit trail)
     console.log(`Staff soft-deleted: ${existingStaff.name} by ${request.headers.get('x-user-email')}`);
+
+    // Emit real-time notification to admins
+    try {
+      await pusherServer.trigger('admin', 'staff_update', {
+        type: 'staff_deleted',
+        staff: existingStaff,
+        timestamp: new Date()
+      });
+    } catch (pusherError) {
+      console.error('Failed to send Pusher notification:', pusherError);
+      // Don't fail the request if Pusher fails
+    }
 
     return NextResponse.json({
       success: true,

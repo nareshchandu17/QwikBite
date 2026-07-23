@@ -67,7 +67,7 @@ const Settings: React.FC = () => {
     const [staff, setStaff] = useState({ roleBasedAccess: false, allowStaffCancel: false });
     const [notif, setNotif] = useState({ newOrderEmail: false, delayedOrderEmail: false, lowStockEmail: false, paymentFailureEmail: false, pushNotifications: false });
     const [security, setSecurity] = useState({ twoFactorAuth: false, autoLockMinutes: 15, sessionTimeoutMinutes: 60 });
-    const [system, setSystem] = useState({ maintenanceMode: false, maxOrdersPerHour: 50, enableAnalytics: false, enableDebugMode: false });
+    const [system, setSystem] = useState({ maintenanceMode: false, maxOrdersPerHour: 50, enableAnalytics: false, enableDebugMode: false, operatingHoursStart: '09:00', operatingHoursEnd: '21:00' });
     const [appearance, setAppearance] = useState({ theme: 'dark', primaryColor: '#FF512F', compactMode: false });
     const [backup, setBackup] = useState({ autoBackup: false, backupFrequency: 'daily', retentionDays: 30 });
 
@@ -113,7 +113,7 @@ const Settings: React.FC = () => {
                     setStaff(data.data.settings.staff || {});
                     setNotif(data.data.settings.notifications || {});
                     setSecurity(data.data.settings.security || {});
-                    setSystem(data.data.settings.system || {});
+                    setSystem({ operatingHoursStart: '09:00', operatingHoursEnd: '21:00', ...(data.data.settings.system || {}) });
                     setAppearance(data.data.settings.appearance || {});
                     setBackup(data.data.settings.backup || {});
                 }
@@ -276,13 +276,55 @@ const Settings: React.FC = () => {
                 setDangerConfirmation('');
                 setCurrentDangerAction('');
                 setError(null);
-                // You might want to show a success message or redirect
-                console.log('Danger action completed:', result.message);
+                await loadSettings();
+                await loadSessions();
+                alert(result.message || 'Danger action executed successfully');
             } else {
                 throw new Error(result.error || 'Failed to execute danger action');
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to execute danger action');
+        }
+    };
+
+    const handleExportOrders = async () => {
+        try {
+            const res = await fetch('/api/admin/orders');
+            if (res.ok) {
+                const data = await res.json();
+                const orders: any[] = data.data?.orders || [];
+                const headers = ['ID', 'Customer', 'Status', 'Total', 'Created At'];
+                const rows: (string | number)[][] = orders.map((o: any) => [
+                    o._id || o.id,
+                    o.user?.name || o.customerName || 'N/A',
+                    o.status,
+                    o.totalAmount,
+                    new Date(o.createdAt).toLocaleString()
+                ]);
+                const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r: (string | number)[]) => r.join(','))].join('\n');
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement('a');
+                link.setAttribute('href', encodedUri);
+                link.setAttribute('download', `orders_export_${Date.now()}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        } catch (err) {
+            console.error('Failed to export orders:', err);
+            setError('Failed to export orders');
+        }
+    };
+
+    const handleClearCache = async () => {
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+            await loadSettings();
+            await loadSessions();
+            alert('System cache cleared successfully and configuration reloaded.');
+        } catch (err) {
+            console.error('Failed to clear cache:', err);
         }
     };
     
@@ -533,7 +575,7 @@ const Settings: React.FC = () => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                                    <span className="text-[#9ca3af]">Shift-based access: Enabled (automatic lock outside shifts)</span>
+                                    <span className="text-[#9ca3af]">Shift-based access: Disabled (coming in future update)</span>
                                 </div>
                             </div>
                             
@@ -741,9 +783,9 @@ const Settings: React.FC = () => {
                         </SettingRow>
                          <SettingRow label="Operating Hours" subLabel="Automatically stop accepting orders outside these hours.">
                              <div className="flex gap-2">
-                                <input type="time" defaultValue="09:00" className="bg-white/5 border border-white/10 rounded-lg p-2 text-white text-sm focus:border-primary outline-none transition-colors" />
+                                <input type="time" value={system.operatingHoursStart || '09:00'} onChange={e => setSystem({...system, operatingHoursStart: e.target.value})} className="bg-white/5 border border-white/10 rounded-lg p-2 text-white text-sm focus:border-primary outline-none transition-colors" />
                                 <span className="self-center text-[#9ca3af]">-</span>
-                                <input type="time" defaultValue="21:00" className="bg-white/5 border border-white/10 rounded-lg p-2 text-white text-sm focus:border-primary outline-none transition-colors" />
+                                <input type="time" value={system.operatingHoursEnd || '21:00'} onChange={e => setSystem({...system, operatingHoursEnd: e.target.value})} className="bg-white/5 border border-white/10 rounded-lg p-2 text-white text-sm focus:border-primary outline-none transition-colors" />
                              </div>
                         </SettingRow>
                         <SettingRow label="Max Orders Per Slot" subLabel="Cap the number of orders per 15-minute slot to prevent overload.">
@@ -789,7 +831,7 @@ const Settings: React.FC = () => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className={`w-3 h-3 rounded-full bg-blue-500`}></div>
-                                    <span className="text-[#9ca3af]">Operating Hours: 09:00 - 21:00 (12 hours)</span>
+                                    <span className="text-[#9ca3af]">Operating Hours: {system.operatingHoursStart || '09:00'} - {system.operatingHoursEnd || '21:00'}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <div className={`w-3 h-3 rounded-full ${system.maxOrdersPerHour <= 50 ? 'bg-green-500' : system.maxOrdersPerHour <= 100 ? 'bg-yellow-500' : 'bg-orange-500'}`}></div>
@@ -862,14 +904,14 @@ const Settings: React.FC = () => {
                         <div className="mt-6">
                             <h4 className="text-sm font-bold text-white mb-4">Data Management</h4>
                             <div className="grid grid-cols-2 gap-4">
-                                <button className="flex items-center justify-center gap-2 p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors group">
+                                <button onClick={handleExportOrders} className="flex items-center justify-center gap-2 p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors group">
                                     <DownloadIcon className="w-5 h-5 text-[#FF512F] group-hover:scale-110 transition-transform" />
                                     <div className="text-left">
                                         <span className="text-sm font-bold text-white block">Export Orders</span>
                                         <span className="text-xs text-[#9ca3af]">Download CSV file</span>
                                     </div>
                                 </button>
-                                <button className="flex items-center justify-center gap-2 p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors group">
+                                <button onClick={handleClearCache} className="flex items-center justify-center gap-2 p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors group">
                                     <RefreshIcon className="w-5 h-5 text-[#F09819] group-hover:scale-110 transition-transform" />
                                     <div className="text-left">
                                         <span className="text-sm font-bold text-white block">Clear Cache</span>
@@ -979,7 +1021,7 @@ const Settings: React.FC = () => {
                                     </p>
                                     <div className="mb-4">
                                         <label className="text-xs text-[#9ca3af] block mb-2">
-                                            Type "DELETE" to confirm this action:
+                                            Type &quot;DELETE&quot; to confirm this action:
                                         </label>
                                         <input
                                             type="text"
@@ -1060,24 +1102,29 @@ const Settings: React.FC = () => {
                 )}
 
                 {/* Global Save Button */}
-                <div className="fixed bottom-6 right-8 md:absolute md:bottom-auto md:right-0 md:top-0">
-                    <button 
-                        onClick={() => saveSettings(activeSection, {
-                            ...(activeSection === 'profile' && profile),
-                            ...(activeSection === 'workflow' && workflow),
-                            ...(activeSection === 'inventory' && inventory),
-                            ...(activeSection === 'staff' && staff),
-                            ...(activeSection === 'notifications' && notif),
-                            ...(activeSection === 'security' && security),
-                            ...(activeSection === 'system' && system),
-                        })}
-                        disabled={saving || loading}
-                        className="flex items-center gap-2 bg-gradient-to-r from-[#FF512F] to-[#F09819] text-white px-6 py-3 rounded-full shadow-[0_0_25px rgba(255, 81, 47, 0.4)] font-bold hover:scale-105 transition-transform z-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                    >
-                        <SaveIcon className="w-5 h-5" />
-                        <span>{saving ? 'Saving...' : 'Save Changes'}</span>
-                    </button>
-                </div>
+                {activeSection !== 'danger' && (
+                    <div className="fixed bottom-6 right-8 md:absolute md:bottom-auto md:right-0 md:top-0">
+                        <button 
+                            onClick={() => saveSettings(activeSection, {
+                                ...(activeSection === 'profile' && profile),
+                                ...(activeSection === 'workflow' && workflow),
+                                ...(activeSection === 'inventory' && inventory),
+                                ...(activeSection === 'staff' && staff),
+                                ...(activeSection === 'notifications' && notif),
+                                ...(activeSection === 'security' && security),
+                                ...(activeSection === 'system' && system),
+                                ...(activeSection === 'data' && backup),
+                                ...(activeSection === 'backup' && backup),
+                                ...(activeSection === 'appearance' && appearance),
+                            })}
+                            disabled={saving || loading}
+                            className="flex items-center gap-2 bg-gradient-to-r from-[#FF512F] to-[#F09819] text-white px-6 py-3 rounded-full shadow-[0_0_25px rgba(255, 81, 47, 0.4)] font-bold hover:scale-105 transition-transform z-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                            <SaveIcon className="w-5 h-5" />
+                            <span>{saving ? 'Saving...' : 'Save Changes'}</span>
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Password Change Modal */}

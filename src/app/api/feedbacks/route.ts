@@ -1,29 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import Feedback from '@/lib/models/Feedback';
+import FeedbackCollection, { IFeedbackCollection } from '@/lib/models/FeedbackCollection';
 import { feedbackIntelligenceService } from '@/lib/ai/feedback-intelligence.service';
 import { verifyToken, parseCookies } from '@/lib/auth';
-import { Types } from 'mongoose';
 import { pusherServer } from '@/lib/pusher';
-import { MongoClient } from 'mongodb';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { checkRateLimit, getRateLimitIdentifier, RateLimitPresets } from '@/lib/security/rateLimiter';
+import { sanitizeString, sanitizeObject } from '@/lib/security/sanitizer';
 
 export const dynamic = 'force-dynamic';
-
-interface IFeedbackDocument {
-  _id: Types.ObjectId;
-  feedbackId?: string;
-  studentId?: string;
-  name?: string;
-  starRating?: number;
-  feedbackText?: string;
-  adminReply?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-  image?: string;
-  category?: string;
-  quickRating?: string;
-  reportIssue?: string[];
-}
 
 // Helper to get user ID from auth token
 const getUserId = (req: NextRequest): string | null => {
@@ -42,40 +28,45 @@ export async function GET(req: NextRequest) {
 
   try {
     const userId = getUserId(req);
-
-    // If authenticated, return user's feedback; otherwise return all
-    // DEBUG: Allow bypassing filter with ?all=true
     const url = new URL(req.url);
     const showAll = url.searchParams.get('all') === 'true';
 
-    let query = {};
+    // Admin authentication check for viewing all feedbacks
+    if (showAll) {
+      const session = await getServerSession(authOptions);
+      if (!session?.user) {
+        return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      }
+
+      const userRole = (session.user as { role?: string }).role;
+      if (!['admin', 'canteen_staff'].includes(userRole as any)) {
+        return NextResponse.json({ success: false, error: 'Forbidden - Insufficient permissions' }, { status: 403 });
+      }
+
+      // Rate limiting for admin requests
+      const identifier = getRateLimitIdentifier(req as Request);
+      const rateLimitResult = checkRateLimit(identifier, RateLimitPresets.LENIENT.limit, RateLimitPresets.LENIENT.windowMs);
+      if (!rateLimitResult.allowed) {
+        return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+      }
+    }
+
+    let query: any = {};
     
     // For testing, if no userId, return all feedback
     if (userId && !showAll) {
       query = { studentId: userId };
     }
 
-    console.log('[DEBUG] Query:', query);
-    console.log('[DEBUG] UserId:', userId);
-
-    // Use the raw MongoDB collection to get the actual feedback data
-    const client = new MongoClient(process.env.MONGODB_URI!);
-    await client.connect();
-    const db = client.db();
-    
-    const feedbacks = await db.collection('feedbacks')
-      .find(query)
+    // Use Mongoose model to get feedback data
+    const feedbacks = await FeedbackCollection.find(query)
       .sort({ createdAt: -1 })
-      .toArray();
-
-    await client.close();
-
-    console.log('[DEBUG] Found feedbacks:', feedbacks.length);
+      .lean();
 
     // Transform the data to match the expected interface
-    const transformedFeedbacks = (feedbacks as unknown as IFeedbackDocument[]).map((feedback) => ({
-      _id: feedback._id.toString(),
-      feedbackId: feedback.feedbackId, // Include the actual feedbackId
+    const transformedFeedbacks = feedbacks.map((feedback: any) => ({
+      _id: feedback._id?.toString() || '',
+      feedbackId: feedback.feedbackId,
       user: {
         _id: feedback.studentId || 'unknown',
         name: feedback.name || 'Anonymous',
@@ -84,7 +75,7 @@ export async function GET(req: NextRequest) {
       rating: feedback.starRating || 0,
       comment: feedback.feedbackText || '',
       isAnonymous: !feedback.name,
-      status: 'approved', // Default status since it's not in the schema
+      status: feedback.status || 'pending',
       adminComment: feedback.adminReply,
       createdAt: feedback.createdAt,
       updatedAt: feedback.updatedAt,
@@ -110,9 +101,6 @@ export async function POST(req: NextRequest) {
     const userId = getUserId(req);
     const body = await req.json();
 
-    console.log('[DEBUG] POST body:', body);
-    console.log('[DEBUG] UserId:', userId);
-
     // Extract fields from JSON body - matching the actual database schema
     const { rating, comment, isAnonymous, order, images, category, emojiRating, studentId, orderNumber, reportIssue, name } = body;
 
@@ -125,12 +113,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Comment is required' }, { status: 400 });
     }
 
-    // Create feedback data matching the actual database schema
-    const feedbackData: any = {
-      _id: new Types.ObjectId(),
+    // Generate feedback ID
+    const feedbackId = `FB${Date.now()}${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+    // Create feedback data matching the Mongoose schema
+    const feedbackData = {
+      feedbackId,
       name: name || "Anonymous",
       studentId: studentId || "",
-      orderReference: orderNumber || "123", // Default order reference
+      orderReference: orderNumber || "123",
       quickRating: emojiRating || "neutral",
       starRating: rating,
       category: category || "Food",
@@ -138,33 +129,14 @@ export async function POST(req: NextRequest) {
       reportIssue: reportIssue || [],
       image: images && images.length > 0 ? images[0] : null,
       adminReply: "",
+      status: 'pending' as const,
     };
 
-    console.log('[DEBUG] Creating feedback with data:', feedbackData);
-
-    // Insert directly into MongoDB collection
-    const client = new MongoClient(process.env.MONGODB_URI!);
-    await client.connect();
-    const db = client.db();
-    
-    // Generate feedback ID
-    const feedbackId = `FB${Date.now()}${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-    feedbackData.feedbackId = feedbackId;
-    feedbackData.createdAt = new Date();
-    feedbackData.updatedAt = new Date();
-    
-    const result = await db.collection('feedbacks').insertOne(feedbackData);
-    await client.close();
-
-    console.log('[DEBUG] Created feedback:', result);
+    // Insert using Mongoose model
+    const feedback = await FeedbackCollection.create(feedbackData);
 
     // Create notification for admins
     try {
-      const client = new MongoClient(process.env.MONGODB_URI!);
-      await client.connect();
-      const db = client.db();
-      
-      // Create system notification for admins
       const notificationData = {
         role: 'admin',
         title: 'New Feedback Submitted',
@@ -182,10 +154,20 @@ export async function POST(req: NextRequest) {
         }
       };
       
-      await db.collection('systemnotifications').insertOne(notificationData);
-      await client.close();
-      
-      console.log('[DEBUG] Admin notification created:', notificationData);
+      // Use Mongoose for notifications if model exists, otherwise direct insert
+      try {
+        const NotificationModule = await import('@/lib/models/Notification');
+        const NotificationModel = NotificationModule.Notification;
+        await NotificationModel.create(notificationData);
+      } catch {
+        // Fallback to direct MongoDB if model doesn't exist
+        const { MongoClient } = await import('mongodb');
+        const client = new MongoClient(process.env.MONGODB_URI!);
+        await client.connect();
+        const db = client.db();
+        await db.collection('systemnotifications').insertOne(notificationData);
+        await client.close();
+      }
       
       // Emit WebSocket notification to admins
       try {
@@ -197,12 +179,10 @@ export async function POST(req: NextRequest) {
           data: notificationData.data,
           timestamp: notificationData.createdAt
         });
-        console.log('[DEBUG] WebSocket notification sent to admins');
       } catch (wsError) {
-        console.error('[DEBUG] Failed to send WebSocket notification:', wsError);
+        // WebSocket notification failed, but don't fail the request
       }
     } catch (notificationError) {
-      console.error('[DEBUG] Failed to create admin notification:', notificationError);
       // Don't fail the request if notification fails
     }
 
@@ -229,7 +209,7 @@ async function triggerAutoAnalysis(
   category: string
 ): Promise<void> {
   try {
-    console.log('[FeedbackAutoAnalysis] Starting analysis for:', feedbackId);
+    
 
     // Determine if it's peak time
     const now = new Date();
@@ -275,3 +255,5 @@ async function triggerAutoAnalysis(
     throw error;
   }
 }
+
+

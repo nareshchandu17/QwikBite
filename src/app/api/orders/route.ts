@@ -5,7 +5,7 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { Order, OrderStatus, PaymentStatus } from '@/models/order.model';
 import mongoose from 'mongoose';
 import { syncTimeSlotUsage } from '@/lib/slot-utils';
-// import { socketManager } from '@/lib/websocket/server'; // REMOVED
+import { pusherServer } from '@/lib/pusher';
 import { cache } from '@/lib/cache';
 import { successResponse, errorResponse } from '@/lib/api-response';
 import logger from '@/lib/logger';
@@ -100,6 +100,9 @@ export async function POST(req: NextRequest) {
         })),
         totalAmount: Number(total || 0),
         pickupTime: timeSlot ? new Date(`${todayStr}T${timeSlot}`) : undefined,
+        timeSlot: timeSlot,
+        pickupDate: todayStr,
+        loadValue: orderLoad,
         status: OrderStatus.PENDING,
         paymentStatus: bodyPaymentStatus === 'paid' ? PaymentStatus.PAID : PaymentStatus.PENDING,
       });
@@ -113,7 +116,21 @@ export async function POST(req: NextRequest) {
       } catch (notifErr) {
         console.error('[Orders POST] Notification error:', notifErr);
       }
+      
+      // Invalidate cache
       cache.del('slots:available');
+      
+      // Trigger real-time slot update via Pusher
+      try {
+        await pusherServer.trigger('admin', 'slot-update', {
+          action: 'order_created',
+          orderId: order.orderId,
+          timeSlot: order.timeSlot,
+          timestamp: new Date().toISOString()
+        });
+      } catch (pusherErr) {
+        console.error('[Orders POST] Pusher error:', pusherErr);
+      }
 
       return successResponse(order, 201);
 

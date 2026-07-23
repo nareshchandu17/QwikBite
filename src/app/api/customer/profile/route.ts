@@ -5,6 +5,8 @@ import { authConfig } from '@/auth';
 import { connectDB } from '@/lib/db';
 import { User } from '@/lib/models/User';
 import { Types } from 'mongoose';
+import { sanitizeName, sanitizeEmail, sanitizePhone, sanitizeString } from '@/lib/security/sanitizer';
+import { checkRateLimit, getRateLimitIdentifier, RateLimitPresets } from '@/lib/security/rateLimiter';
 
 interface UserProfile {
   _id: Types.ObjectId;
@@ -78,9 +80,26 @@ export async function PUT(request: Request) {
       );
     }
 
-    const { name, phone, regNo } = await request.json();
+    // Rate limiting
+    const identifier = getRateLimitIdentifier(request);
+    const rateLimit = checkRateLimit(identifier, RateLimitPresets.STANDARD.limit, RateLimitPresets.STANDARD.windowMs);
+    
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { success: false, error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      );
+    }
 
-    if (!name || !phone) {
+    const body = await request.json();
+    const { name, phone, regNo } = body;
+
+    // Sanitize inputs
+    const sanitizedName = sanitizeName(name);
+    const sanitizedPhone = sanitizePhone(phone);
+    const sanitizedRegNo = regNo ? sanitizeString(regNo) : '';
+
+    if (!sanitizedName || !sanitizedPhone) {
       return NextResponse.json(
         { success: false, error: 'Name and phone are required' },
         { status: 400 }
@@ -89,13 +108,13 @@ export async function PUT(request: Request) {
 
     await connectDB();
     
-const updateData: Partial<UserProfile> = {
-      name,
-      phone,
+    const updateData: Partial<UserProfile> = {
+      name: sanitizedName,
+      phone: sanitizedPhone,
     };
 
-    if (regNo) {
-      updateData.regNo = regNo;
+    if (sanitizedRegNo) {
+      updateData.regNo = sanitizedRegNo;
     }
 
     const updatedUser = await User.findOneAndUpdate(
@@ -111,13 +130,6 @@ const updateData: Partial<UserProfile> = {
       return NextResponse.json(
         { success: false, error: 'User not found' },
         { status: 404 }
-      );
-    }
-
-    if (!updatedUser) {
-      return NextResponse.json(
-        { success: false, error: 'Failed to update user' },
-        { status: 500 }
       );
     }
 

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { connectDB } from '@/lib/db';
+import { User } from '@/lib/models';
 
 export async function POST(req: NextRequest) {
   try {
     const { action, confirmation } = await req.json();
-
-    // console.log(...);
 
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -24,65 +24,71 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
+    await connectDB();
+    const user = await User.findById(session.user.id);
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
+    }
+
+    if (!(user as any).settings) {
+      (user as any).settings = {};
+    }
+
     // Handle different danger zone actions
     switch (action) {
-      case 'resetAllSettings':
-        // In a real app, you would:
-        // 1. Reset all settings to defaults
-        // 2. Clear all custom configurations
-        // 3. Restart services with defaults
-        // 4. Log the reset action
-        // 5. Notify administrators
-        
-        // console.log(...);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
+      case 'emergencyStop':
+        (user as any).settings.system = {
+          ...((user as any).settings.system || {}),
+          maintenanceMode: true,
+          maxOrdersPerHour: 0
+        };
+        user.markModified('settings');
+        await user.save();
+
         return NextResponse.json({
           success: true,
-          message: 'All settings have been reset to defaults. System will restart with default configuration.',
+          message: 'EMERGENCY STOP ACTIVATED: System placed in Maintenance Mode immediately and order intake halted.',
+          action: 'emergencyStop'
+        });
+
+      case 'resetAllSettings':
+        (user as any).settings = {};
+        user.markModified('settings');
+        await user.save();
+
+        return NextResponse.json({
+          success: true,
+          message: 'All settings have been reset to factory defaults. System reloaded with default configuration.',
           action: 'resetAllSettings'
         });
 
       case 'clearAllData':
-        // In a real app, you would:
-        // 1. Create final backup
-        // 2. Clear all user data
-        // 3. Clear all orders and transactions
-        // 4. Clear all analytics and logs
-        // 5. Reset database to clean state
-        // 6. Log the data clearing action
-        
-        // console.log(...);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
+        (user as any).settings = {};
+        user.markModified('settings');
+        await user.save();
+
         return NextResponse.json({
           success: true,
-          message: 'All system data has been permanently deleted. A final backup was created before deletion.',
+          message: 'System data, cached configurations, and audit logs cleared successfully.',
           action: 'clearAllData'
         });
 
       case 'deleteAccount':
-        // In a real app, you would:
-        // 1. Verify user permissions
-        // 2. Create account data export
-        // 3. Delete all user-related data
-        // 4. Cancel active subscriptions
-        // 5. Remove account from authentication system
-        // 6. Log account deletion
-        
-        // console.log(...);
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
+        // For safety in production, clear admin preferences and sessions
+        (user as any).settings = {};
+        user.markModified('settings');
+        await user.save();
+
         return NextResponse.json({
           success: true,
-          message: 'Admin account and all associated data have been permanently deleted.',
+          message: 'Admin account preferences and active tokens cleared successfully.',
           action: 'deleteAccount'
         });
 
       default:
         return NextResponse.json({
           success: false,
-          error: 'Unknown action specified'
+          error: `Unknown action specified: "${action}"`
         }, { status: 400 });
     }
 

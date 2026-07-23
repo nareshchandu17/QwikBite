@@ -8,6 +8,7 @@ import RateLimiter from '@/lib/middleware/rateLimiter';
 import StaffValidator from '@/lib/validation/staffValidator';
 import AuditService from '@/lib/services/auditService';
 import CacheService from '@/lib/services/cacheService';
+import { pusherServer } from '@/lib/pusher';
 
 // Connect to the database
 await connectDB();
@@ -58,7 +59,8 @@ async function withSecurity(request: NextRequest, handler: (req: NextRequest) =>
     method: request.method,
     headers: requestHeaders,
     body: request.body,
-  });
+    duplex: 'half',
+  } as any);
 
   // Call the handler
   const response = await handler(authenticatedRequest);
@@ -192,10 +194,11 @@ export async function POST(request: NextRequest) {
 
     // Create new staff with additional fields
     const staffData = {
-      ...sanitizedData,
-      avatar: sanitizedData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(sanitizedData.name)}&background=random`,
-      createdAt: new Date(),
-      updatedAt: new Date()
+        ...sanitizedData,
+        phone: sanitizedData.contact || sanitizedData.phone, // Map contact to phone
+        avatar: sanitizedData.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(sanitizedData.name)}&background=random`,
+        createdAt: new Date(),
+        updatedAt: new Date()
     };
 
     const staff: IStaff = await Staff.create(staffData);
@@ -217,6 +220,21 @@ export async function POST(request: NextRequest) {
     );
 
     console.log(`Staff created: ${staff.name} by ${req.headers.get('x-user-email')}`);
+
+    // Emit real-time notification to admins
+    try {
+      await pusherServer.trigger('admin', 'staff_update', {
+        type: 'staff_created',
+        staff: {
+          _id: staff._id,
+          ...staffData
+        },
+        timestamp: new Date()
+      });
+    } catch (pusherError) {
+      console.error('Failed to send Pusher notification:', pusherError);
+      // Don't fail the request if Pusher fails
+    }
 
     // Return success response with created staff data
     return NextResponse.json({

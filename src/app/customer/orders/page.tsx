@@ -51,31 +51,70 @@ const getMenuImageForItem = (itemName: string): string | null => {
   const normalized = itemName?.toLowerCase().trim();
   if (!normalized) return null;
 
-  const menuItem = menuItems.find((item) =>
-    item.name.toLowerCase() === normalized ||
-    normalized.includes(item.name.toLowerCase()) ||
-    item.name.toLowerCase().includes(normalized)
-  );
+  // Try exact match first
+  let menuItem = menuItems.find((item) => item.name.toLowerCase() === normalized);
+  
+  // If no exact match, try partial match
+  if (!menuItem) {
+    menuItem = menuItems.find((item) =>
+      normalized.includes(item.name.toLowerCase()) ||
+      item.name.toLowerCase().includes(normalized)
+    );
+  }
 
   return menuItem?.image || null;
 };
 
 const getOrderItemImages = (order: Order): string[] => {
-  const fallbackImage = order.imageUrl || '/images/order.jpg';
-
-  if (!Array.isArray(order.items) || order.items.length === 0) {
-    return [fallbackImage];
+  // If items is a string, parse it to extract item names
+  if (typeof order.items === 'string') {
+    const itemNames = order.items.split(',').map(item => item.trim());
+    
+    const images = itemNames
+      .map(itemStr => {
+        // Extract name from "1x Item Name" format
+        const match = itemStr.match(/(\d+)x\s*(.+)/);
+        const itemName = match ? match[2] : itemStr;
+        return getMenuImageForItem(itemName);
+      })
+      .filter((img): img is string => Boolean(img));
+    
+    return images.length > 0 ? images : ['/images/order.jpg'];
   }
 
-  const resolvedImages = order.items
-    .map((item) => item.imageUrl || item.image || getMenuImageForItem(item.name))
-    .filter((src): src is string => Boolean(src));
+  // If items is an array, get images from each item
+  if (Array.isArray(order.items) && order.items.length > 0) {
+    const resolvedImages = order.items
+      .map((item) => {
+        // Check if item has a real image (not placeholder)
+        const hasRealImage = item.imageUrl && !item.imageUrl.includes('placeholder') && !item.imageUrl.includes('order.jpg');
+        const hasRealImageField = item.image && !item.image.includes('placeholder') && !item.image.includes('order.jpg');
+        
+        // First try to match from menu (this is the real image)
+        const menuImage = getMenuImageForItem(item.name);
+        if (menuImage) {
+          return menuImage;
+        }
+        
+        // Only use item's own image if it's not a placeholder
+        if (hasRealImage) {
+          return item.imageUrl;
+        }
+        if (hasRealImageField) {
+          return item.image;
+        }
+        
+        return null;
+      })
+      .filter((src): src is string => Boolean(src));
 
-  if (resolvedImages.length === 0) {
-    return [fallbackImage];
+    if (resolvedImages.length > 0) {
+      return Array.from(new Set(resolvedImages));
+    }
   }
 
-  return Array.from(new Set(resolvedImages));
+  // Fallback to order's imageUrl or default
+  return [order.imageUrl || '/images/order.jpg'];
 };
 
 // --- Sub-Components ---

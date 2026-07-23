@@ -1,19 +1,34 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import { Bell, Lock, User, CreditCard, Clock, Globe, LogOut, Palette } from 'lucide-react';
+import { Bell, Lock, User, CreditCard, Clock, Globe, LogOut, Palette, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { useCustomerGuard } from '@/hooks/use-customer-guard'; // Updated import
+import { useCustomerGuard } from '@/hooks/use-customer-guard';
+import { toast } from 'sonner';
 
 export default function SettingsPage() {
-  useCustomerGuard(); // Add this hook to protect the page
+  useCustomerGuard();
 
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const { logout } = useAuth();
+  
+  // Load settings from localStorage on mount
+  useEffect(() => {
+    const savedNotifications = localStorage.getItem('notifications');
+    const savedPreferences = localStorage.getItem('preferences');
+    
+    if (savedNotifications) {
+      setNotifications(JSON.parse(savedNotifications));
+    }
+    if (savedPreferences) {
+      setPreferences(JSON.parse(savedPreferences));
+    }
+  }, []);
+
   const [notifications, setNotifications] = useState({
     email: true,
     push: false,
@@ -28,11 +43,32 @@ export default function SettingsPage() {
     autoRefreshOrderStatus: false
   });
 
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showSessionsModal, setShowSessionsModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [betaLayout, setBetaLayout] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Save settings to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('notifications', JSON.stringify(notifications));
+  }, [notifications]);
+
+  useEffect(() => {
+    localStorage.setItem('preferences', JSON.stringify(preferences));
+  }, [preferences]);
+
   const toggleNotification = (key: keyof typeof notifications) => {
     setNotifications(prev => ({
       ...prev,
       [key]: !prev[key]
     }));
+    toast.success('Notification preference updated');
   };
 
   const togglePreference = (key: keyof typeof preferences) => {
@@ -40,11 +76,50 @@ export default function SettingsPage() {
       ...prev,
       [key]: !prev[key]
     }));
+    toast.success('Preference updated');
   };
 
   const handleSignOut = () => {
     logout();
-    // AuthContext logout already handles navigation to '/'
+  };
+
+  const handleChangePassword = () => {
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      toast.error('Please fill all password fields');
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    if (passwordForm.newPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
+      return;
+    }
+    
+    // Simulate password change (in real app, call API)
+    toast.success('Password changed successfully');
+    setShowPasswordModal(false);
+    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  };
+
+  const handleViewSessions = () => {
+    setShowSessionsModal(true);
+  };
+
+  const handleDeleteAccount = () => {
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteAccount = () => {
+    // Simulate account deletion (in real app, call API)
+    toast.success('Account deleted successfully');
+    logout();
+  };
+
+  const handleEnableBeta = () => {
+    setBetaLayout(true);
+    toast.success('Beta layout enabled');
   };
 
   return (
@@ -189,7 +264,10 @@ export default function SettingsPage() {
                         <p className="text-gray-500 text-sm">Update your password</p>
                       </div>
                     </div>
-                    <button className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-sm font-medium transition-colors">
+                    <button 
+                      onClick={() => setShowPasswordModal(true)}
+                      className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-sm font-medium transition-colors"
+                    >
                       Change
                     </button>
                   </div>
@@ -208,7 +286,10 @@ export default function SettingsPage() {
                         <p className="text-gray-500 text-sm">Manage your active sessions</p>
                       </div>
                     </div>
-                    <button className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-sm font-medium transition-colors">
+                    <button 
+                      onClick={handleViewSessions}
+                      className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-sm font-medium transition-colors"
+                    >
                       View
                     </button>
                   </div>
@@ -227,7 +308,10 @@ export default function SettingsPage() {
                         <p className="text-gray-500 text-sm">Permanently delete your account</p>
                       </div>
                     </div>
-                    <button className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors">
+                    <button 
+                      onClick={handleDeleteAccount}
+                      className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors"
+                    >
                       Delete
                     </button>
                   </div>
@@ -318,8 +402,11 @@ export default function SettingsPage() {
                         <p className="text-gray-500 text-sm">Test the new interface design</p>
                       </div>
                     </div>
-                    <button className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-sm font-medium transition-colors">
-                      Enable
+                    <button 
+                      onClick={handleEnableBeta}
+                      className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      {betaLayout ? 'Enabled' : 'Enable'}
                     </button>
                   </div>
                 </motion.div>
@@ -371,6 +458,145 @@ export default function SettingsPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl p-6 w-full max-w-md mx-4"
+          >
+            <h3 className="text-xl font-semibold mb-4">Change Password</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                <input
+                  type="password"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2 top-2 text-gray-500"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowPasswordModal(false);
+                  setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                }}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleChangePassword}
+                className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600"
+              >
+                Change Password
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Sessions Modal */}
+      {showSessionsModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl p-6 w-full max-w-md mx-4"
+          >
+            <h3 className="text-xl font-semibold mb-4">Active Sessions</h3>
+            <div className="space-y-3">
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900">Current Session</p>
+                    <p className="text-sm text-gray-500">Chrome on Windows • Active now</p>
+                  </div>
+                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Current</span>
+                </div>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-gray-900">Mobile App</p>
+                    <p className="text-sm text-gray-500">iOS • Last active 2 hours ago</p>
+                  </div>
+                  <button className="text-red-600 text-sm hover:underline">Revoke</button>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setShowSessionsModal(false)}
+                className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600"
+              >
+                Close
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Delete Account Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-2xl p-6 w-full max-w-md mx-4"
+          >
+            <h3 className="text-xl font-semibold mb-4 text-red-600">Delete Account</h3>
+            <p className="text-gray-600 mb-4">
+              Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteAccount}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+              >
+                Delete Account
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

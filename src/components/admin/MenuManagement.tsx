@@ -52,10 +52,7 @@ const DishCard: React.FC<DishCardProps> = ({ dish, index, onEdit, onDelete }) =>
 
             {/* Floating Price Tag */}
             <div className="absolute top-4 right-4 z-10">
-                <div className="bg-[rgba(20,20,20,0.6)]
-  backdrop-blur-[24px] [-webkit-backdrop-filter:blur(24px)]
-  border border-[rgba(255,255,255,0.08)]
-  shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] px-3 py-1.5 rounded-xl flex flex-col items-center border border-white/10 shadow-lg group-hover:bg-[#FF512F] transition-colors duration-300">
+                <div className="bg-black/40 backdrop-blur-md border border-white/10 shadow-lg px-3 py-1.5 rounded-xl flex flex-col items-center group-hover:bg-[#FF512F] transition-colors duration-300">
                     <span className="text-sm font-bold text-white">₹{dish.price}</span>
                 </div>
             </div>
@@ -89,7 +86,7 @@ const DishCard: React.FC<DishCardProps> = ({ dish, index, onEdit, onDelete }) =>
                 </div>
 
                 {/* Hover Actions Slide Up */}
-                <div className="h-0 group-hover:h-12 overflow-hidden transition-all duration-500 ease-[(cubic-bezier(0.16, 1, 0.3, 1)] opacity-0 group-hover:opacity-100 mt-0 group-hover:mt-3">
+                <div className="h-0 group-hover:h-12 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] opacity-0 group-hover:opacity-100 mt-0 group-hover:mt-3">
                     <div className="flex gap-2 pt-1">
                         <button
                             onClick={(e) => { e.stopPropagation(); onEdit(dish); }}
@@ -132,7 +129,7 @@ const DishSkeleton: React.FC = () => {
             </div>
 
             {/* Shimmer effect */}
-            <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
+            <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
         </div>
     );
 };
@@ -202,6 +199,19 @@ const AddDishModal: React.FC<AddDishModalProps> = ({ onClose, onSave, dishToEdit
     };
 
     const handleSave = () => {
+        if (!formData.name?.trim()) {
+            toast.error('Dish name is required');
+            return;
+        }
+        if (!formData.category?.trim()) {
+            toast.error('Category is required');
+            return;
+        }
+        if (formData.price === undefined || Number.isNaN(Number(formData.price)) || Number(formData.price) < 0) {
+            toast.error('Price must be a valid non-negative number');
+            return;
+        }
+
         // Construct final tags array
         let finalTags = tagInput.split(',').map(t => t.trim()).filter(t => t.length > 0);
 
@@ -218,6 +228,14 @@ const AddDishModal: React.FC<AddDishModalProps> = ({ onClose, onSave, dishToEdit
             ...formData,
             tags: finalTags,
             id: dishToEdit ? dishToEdit.id : Date.now().toString(), // Preserve ID if editing, else generate new
+            calories: (formData.calories as number) ?? 0,
+            prep_time: (formData.prep_time as number) ?? 15,
+            isVegetarian: dietaryFlags.isVegetarian,
+            isVegan: dietaryFlags.isVegan,
+            isGlutenFree: dietaryFlags.isGlutenFree,
+            isDairyFree: (dishToEdit as any)?.isDairyFree ?? false,
+            isSpicy: dietaryFlags.isSpicy,
+            isPopular: dietaryFlags.isPopular,
         } as MenuItem;
 
         onSave(finalDish);
@@ -226,10 +244,7 @@ const AddDishModal: React.FC<AddDishModalProps> = ({ onClose, onSave, dishToEdit
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8 bg-black/80 backdrop-blur-md animate-fade-in-up">
-            <div className="bg-[rgba(20,20,20,0.6)]
-  backdrop-blur-[24px] [-webkit-backdrop-filter:blur(24px)]
-  border border-[rgba(255,255,255,0.08)]
-  shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] w-full max-w-5xl h-full md:h-auto max-h-[95vh] overflow-hidden rounded-3xl flex flex-col relative animate-scale-in shadow-2xl shadow-black/50 border border-white/10 relative z-[10000]">
+            <div className="bg-black/40 backdrop-blur-md border border-white/10 shadow-2xl w-full max-w-5xl h-full md:h-auto max-h-[95vh] overflow-hidden rounded-3xl flex flex-col relative animate-scale-in shadow-black/50">
 
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-white/10 bg-white/5 backdrop-blur-xl z-10">
@@ -377,10 +392,7 @@ const AddDishModal: React.FC<AddDishModalProps> = ({ onClose, onSave, dishToEdit
                             </div>
 
                             {/* Dietary & Attributes */}
-                            <div className="bg-[rgba(20,20,20,0.6)]
-  backdrop-blur-[24px] [-webkit-backdrop-filter:blur(24px)]
-  border border-[rgba(255,255,255,0.08)]
-  shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] bg-white/5 rounded-2xl p-5 border border-white/10">
+                            <div className="bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl p-5">
                                 <label className="text-xs font-bold uppercase tracking-wider text-[#FF9800] mb-4 block">Dietary Attributes</label>
                                 <div className="flex flex-wrap gap-3">
                                     {[
@@ -465,10 +477,7 @@ const MenuManagement: React.FC = () => {
         try {
             setLoading(true);
             setError(null);
-            console.log('Fetching menu items from /api/menu?adminView=true...');
-
-            const response = await fetch('/api/menu?adminView=true');
-            console.log('Response status:', response.status);
+            const response = await fetch('/api/menu?adminView=true', { credentials: 'include' });
 
             if (!response.ok) {
                 const errorText = await response.text();
@@ -477,14 +486,13 @@ const MenuManagement: React.FC = () => {
             }
 
             const data = await response.json();
-            console.log('Fetched menu items:', data);
-
-            if (!data || !Array.isArray(data.data)) {
-                console.error('Unexpected data format:', data);
+            const list = data?.data?.data ?? data?.data ?? data;
+            if (!Array.isArray(list)) {
+                console.error('Unexpected menu payload:', data);
                 throw new Error('Invalid data format received from API');
             }
 
-            setItems(data.data);
+            setItems(list);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
             console.error('Error in fetchMenuItems:', errorMessage, error);
@@ -506,11 +514,9 @@ const MenuManagement: React.FC = () => {
         if (!pusherClient) return;
 
         const handleMenuUpdate = (event: string, data: MenuItem) => {
-            console.log(`Received menu ${event} event:`, data);
-
             switch (event) {
                 case 'created':
-                    setItems(prev => [...prev, data]);
+                    setItems(prev => (prev.some(i => i.id === data.id) ? prev : [...prev, data]));
                     // Don't show toast here as It's already shown in the admin panel
                     break;
                 case 'updated':
@@ -584,30 +590,28 @@ const MenuManagement: React.FC = () => {
         try {
             const isUpdate = !!dish.id && items.some(item => item.id === dish.id);
 
-            console.log('Saving dish:', { isUpdate, dish });
-
-            const url = isUpdate ? '/api/menu' : '/api/menu';
             const method = isUpdate ? 'PUT' : 'POST';
 
-            // Ensure we have all required fields with defaults
+            // API expects normalized client shape; server maps it to DB fields.
             const dishToSave = {
-                ...dish,
-                name: dish.name || 'Unnamed Item',
-                price: dish.price || 0,
-                category: dish.category || 'Uncategorized',
-                available: dish.available !== undefined ? dish.available : true,
-                tags: Array.isArray(dish.tags) ? dish.tags : [],
+                ...(isUpdate ? { id: dish.id } : {}),
+                name: dish.name?.trim(),
+                description: dish.description ?? '',
+                price: Number(dish.price ?? 0),
                 image: dish.image || '/images/placeholder-food.jpg',
-                description: dish.description || '',
-                calories: dish.calories || 0,
-                isVegetarian: dish.isVegetarian || false,
-                isVegan: dish.isVegan || false,
-                isGlutenFree: dish.isGlutenFree || false,
-                isDairyFree: dish.isDairyFree || false,
-                isPopular: dish.isPopular || false,
-            };
+                category: dish.category ?? 'Uncategorized',
+                tags: Array.isArray(dish.tags) ? dish.tags : [],
+                available: dish.available !== undefined ? dish.available : true,
+                calories: Number(dish.calories ?? 0),
+                prep_time: Number(dish.prep_time ?? 15),
+                isVegetarian: Boolean(dish.isVegetarian ?? false),
+                isVegan: Boolean(dish.isVegan ?? false),
+                isGlutenFree: Boolean(dish.isGlutenFree ?? false),
+                isDairyFree: Boolean(dish.isDairyFree ?? false),
+                isPopular: Boolean(dish.isPopular ?? false),
+            } satisfies Partial<MenuItem> & { id?: string };
 
-            const response = await fetch(url, {
+            const response = await fetch('/api/menu', {
                 method,
                 headers: {
                     'Content-Type': 'application/json',
@@ -615,22 +619,12 @@ const MenuManagement: React.FC = () => {
                 body: JSON.stringify(dishToSave),
             });
 
-            const responseData = await response.text();
-
             if (!response.ok) {
-                console.error('Error response:', response.status, response.statusText, responseData);
                 throw new Error(`Failed to ${isUpdate ? 'update' : 'add'} menu item: ${response.status} ${response.statusText}`);
             }
 
-            let savedItem;
-            try {
-                savedItem = JSON.parse(responseData);
-            } catch (e) {
-                console.error('Failed to parse response:', e);
-                throw new Error('Invalid response from server');
-            }
-
-            console.log('Saved item:', savedItem);
+            const payload = await response.json();
+            const savedItem: MenuItem = payload?.data ?? payload;
 
             // Send notification to customers about new menu item
             if (!isUpdate) {
@@ -659,7 +653,7 @@ const MenuManagement: React.FC = () => {
                 setItems(prevItems => prevItems.map(item => item.id === savedItem.id ? savedItem : item));
                 toast.success('Item updated successfully!');
             } else {
-                setItems(prevItems => [...prevItems, savedItem]);
+                setItems(prevItems => (prevItems.some(i => i.id === savedItem.id) ? prevItems : [...prevItems, savedItem]));
                 toast.success(`Item "${savedItem.name}" added successfully!`);
             }
 
@@ -694,7 +688,6 @@ const MenuManagement: React.FC = () => {
                         message: `${dishName} has been temporarily removed from our menu`
                     }),
                 });
-                console.log('Notification sent to customers for item removal:', dishName);
             } catch (notificationError) {
                 console.error('Failed to send removal notification:', notificationError);
                 // Don&apos;t fail the whole operation if notification fails
@@ -842,7 +835,7 @@ const MenuManagement: React.FC = () => {
                 ) : (
                     <div className="h-96 flex flex-col items-center justify-center text-center animate-fade-in-up">
                         <div className="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center mb-6 border border-white/10 shadow-[0 0 25px rgba(240, 152, 25, 0.4)]">
-                            <SearchIcon className="w-10 h-10 text-[#9ca3af/50" />
+                            <SearchIcon className="w-10 h-10 text-[#9ca3af]/50" />
                         </div>
                         <h3 className="text-2xl font-bold text-white mb-2">No dishes found</h3>
                         <p className="text-[#9ca3af] max-w-xs mx-auto">

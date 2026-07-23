@@ -1,4 +1,4 @@
-export type PaymentStatus = "Success" | "Pending" | "Failed";
+export type PaymentStatus = "Pending" | "Success" | "Failed" | "Refunded";
 export type PaymentMethod = "UPI" | "Card" | "Cash";
 
 export interface Transaction {

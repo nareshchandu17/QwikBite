@@ -1,24 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { syncTimeSlotUsage } from '@/lib/slot-utils';
-import { verifyAuth, createSecureResponse } from '@/lib/middleware/auth';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { checkRateLimit, getRateLimitIdentifier, RateLimitPresets } from '@/lib/security/rateLimiter';
+import { pusherServer } from '@/lib/pusher';
 
 export async function POST(req: NextRequest) {
   try {
-    // Only admins or staff should be able to trigger a full sync
-    const auth = await verifyAuth(req);
-    
-    if (!auth.success || !auth.user) {
-      return createSecureResponse(auth);
+    // Authentication check
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (auth.user.role !== 'admin' && auth.user.role !== 'staff') {
+    // Authorization check - only admin or canteen_staff can trigger sync
+    const userRole = (session.user as { role?: string }).role;
+    if (!['admin', 'canteen_staff'].includes(userRole as any)) {
       return NextResponse.json({ 
-        success: false, 
-        error: 'Unauthorized: Admin or Staff role required' 
+        error: 'Forbidden - Insufficient permissions' 
       }, { status: 403 });
     }
 
+    // Rate limiting
+    const identifier = getRateLimitIdentifier(req as Request);
+    const rateLimitResult = checkRateLimit(identifier, RateLimitPresets.STANDARD.limit, RateLimitPresets.STANDARD.windowMs);
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
+    }
+
     await syncTimeSlotUsage();
+    
+    // Trigger real-time update via Pusher
+    await pusherServer.trigger('admin', 'slot-update', { 
+      action: 'sync',
+      timestamp: new Date().toISOString()
+    });
     
     return NextResponse.json({ 
       success: true, 

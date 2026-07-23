@@ -25,7 +25,7 @@ export default function SignInPage() {
       console.log('[SignIn] User already authenticated, redirecting to:', callbackUrl);
       
       // Redirect to callback URL or role-based home
-      if (callbackUrl && callbackUrl !== '/signin') {
+      if (callbackUrl && callbackUrl !== '/signin' && callbackUrl !== '/') {
         router.replace(callbackUrl);
       } else {
         // Use role-based redirect

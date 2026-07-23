@@ -31,6 +31,7 @@ export default function FeedbackPage() {
   const [feedbackHistory, setFeedbackHistory] = useState<FeedbackItem[]>([]);
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [highlightedFeedbackId, setHighlightedFeedbackId] = useState<string | null>(null);
 
   // Filters
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -58,6 +59,23 @@ export default function FeedbackPage() {
   useEffect(() => {
     setMounted(true);
     fetchFeedbackHistory();
+    
+    // Check for feedbackId in URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const feedbackId = urlParams.get('feedbackId');
+    if (feedbackId) {
+      setHighlightedFeedbackId(feedbackId);
+      
+      // Scroll to the feedback after data loads
+      setTimeout(() => {
+        const element = document.getElementById(`feedback-${feedbackId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // Remove highlight after a few seconds
+          setTimeout(() => setHighlightedFeedbackId(null), 5000);
+        }
+      }, 1500);
+    }
   }, []);
 
   const fetchFeedbackHistory = async () => {
@@ -630,7 +648,15 @@ export default function FeedbackPage() {
               <div className="text-gray-600 text-center py-10">No feedback submitted yet.</div>
             ) : (
               filteredHistory.map((f) => (
-                <div key={f._id} className="rounded-2xl border border-white/70 bg-white/70 p-4 shadow-sm">
+                <div 
+                  key={f._id} 
+                  id={`feedback-${f._id}`}
+                  className={`rounded-2xl border bg-white/70 p-4 shadow-sm transition-all ${
+                    highlightedFeedbackId === f._id 
+                      ? 'border-amber-400 ring-4 ring-amber-200' 
+                      : 'border-white/70'
+                  }`}
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3 min-w-0">
                       <div className="h-10 w-10 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0">

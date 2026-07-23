@@ -515,7 +515,9 @@ export default function MenuPage() {
               className="h-12 px-4 border-amber-600/30 hover:border-amber-600/50 bg-white/90 hover:bg-amber-50 text-amber-800 flex items-center justify-center gap-2 transition-all duration-200 shadow-sm hover:shadow w-36"
             >
               <Filter className="h-4 w-4" />
-              <span className="font-medium">Categories</span>
+              <span className="font-medium truncate">
+                {selectedCategory === 'all' ? 'Categories' : categoryOptions.find(c => c.id === selectedCategory)?.name || 'Categories'}
+              </span>
               <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isFilterOpen ? 'rotate-180' : ''}`} />
             </Button>
 

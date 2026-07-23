@@ -11,6 +11,7 @@ type PasswordStrength = 'weak' | 'medium' | 'strong' | 'very-strong';
 
 type SetNewPasswordCardProps = {
   token?: string;
+  isModal?: boolean;
   onSuccess?: () => void;
   onBackToSignIn?: () => void;
   className?: string;
@@ -18,6 +19,7 @@ type SetNewPasswordCardProps = {
 
 export function SetNewPasswordCard({
   token,
+  isModal = true,
   onSuccess,
   onBackToSignIn,
   className,
@@ -70,6 +72,11 @@ export function SetNewPasswordCard({
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (!token) {
+      toast.error('Reset link is invalid or missing. Please check your email link or request a new reset.');
+      return;
+    }
+
     if (!password || !confirmPassword) {
       toast.error('Please fill in all fields');
       return;
@@ -80,8 +87,8 @@ export function SetNewPasswordCard({
       return;
     }
 
-    if (Object.values(validations).filter(Boolean).length < 3) {
-      toast.error('Password does not meet security requirements');
+    if (!Object.values(validations).every(Boolean)) {
+      toast.error('Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character');
       return;
     }
 
@@ -95,24 +102,26 @@ export function SetNewPasswordCard({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          token: token || '', // This would come from URL params
+          token,
           password,
           confirmPassword
         }),
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to reset password');
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || error.message || 'Failed to reset password');
       }
 
       toast.success('Password reset successfully! Please sign in with your new password.');
 
-      // Navigate to password reset success modal
-      closeModal();
-      setTimeout(() => {
-        openModal('passwordresetsuccess');
-      }, 100);
+      if (isModal) {
+        // Navigate to password reset success modal
+        closeModal();
+        setTimeout(() => {
+          openModal('passwordresetsuccess');
+        }, 100);
+      }
 
       onSuccess?.();
     } catch (error) {

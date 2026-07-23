@@ -32,7 +32,7 @@ const SUGGESTIONS = [
   "Find veg items under ₹80",
 ];
 
-export default function qwikBiteAssistant() {
+export default function QwikBiteAssistant() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([

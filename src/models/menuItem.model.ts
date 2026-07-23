@@ -15,6 +15,7 @@ export interface INutritionInfo {
  * Menu Item Interface
  */
 export interface IMenuItem extends Document {
+  id: string;
   name: string;
   description?: string;
 
@@ -65,6 +66,14 @@ const nutritionSchema = new Schema<INutritionInfo>(
  */
 const menuItemSchema = new Schema<IMenuItem>(
   {
+    id: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+      default: () => `MENU-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+    },
+
     name: {
       type: String,
       required: true,

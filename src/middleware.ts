@@ -116,6 +116,14 @@ export async function middleware(req: NextRequest) {
   if (isAuthenticated) {
     // Redirect away from auth-only routes (/, /signin, etc)
     if (isAuthOnlyRoute) {
+      const callbackUrl = req.nextUrl.searchParams.get('callbackUrl');
+      if (
+        callbackUrl &&
+        callbackUrl !== '/' &&
+        !authOnlyRoutes.some(route => callbackUrl === route || callbackUrl.startsWith(`${route}/`))
+      ) {
+        return NextResponse.redirect(new URL(callbackUrl, req.url));
+      }
       if (userRole === 'admin' || userRole === 'canteen_staff') {
         return NextResponse.redirect(new URL('/admin/dashboard', req.url));
       } else {

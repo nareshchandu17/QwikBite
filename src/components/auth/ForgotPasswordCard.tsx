@@ -193,7 +193,7 @@ export function ForgotPasswordCard({
         <div className="flex items-center justify-center gap-2.5 px-6 py-3 bg-stone-50 rounded-2xl">
           <Shield className="text-orange-500/60 w-4 h-4" />
           <p className="text-[10px] font-bold text-stone-500 leading-tight text-center uppercase tracking-widest">
-            Security first: We'll verify your identity before resetting.
+            Security first: We&apos;ll verify your identity before resetting.
           </p>
         </div>
       </div>

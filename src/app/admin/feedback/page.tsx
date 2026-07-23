@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import FeedbackFilters from '@/components/admin/FeedbackFilters';
 
 interface Feedback {
   _id: string;
@@ -32,43 +33,49 @@ export default function AdminFeedbackDashboard() {
     positive: 0,
     neutral: 0,
     negative: 0,
-    actionsTaken: 258
+    actionsTaken: 0
   });
 
   const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterRating, setFilterRating] = useState<number | null>(null);
+  const [filterDateRange, setFilterDateRange] = useState('All Time');
+  const [customDateRange, setCustomDateRange] = useState<{ start: string; end: string } | null>(null);
 
   useEffect(() => {
     fetchFeedbacks();
   }, []);
 
   const fetchFeedbacks = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
-      console.log('Fetching feedbacks from /api/feedbacks...');
-      const res = await fetch('/api/feedbacks');
-      console.log('Response status:', res.status);
-      console.log('Response ok:', res.ok);
+      const res = await fetch('/api/feedbacks?all=true');
       
       if (res.ok) {
         const data = await res.json();
-        console.log('Response data:', data);
         if (data.success) {
           setFeedbacks(data.data || []);
           calculateStats(data.data || []);
         } else {
-          console.error('API returned error:', data.error);
+          setError(data.error || 'Failed to load feedbacks');
           toast.error(`Failed: ${data.error}`);
         }
       } else {
-        const errorText = await res.text();
-        console.error('HTTP error:', res.status, errorText);
+        setError(`HTTP ${res.status}: Failed to load feedbacks`);
         toast.error(`HTTP ${res.status}: Failed to load feedbacks`);
       }
     } catch (error) {
-      console.error('Network error:', error);
+      setError('Network error loading feedbacks');
       toast.error('Network error loading feedbacks');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -87,7 +94,7 @@ export default function AdminFeedbackDashboard() {
       positive,
       neutral,
       negative,
-      actionsTaken: 258
+      actionsTaken: 0
     });
   };
 
@@ -103,7 +110,8 @@ export default function AdminFeedbackDashboard() {
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    if (diffDays === 1) return 'today';
+    if (diffDays === 0) return 'today';
+    if (diffDays === 1) return 'yesterday';
     if (diffDays <= 7) return `${diffDays} days ago`;
     if (diffDays <= 30) return `${Math.floor(diffDays / 7)} weeks ago`;
     return `${Math.floor(diffDays / 30)} months ago`;
@@ -124,7 +132,10 @@ export default function AdminFeedbackDashboard() {
   const getAvatarColor = (name: string) => {
     const colors = ['indigo', 'emerald', 'blue', 'purple', 'pink', 'yellow'];
     const index = name?.charCodeAt(0) % colors.length || 0;
-    return colors[index];
+    return {
+      bg: colors[index],
+      text: colors[index]
+    };
   };
 
   const handleReply = (feedbackId: string) => {
@@ -136,7 +147,6 @@ export default function AdminFeedbackDashboard() {
     if (!replyText.trim() || !replyingTo) return;
 
     try {
-      // Find the feedback to get its feedbackId
       const feedback = feedbacks.find(f => f._id === replyingTo);
       if (!feedback || !feedback.feedbackId) {
         toast.error('Feedback ID not found');
@@ -149,7 +159,7 @@ export default function AdminFeedbackDashboard() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          feedbackId: feedback.feedbackId, // Use feedbackId instead of _id
+          feedbackId: feedback.feedbackId,
           reply: replyText,
         }),
       });
@@ -158,15 +168,91 @@ export default function AdminFeedbackDashboard() {
         toast.success('Reply sent successfully');
         setReplyingTo(null);
         setReplyText('');
-        fetchFeedbacks(); // Refresh the feedback list
+        fetchFeedbacks();
       } else {
         toast.error('Failed to send reply');
       }
     } catch (error) {
-      console.error('Error sending reply:', error);
       toast.error('Error sending reply');
     }
   };
+
+  const handleStatusChange = async (feedbackId: string, status: 'approved' | 'rejected') => {
+    try {
+      const feedback = feedbacks.find(f => f._id === feedbackId);
+      if (!feedback || !feedback.feedbackId) {
+        toast.error('Feedback ID not found');
+        return;
+      }
+
+      const res = await fetch('/api/feedbacks/status', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          feedbackId: feedback.feedbackId,
+          status,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success(`Feedback ${status} successfully`);
+        fetchFeedbacks();
+      } else {
+        toast.error(`Failed to ${status} feedback`);
+      }
+    } catch (error) {
+      toast.error(`Error ${status} feedback`);
+    }
+  };
+
+  const handleCustomDateRangeChange = (startDate: string, endDate: string) => {
+    if (!startDate || !endDate) {
+      toast.error('Please select both start and end dates');
+      return;
+    }
+    if (new Date(startDate) > new Date(endDate)) {
+      toast.error('Start date must be before end date');
+      return;
+    }
+    setCustomDateRange({ start: startDate, end: endDate });
+  };
+
+  const filteredFeedbacks = feedbacks.filter(feedback => {
+    const matchesSearch = searchQuery === '' || 
+      feedback.comment.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (feedback.user?.name || '').toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesCategory = filterCategory === '' || feedback.category === filterCategory;
+    const matchesRating = filterRating === null || feedback.rating === filterRating;
+    
+    let matchesDate = true;
+    if (filterDateRange !== 'All Time') {
+      const feedbackDate = new Date(feedback.createdAt);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      
+      if (filterDateRange === 'Today') {
+        matchesDate = feedbackDate >= today;
+      } else if (filterDateRange === 'Last 7 Days') {
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        matchesDate = feedbackDate >= sevenDaysAgo;
+      } else if (filterDateRange === 'Last 30 Days') {
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        matchesDate = feedbackDate >= thirtyDaysAgo;
+      } else if (filterDateRange.startsWith('Custom') && customDateRange) {
+        const startDate = new Date(customDateRange.start);
+        const endDate = new Date(customDateRange.end);
+        endDate.setHours(23, 59, 59, 999); // Include the entire end day
+        matchesDate = feedbackDate >= startDate && feedbackDate <= endDate;
+      }
+    }
+    
+    return matchesSearch && matchesCategory && matchesRating && matchesDate;
+  });
 
   const handleViewDetails = (feedback: Feedback) => {
     setSelectedFeedback(feedback);
@@ -181,19 +267,68 @@ export default function AdminFeedbackDashboard() {
             <div className="orange-line-gradient absolute top-0 left-0"></div>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-semibold text-white">Feedback List</h3>
-              <button className="flex items-center gap-1 text-sm text-white hover:text-primary transition-colors">
-                Events <span className="material-icons-outlined text-sm">chevron_right</span>
-              </button>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  placeholder="Search feedback..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary/50 text-sm"
+                />
+                <button className="flex items-center gap-1 text-sm text-white hover:text-primary transition-colors">
+                  Events <span className="material-icons-outlined text-sm">chevron_right</span>
+                </button>
+              </div>
             </div>
             
+            <FeedbackFilters
+              onCategoryChange={setFilterCategory}
+              onRatingChange={setFilterRating}
+              onDateRangeChange={setFilterDateRange}
+              onCustomDateRangeChange={handleCustomDateRangeChange}
+            />
+            
             <div className="space-y-4">
-              {feedbacks.length === 0 ? (
+              {isLoading ? (
+                <div className="text-center py-12">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-4"></div>
+                  <p className="text-white">Loading feedbacks...</p>
+                </div>
+              ) : error ? (
+                <div className="text-center py-12">
+                  <span className="material-icons-outlined text-4xl text-red-400 mb-4">error_outline</span>
+                  <p className="text-white mb-4">{error}</p>
+                  <button
+                    onClick={fetchFeedbacks}
+                    className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-orange-600 transition-colors"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : feedbacks.length === 0 ? (
                 <div className="text-center py-12">
                   <span className="material-icons-outlined text-4xl text-white mb-4">chat_bubble_outline</span>
                   <p className="text-white">No feedback submissions yet</p>
                 </div>
+              ) : filteredFeedbacks.length === 0 ? (
+                <div className="text-center py-12">
+                  <span className="material-icons-outlined text-4xl text-white mb-4">filter_list_off</span>
+                  <p className="text-white">No feedback matches your filters</p>
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setFilterCategory('');
+                      setFilterRating(null);
+                      setFilterDateRange('All Time');
+                      setCustomDateRange(null);
+                    }}
+                    className="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-orange-600 transition-colors"
+                  >
+                    Clear Filters
+                  </button>
+                </div>
               ) : (
-                feedbacks.map((feedback) => {
+                filteredFeedbacks.map((feedback) => {
                   const sentiment = getSentiment(feedback.rating);
                   const avatarColor = getAvatarColor(feedback.user?.name || 'Anonymous');
                   
@@ -201,7 +336,7 @@ export default function AdminFeedbackDashboard() {
                     <div key={feedback._id} className="dark:bg-white/[0.02] border border-white/5 rounded-xl p-5 hover:border-primary/30 transition-all duration-300">
                       <div className="flex justify-between items-start mb-4">
                         <div className="flex gap-4">
-                          <div className={`w-10 h-10 rounded-full bg-${avatarColor}-500/20 text-${avatarColor}-400 flex items-center justify-center font-bold`}>
+                          <div className={`w-10 h-10 rounded-full bg-${avatarColor.bg}-500/20 text-${avatarColor.text}-400 flex items-center justify-center font-bold`}>
                             {getInitial(feedback.isAnonymous ? 'Anonymous' : (feedback.user?.name || 'User'))}
                           </div>
                           <div>
@@ -233,10 +368,33 @@ export default function AdminFeedbackDashboard() {
                       )}
                       
                       <div className="flex justify-between items-center">
-                        <span className={`px-3 py-1 bg-${sentiment.color}-500/10 text-${sentiment.color}-500 text-xs font-semibold rounded-full border border-${sentiment.color}-500/20`}>
-                          {sentiment.label}
-                        </span>
+                        <div className="flex gap-2">
+                          <span className={`px-3 py-1 bg-${sentiment.color}-500/10 text-${sentiment.color}-500 text-xs font-semibold rounded-full border border-${sentiment.color}-500/20`}>
+                            {sentiment.label}
+                          </span>
+                          <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${
+                            feedback.status === 'approved' 
+                              ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                              : feedback.status === 'rejected'
+                              ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                              : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                          }`}>
+                            {feedback.status.charAt(0).toUpperCase() + feedback.status.slice(1)}
+                          </span>
+                        </div>
                         <div className="flex gap-3">
+                          <button 
+                            onClick={() => handleStatusChange(feedback._id, 'approved')}
+                            className="text-xs font-semibold px-4 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 transition-all cursor-pointer"
+                          >
+                            Approve
+                          </button>
+                          <button 
+                            onClick={() => handleStatusChange(feedback._id, 'rejected')}
+                            className="text-xs font-semibold px-4 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition-all cursor-pointer"
+                          >
+                            Reject
+                          </button>
                           <button 
                             onClick={() => handleReply(feedback._id)}
                             className="text-xs font-semibold px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-primary border border-primary/20 transition-all cursor-pointer"
@@ -413,7 +571,7 @@ export default function AdminFeedbackDashboard() {
             <div className="space-y-6">
               {/* User Info */}
               <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-full bg-${getAvatarColor(selectedFeedback.user?.name || 'Anonymous')}-500/20 text-${getAvatarColor(selectedFeedback.user?.name || 'Anonymous')}-400 flex items-center justify-center font-bold text-lg`}>
+                <div className={`w-12 h-12 rounded-full bg-${getAvatarColor(selectedFeedback.user?.name || 'Anonymous').bg}-500/20 text-${getAvatarColor(selectedFeedback.user?.name || 'Anonymous').text}-400 flex items-center justify-center font-bold text-lg`}>
                   {getInitial(selectedFeedback.isAnonymous ? 'Anonymous' : (selectedFeedback.user?.name || 'User'))}
                 </div>
                 <div>
@@ -439,6 +597,20 @@ export default function AdminFeedbackDashboard() {
                 <span className="text-sm font-medium text-slate-400">Sentiment:</span>
                 <span className={`px-3 py-1 bg-${getSentiment(selectedFeedback.rating).color}-500/10 text-${getSentiment(selectedFeedback.rating).color}-500 text-xs font-semibold rounded-full border border-${getSentiment(selectedFeedback.rating).color}-500/20`}>
                   {getSentiment(selectedFeedback.rating).label}
+                </span>
+              </div>
+
+              {/* Status */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-slate-400">Status:</span>
+                <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${
+                  selectedFeedback.status === 'approved' 
+                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                    : selectedFeedback.status === 'rejected'
+                    ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                    : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                }`}>
+                  {selectedFeedback.status.charAt(0).toUpperCase() + selectedFeedback.status.slice(1)}
                 </span>
               </div>
 

@@ -1,7 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MongoClient } from 'mongodb';
+import connectDB from '@/lib/db';
+import FeedbackCollection from '@/lib/models/FeedbackCollection';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { pusherServer } from '@/lib/pusher';
 
 export async function POST(req: NextRequest) {
+  // Admin authentication check
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const userRole = (session.user as { role?: string }).role;
+  if (!['admin', 'canteen_staff'].includes(userRole as any)) {
+    return NextResponse.json({ success: false, error: 'Forbidden - Insufficient permissions' }, { status: 403 });
+  }
+
+  await connectDB();
+
   try {
     const { feedbackId, reply } = await req.json();
 
@@ -12,16 +29,10 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Connect to MongoDB
-    const client = new MongoClient(process.env.MONGODB_URI!);
-    await client.connect();
-    const db = client.db();
-
-    // First, get the feedback details to find the customer
-    const feedback = await db.collection('feedbacks').findOne({ feedbackId: feedbackId });
+    // Find the feedback using Mongoose
+    const feedback = await FeedbackCollection.findOne({ feedbackId });
     
     if (!feedback) {
-      await client.close();
       return NextResponse.json({ 
         success: false, 
         error: 'Feedback not found' 
@@ -29,15 +40,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Update the feedback with the admin reply
-    const result = await db.collection('feedbacks').updateOne(
-      { feedbackId: feedbackId },
-      { 
-        $set: { 
-          adminReply: reply,
-          updatedAt: new Date()
-        }
-      }
-    );
+    feedback.adminReply = reply;
+    await feedback.save();
 
     // Create notification for the customer
     if (feedback.studentId && feedback.name) {
@@ -50,19 +54,31 @@ export async function POST(req: NextRequest) {
           priority: 'normal',
           isRead: false,
           createdAt: new Date(),
+          ctaLink: `/customer/feedback?feedbackId=${feedback._id.toString()}`,
           data: {
-            feedbackId: feedbackId,
+            feedbackId: feedback._id.toString(),
             feedbackText: feedback.feedbackText,
             adminReply: reply
           }
         };
         
-        await db.collection('notifications').insertOne(notificationData);
-        console.log('[Feedback Reply] ✅ Customer notification created for:', feedback.studentId);
-        
-        // Also emit WebSocket notification if available
+        // Try to use Mongoose model if exists, otherwise fallback to direct insert
         try {
-          const { pusherServer } = await import('@/lib/pusher');
+          const NotificationModule = await import('@/lib/models/Notification');
+          const NotificationModel = (NotificationModule as any).default || (NotificationModule as any).Notification || NotificationModule;
+          await NotificationModel.create(notificationData);
+        } catch {
+          // Fallback to direct MongoDB
+          const { MongoClient } = await import('mongodb');
+          const client = new MongoClient(process.env.MONGODB_URI!);
+          await client.connect();
+          const db = client.db();
+          await db.collection('notifications').insertOne(notificationData);
+          await client.close();
+        }
+        
+        // Emit WebSocket notification if available
+        try {
           const channel = `user-${feedback.studentId}`;
           await pusherServer.trigger(channel, 'new_notification', {
             userId: feedback.studentId,
@@ -70,26 +86,16 @@ export async function POST(req: NextRequest) {
             message: notificationData.message,
             type: notificationData.type,
             priority: notificationData.priority,
+            ctaLink: notificationData.ctaLink,
             data: notificationData.data,
             timestamp: notificationData.createdAt
           });
         } catch (wsError) {
-          console.log('[Feedback Reply] ⚠️ WebSocket notification failed:', wsError);
+          // WebSocket notification failed, but don't fail the request
         }
-        
       } catch (notifError) {
-        console.error('[Feedback Reply] ❌ Failed to create customer notification:', notifError);
         // Don't fail the reply if notification fails
       }
-    }
-
-    await client.close();
-
-    if (result.matchedCount === 0) {
-      return NextResponse.json({ 
-        success: false, 
-        error: 'Feedback not found' 
-      }, { status: 404 });
     }
 
     return NextResponse.json({ 

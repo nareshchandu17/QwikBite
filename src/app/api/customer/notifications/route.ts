@@ -4,8 +4,8 @@ import connectToDatabase from '@/lib/db';
 import { Notification } from '@/lib/models';
 import { getToken } from 'next-auth/jwt';
 import mongoose from 'mongoose';
-
 import { getAuthenticatedUser } from '@/lib/auth-helper';
+import { checkRateLimit, getRateLimitIdentifier, RateLimitPresets } from '@/lib/security/rateLimiter';
 
 // GET /api/customer/notifications - Get customer's notifications
 export async function GET(req: NextRequest) {
@@ -15,6 +15,14 @@ export async function GET(req: NextRequest) {
     if (!user?.id) {
       console.log('[Notifications GET] Unauthorized - no user ID');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Rate limiting for GET requests
+    const identifier = getRateLimitIdentifier(req);
+    const rateLimit = checkRateLimit(identifier, RateLimitPresets.LENIENT.limit, RateLimitPresets.LENIENT.windowMs);
+    
+    if (!rateLimit.allowed) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
     const userId = user.id;

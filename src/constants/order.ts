@@ -1,6 +1,6 @@
 import type { OrderStatus } from '@/types/order';
 
-export const statusMessages: Record<OrderStatus, string> = {
+export const statusMessages: Record<string, string> = {
   'received': 'Your order has been received successfully',
   'preparing': 'Your order is being prepared with care',
   'almost_ready': 'Your order is almost ready for pickup',

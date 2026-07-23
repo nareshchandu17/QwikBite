@@ -135,7 +135,7 @@ export const SocialProofSection: React.FC = () => {
               </div>
 
               <p className="mb-8 text-lg font-medium leading-relaxed text-[#1A1A1A]/80">
-                "{testimonial.content}"
+                &ldquo;{testimonial.content}&rdquo;
               </p>
 
               <div className="flex items-center gap-8 text-gray-500">

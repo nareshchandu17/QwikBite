@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { getSocket } from '@/lib/socket';
+import { getPusherClient } from '@/lib/pusher';
 import { STANDARD_SLOTS } from '@/lib/slot-utils';
 import EditScheduleModal from './EditScheduleModal';
 import SlotLoadViz from './SlotLoadViz';
 import { TimeSlot } from '@/types/slot';
-import { RefreshCw, Clock, ShieldCheck, AlertCircle, Zap } from 'lucide-react';
+import { RefreshCw, Clock, ShieldCheck, AlertCircle, Zap, Wifi, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const SlotsTimings: React.FC = () => {
@@ -16,18 +16,25 @@ const SlotsTimings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [isConnected, setIsConnected] = useState(false);
+  const [autoRefreshInterval, setAutoRefreshInterval] = useState<NodeJS.Timeout | null>(null);
 
   // 🔹 FETCH SLOTS FROM DB
   const fetchSlots = async () => {
     try {
+      setLoading(true);
       const res = await fetch('/api/admin/timeslots/today', { cache: 'no-store' });
-      if (!res.ok) throw new Error('Fetch failed');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+      }
       const data = await res.json();
       setSlots(data);
       setLastRefresh(new Date());
     } catch (error) {
       console.error('Failed to load slots:', error);
-      toast.error('Failed to load time slots');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to load time slots: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -38,7 +45,10 @@ const SlotsTimings: React.FC = () => {
     try {
       setIsSyncing(true);
       const res = await fetch('/api/slots/sync', { method: 'POST' });
-      if (!res.ok) throw new Error('Sync failed');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+      }
       
       const result = await res.json();
       toast.success(result.message || 'System reconciled successfully!');
@@ -46,7 +56,9 @@ const SlotsTimings: React.FC = () => {
       // Refresh local data
       await fetchSlots();
     } catch (error) {
-      toast.error('Failed to sync slot data');
+      console.error('Force sync failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to sync slot data: ${errorMessage}`);
     } finally {
       setIsSyncing(false);
     }
@@ -55,16 +67,43 @@ const SlotsTimings: React.FC = () => {
   useEffect(() => {
     fetchSlots();
 
-    // 🔹 Real-time updates via WebSockets
-    const socket = getSocket();
-    socket.on('timeslot:update', (updatedSlots: any[]) => {
-      fetchSlots(); // Re-fetch to ensure full data sync
-    });
+    // 🔹 Real-time updates via Pusher
+    const pusher = getPusherClient();
+    if (pusher) {
+      const channel = pusher.subscribe('admin');
+      
+      channel.bind('slot-update', (data: any) => {
+        console.log('Slot update received:', data);
+        fetchSlots();
+      });
 
-    return () => {
-      socket.off('timeslot:update');
-    };
-  }, []);
+      channel.bind('pusher:connection_established', () => {
+        setIsConnected(true);
+        console.log('Pusher connected');
+      });
+
+      channel.bind('pusher:connection_failed', () => {
+        setIsConnected(false);
+        console.log('Pusher connection failed');
+      });
+
+      // Set up auto-refresh as fallback when disconnected
+      const interval = setInterval(() => {
+        if (!isConnected) {
+          fetchSlots();
+        }
+      }, 30000); // Refresh every 30 seconds when disconnected
+      setAutoRefreshInterval(interval);
+
+      return () => {
+        channel.unbind_all();
+        channel.unsubscribe();
+        if (autoRefreshInterval) {
+          clearInterval(autoRefreshInterval);
+        }
+      };
+    }
+  }, [isConnected]);
 
   const getStatusConfig = (status: string, percentage: number) => {
     const s = status.toLowerCase();
@@ -96,19 +135,32 @@ const SlotsTimings: React.FC = () => {
 
   const handleSaveSchedule = async (updatedSlots: TimeSlot[]) => {
     try {
-      const res = await fetch('/api/slots', {
+      const res = await fetch('/api/admin/timeslots/today', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedSlots),
+        body: JSON.stringify({ slots: updatedSlots }),
       });
 
-      if (!res.ok) throw new Error('Save failed');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+      }
 
+      const result = await res.json();
       setSlots(updatedSlots);
       toast.success('Manual overrides applied!');
       setIsModalOpen(false);
+      
+      // Invalidate cache to ensure fresh data
+      try {
+        await fetch('/api/slots', { method: 'POST' });
+      } catch (cacheErr) {
+        console.error('Failed to invalidate cache:', cacheErr);
+      }
     } catch (error) {
-      toast.error('Failed to update schedule');
+      console.error('Failed to update schedule:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to update schedule: ${errorMessage}`);
     }
   };
 
@@ -137,6 +189,11 @@ const SlotsTimings: React.FC = () => {
              <p className="text-xs text-gray-500 italic">
                 Last updated: {lastRefresh.toLocaleTimeString()}
              </p>
+             <span className="h-1 w-1 rounded-full bg-gray-600" />
+             <div className={`flex items-center gap-1 text-xs ${isConnected ? 'text-emerald-400' : 'text-amber-400'}`}>
+                {isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
+                {isConnected ? 'Live' : 'Polling'}
+             </div>
           </div>
         </div>
         

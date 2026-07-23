@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { ArrowRight, ShoppingCart } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useAuthModal } from "@/context/AuthModalContext";
 import { useAuth } from "@/context/AuthContext";
-import { useCartStore } from "@/stores/cartStore";
 import UserDropdown from "@/components/UserDropdown";
 import Link from "next/link";
 
@@ -10,7 +9,6 @@ export const Header: React.FC = () => {
   const { openModal } = useAuthModal();
   const { user, isAuthenticated } = useAuth();
   const [mounted, setMounted] = useState(false);
-  const cartCount = useCartStore((s) => s.count());
 
   useEffect(() => {
     setMounted(true);
@@ -67,22 +65,6 @@ export const Header: React.FC = () => {
 
         {/* Right Side CTA Actions */}
         <div className="flex items-center gap-4 md:gap-8">
-          {mounted && (
-            <Link
-              href="/cart"
-              className="relative group/cart cursor-pointer p-2 rounded-full hover:bg-gray-100 transition-colors pointer-events-auto"
-            >
-              <ShoppingCart
-                className="w-5 h-5 text-[hsl(222.2_84%_4.9%)] group-hover/cart:text-[hsl(24_85%_55%)] transition-colors"
-              />
-              {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-[hsl(24_85%_55%)] text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white min-w-[18px] h-[18px] flex items-center justify-center">
-                  {cartCount}
-                </span>
-              )}
-            </Link>
-          )}
-
           {mounted && isAuthenticated && user ? (
             <UserDropdown user={user} />
           ) : (

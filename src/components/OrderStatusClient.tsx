@@ -306,7 +306,7 @@ export function OrderStatusClient({ initialOrder, orderId }: OrderStatusClientPr
               <ChevronRight className="w-5 h-5" />
             </Link>
 
-            {order?.status === 'collected' ? (
+            {order?.status === 'completed' || (order?.status as string) === 'collected' ? (
               <Link
                 href={`/feedback?orderId=${order?.id || orderId}`}
                 className="px-6 py-4 bg-white text-amber-600 border border-amber-200 hover:bg-amber-50 dark:bg-gray-800 dark:border-amber-800 dark:hover:bg-gray-700 shadow-lg font-semibold rounded-xl transition-all text-center flex-1 flex items-center justify-center gap-2"

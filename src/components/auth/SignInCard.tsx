@@ -216,17 +216,6 @@ export function SignInCard({
         });
       }
 
-      toast.success("Welcome back! Redirecting...", {
-        duration: 3000,
-        style: {
-          background: 'rgba(34, 197, 94, 0.9)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          color: '#ffffff',
-        },
-      });
-      
       // Determine redirect path
       let redirectPath = '/';
       const userRole = updatedSession?.user?.role;
@@ -246,11 +235,25 @@ export function SignInCard({
         }
       }
       
-      // Start navigation first using next/navigation router.replace
+      // Navigate FIRST using router.replace to prevent homepage flash
       router.replace(redirectPath);
       
-      // Close the modal only after navigation is initiated
+      // Close the modal immediately after navigation is initiated
       onSuccess?.();
+      
+      // Show toast AFTER navigation to ensure it appears in the destination page
+      setTimeout(() => {
+        toast.success("Welcome back!", {
+          duration: 3000,
+          style: {
+            background: 'rgba(34, 197, 94, 0.9)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            color: '#ffffff',
+          },
+        });
+      }, 100);
     } catch (err) {
       toast.error("Something went wrong. Please try again later.", {
         duration: 3000,
