@@ -1,6 +1,5 @@
 <div align="center">
 
-<img src="public/images/heroimage.png" alt="QwikBite — Campus Food Ordering System" width="100%" />
 
 # QwikBite
 
