@@ -62,7 +62,7 @@ export default function TimeSlotsPage() {
                   Add some delicious items from our menu before selecting a time
                   slot.
                 </p>
-                <Link href="/menu" className="btn btn-primary">
+                <Link href="/customer/menu" className="btn btn-primary">
                   Browse Menu
                 </Link>
               </motion.div>
@@ -192,7 +192,7 @@ export default function TimeSlotsPage() {
             </div>
 
             <div className="flex justify-between items-center mt-10 pt-6 border-t border-gray-200 dark:border-gray-800">
-              <Link href="/menu" className="btn btn-ghost flex items-center">
+              <Link href="/customer/menu" className="btn btn-ghost flex items-center">
                 Back to Menu
               </Link>
 

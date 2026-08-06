@@ -11,7 +11,7 @@ export function AuthRedirector({ children }: { children: React.ReactNode }) {
   const [hasRedirected, setHasRedirected] = useState(false);
 
   // Public paths that Don&apos;t require authentication
-  const publicPaths = ["/", "/signin", "/signup", "/menu", "/api", "/_next"];
+  const publicPaths = ["/", "/signin", "/signup", "/customer/menu", "/api", "/_next"];
 
   useEffect(() => {
     // Don&apos;t do anything while loading or if pathname is null

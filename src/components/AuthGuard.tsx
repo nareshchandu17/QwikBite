@@ -9,7 +9,7 @@ const publicRoutes = [
   "/",
   "/signin",
   "/signup",
-  "/menu",
+  "/customer/menu",
   "/_next",
   "/api/auth",
   "/api/register",

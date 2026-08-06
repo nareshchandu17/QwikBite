@@ -5,7 +5,7 @@ import { getToken } from "next-auth/jwt";
 /**
  * Public pages (no authentication required)
  */
-const publicRoutes = ["/", "/signin", "/signup", "/menu", "/unauthorized"];
+const publicRoutes = ["/", "/signin", "/signup", "/customer/menu", "/unauthorized"];
 
 /**
  * Role-based protected routes
