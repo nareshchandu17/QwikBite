@@ -1,12 +1,11 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import Image from 'next/image';
+import { motion } from "framer-motion";
+import Image from "next/image";
 
 export default function PremiumLoadingScreen() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden flex items-center justify-center">
-      
       {/* Background Image */}
       <Image
         src="/images/herosection.jpg"
@@ -27,7 +26,7 @@ export default function PremiumLoadingScreen() {
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: 'easeOut' }}
+        transition={{ duration: 0.8, ease: "easeOut" }}
         className="
           relative z-10
           max-w-3xl w-full mx-4
@@ -40,11 +39,10 @@ export default function PremiumLoadingScreen() {
           text-center
         "
       >
-
         {/* Floating shimmer badge */}
         <motion.div
           animate={{ y: [0, -6, 0] }}
-          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
           className="
             inline-block mb-6
             px-5 py-2 rounded-full
@@ -67,7 +65,7 @@ export default function PremiumLoadingScreen() {
         {/* CTA illusion */}
         <motion.div
           animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
           className="
             inline-flex items-center justify-center
             h-12 w-40 rounded-full
@@ -83,8 +81,12 @@ export default function PremiumLoadingScreen() {
       {/* Animations */}
       <style jsx>{`
         @keyframes shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
+          0% {
+            background-position: -200% 0;
+          }
+          100% {
+            background-position: 200% 0;
+          }
         }
         .animate-shimmer {
           animation: shimmer 2.4s linear infinite;
@@ -93,8 +95,13 @@ export default function PremiumLoadingScreen() {
           animation: fade 2.2s ease-in-out infinite;
         }
         @keyframes fade {
-          0%,100% { opacity: 0.4; }
-          50% { opacity: 0.75; }
+          0%,
+          100% {
+            opacity: 0.4;
+          }
+          50% {
+            opacity: 0.75;
+          }
         }
       `}</style>
     </div>

@@ -1,20 +1,19 @@
-import { MongoClient } from 'mongodb';
+import { MongoClient } from "mongodb";
 
 if (!process.env.MONGODB_URI) {
-  if (process.env.NEXT_PHASE === 'phase-production-build') {
-    console.warn('⚠️ MONGODB_URI is missing at build time. Using placeholder for build safety.');
+  if (process.env.NEXT_PHASE === "phase-production-build") {
   } else {
     throw new Error('Invalid/Missing environment variable: "MONGODB_URI"');
   }
 }
 
-const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/placeholder';
+const uri = process.env.MONGODB_URI || "mongodb://localhost:27017/placeholder";
 const options = {};
 
 let client;
 let clientPromise: Promise<MongoClient>;
 
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === "development") {
   const globalWithMongo = global as typeof globalThis & {
     _mongoClientPromise?: Promise<MongoClient>;
   };

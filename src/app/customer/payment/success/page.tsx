@@ -6,12 +6,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, Repeat, ArrowRight } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useOrders, type Order, type OrderStatus } from "@/context/OrderContext";
+import {
+  useOrders,
+  type Order,
+  type OrderStatus,
+} from "@/context/OrderContext";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import logger from "@/lib/logger";
 
 // Dynamically import Confetti with no SSR to avoid window is not defined errors
-const Confetti = dynamic(() => import('react-confetti'), {
+const Confetti = dynamic(() => import("react-confetti"), {
   ssr: false,
 });
 
@@ -20,23 +25,31 @@ type ClassValue = string | Record<string, boolean> | undefined | null | false;
 function cn(...classes: ClassValue[]): string {
   return classes
     .map((cls) => {
-      if (!cls) return '';
-      if (typeof cls === 'string') return cls;
+      if (!cls) return "";
+      if (typeof cls === "string") return cls;
       return Object.entries(cls)
         .filter(([_, value]) => value)
         .map(([key]) => key)
-        .join(' ');
+        .join(" ");
     })
     .filter(Boolean)
-    .join(' ');
+    .join(" ");
 }
 
-const Button = ({ children, onClick, className = '' }: { children: React.ReactNode; onClick: () => void; className?: string }) => (
+const Button = ({
+  children,
+  onClick,
+  className = "",
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  className?: string;
+}) => (
   <button
     onClick={onClick}
     className={cn(
       "bg-primary text-white hover:bg-primary/90 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
-      className
+      className,
     )}
   >
     {children}
@@ -99,8 +112,8 @@ const OrderConfirmationCard = ({
       y: 0,
       transition: {
         type: "spring" as const,
-        stiffness: 100
-      }
+        stiffness: 100,
+      },
     },
   };
 
@@ -113,12 +126,15 @@ const OrderConfirmationCard = ({
         aria-live="polite"
         className={cn(
           "relative w-full max-w-sm rounded-xl border bg-white text-gray-900 shadow-lg p-6 sm:p-8 transition-all duration-300 hover:shadow-[0_0_25px_8px_rgba(251,191,36,0.6)]",
-          className ?? " "
+          className ?? " ",
         )}
       >
         <div className="flex flex-col items-center space-y-4 text-center">
           <motion.div variants={itemVariants}>{icon}</motion.div>
-          <motion.h1 variants={itemVariants} className="text-3xl font-bold text-gray-900">
+          <motion.h1
+            variants={itemVariants}
+            className="text-3xl font-bold text-gray-900"
+          >
             {heading}
           </motion.h1>
           <motion.h2 variants={itemVariants} className="text-gray-600 text-lg">
@@ -132,24 +148,43 @@ const OrderConfirmationCard = ({
                 className={cn(
                   "flex items-center justify-between border-b pb-4 text-sm",
 
-                  index === details.length - 1 ? "border-none pb-0" : ""
-
+                  index === details.length - 1 ? "border-none pb-0" : "",
                 )}
               >
-                <span className={cn("font-semibold text-gray-800")}>{item.label}</span>
-                <span className={cn({ "text-lg font-bold text-gray-900": item.isBold === true, "text-gray-600": item.isBold !== true })}>
+                <span className={cn("font-semibold text-gray-800")}>
+                  {item.label}
+                </span>
+                <span
+                  className={cn({
+                    "text-lg font-bold text-gray-900": item.isBold === true,
+                    "text-gray-600": item.isBold !== true,
+                  })}
+                >
                   {item.value}
                 </span>
               </div>
             ))}
           </motion.div>
 
-          <motion.div variants={itemVariants} className="w-full pt-4 flex flex-row gap-4 justify-center">
+          <motion.div
+            variants={itemVariants}
+            className="w-full pt-4 flex flex-row gap-4 justify-center"
+          >
             <Button
               onClick={onOrderAgain}
               className="flex-1 max-w-[200px] bg-amber-300 hover:bg-amber-500 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
                 <path d="M3 3v5h5" />
                 <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
@@ -162,7 +197,17 @@ const OrderConfirmationCard = ({
               className="flex-1 max-w-[200px] bg-amber-300 hover:bg-amber-500 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
               View Order Status
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M5 12h14" />
                 <path d="m12 5 7 7-7 7" />
               </svg>
@@ -191,29 +236,33 @@ interface OrderData {
 export default function PaymentSuccessPage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [orderData, setOrderData] = useState<OrderData | null>(null);
-  const [orderId, setOrderId] = useState<string>('');
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>('online');
-  const orderIdRef = useRef<string>('');
+  const [orderId, setOrderId] = useState<string>("");
+  const [selectedPaymentMethod, setSelectedPaymentMethod] =
+    useState<string>("online");
+  const orderIdRef = useRef<string>("");
   const { addOrder } = useOrders();
   const router = useRouter();
   const orderProcessedRef = useRef(false);
   const { token } = useAuth();
 
   const displayPaymentMethod = (method: string | null | undefined) => {
-    const m = (method || '').toLowerCase().trim();
-    if (m === 'cod' || m === 'cash' || m === 'cash on delivery') return 'Cash on Delivery';
-    if (m === 'card' || m === 'debit/credit' || m === 'debit' || m === 'credit') return 'Card';
-    if (m === 'upi') return 'UPI';
-    if (m === 'wallet') return 'Wallet';
-    if (m === 'online') return 'Online';
-    return method || 'Online';
+    const m = (method || "").toLowerCase().trim();
+    if (m === "cod" || m === "cash" || m === "cash on delivery")
+      return "Cash on Delivery";
+    if (m === "card" || m === "debit/credit" || m === "debit" || m === "credit")
+      return "Card";
+    if (m === "upi") return "UPI";
+    if (m === "wallet") return "Wallet";
+    if (m === "online") return "Online";
+    return method || "Online";
   };
 
   // Initialize orderId from localStorage on mount
   useEffect(() => {
-    const savedOrderId = localStorage.getItem('lastOrderId') || localStorage.getItem('orderId');
-    const storedMethod = localStorage.getItem('selectedPaymentMethod');
-    const storedOrderData = localStorage.getItem('orderData');
+    const savedOrderId =
+      localStorage.getItem("lastOrderId") || localStorage.getItem("orderId");
+    const storedMethod = localStorage.getItem("selectedPaymentMethod");
+    const storedOrderData = localStorage.getItem("orderData");
 
     if (storedMethod) {
       setSelectedPaymentMethod(storedMethod);
@@ -227,22 +276,29 @@ export default function PaymentSuccessPage() {
         setOrderData((prev) => ({
           items: prev?.items?.length ? prev.items : localItems,
           total: Number.isFinite(localTotal) ? localTotal : (prev?.total ?? 0),
-          timeSlot: parsed?.timeSlot || prev?.timeSlot || 'ASAP',
-          paymentMethod: storedMethod || prev?.paymentMethod || parsed?.paymentMethod || 'online',
-          username: parsed?.username || prev?.username || 'Customer',
+          timeSlot: parsed?.timeSlot || prev?.timeSlot || "ASAP",
+          paymentMethod:
+            storedMethod ||
+            prev?.paymentMethod ||
+            parsed?.paymentMethod ||
+            "online",
+          username: parsed?.username || prev?.username || "Customer",
         }));
       } catch (error) {
-        console.warn('[Payment Success] Failed to parse local orderData:', error);
+        logger.warn(
+          "[Payment Success] Failed to parse local orderData:",
+          error,
+        );
       }
     }
 
     if (savedOrderId) {
-      console.log('📦 Loaded order ID from localStorage:', savedOrderId);
+      logger.info("📦 Loaded order ID from localStorage:", savedOrderId);
       setOrderId(savedOrderId);
       orderIdRef.current = savedOrderId; // Also store in ref for immediate access
-      console.log('📌 Set orderId state and ref to:', savedOrderId);
+      logger.info("📌 Set orderId state and ref to:", savedOrderId);
     } else {
-      console.warn('⚠️ No order ID found in localStorage');
+      logger.warn("⚠️ No order ID found in localStorage");
     }
   }, []);
 
@@ -250,56 +306,78 @@ export default function PaymentSuccessPage() {
   useEffect(() => {
     const fetchRecentOrder = async () => {
       try {
-        console.log('[Payment Success] 📦 Fetching most recent order from database...');
-        
+        logger.info(
+          "[Payment Success] 📦 Fetching most recent order from database...",
+        );
+
         // Fetch the most recent order from the database
         const headers: Record<string, string> = {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
+        if (token) headers["Authorization"] = `Bearer ${token}`;
 
-        const response = await fetch('/api/orders/customer/recent', {
-          method: 'GET',
-          credentials: 'include',
-          headers
+        const response = await fetch("/api/orders/customer/recent", {
+          method: "GET",
+          credentials: "include",
+          headers,
         });
-        
+
         if (response.ok) {
           const data = await response.json();
-          console.log('[Payment Success] ✅ Recent order fetched:', data);
-          
+          logger.info("[Payment Success] ✅ Recent order fetched:", data);
+
           if (data.success && data.order) {
-            const apiTotal = Number(data.order.total ?? data.order.totalAmount ?? data.order.price ?? 0);
-            const apiItems = Array.isArray(data.order.items) ? data.order.items : [];
+            const apiTotal = Number(
+              data.order.total ??
+                data.order.totalAmount ??
+                data.order.price ??
+                0,
+            );
+            const apiItems = Array.isArray(data.order.items)
+              ? data.order.items
+              : [];
             const apiPaymentMethod = data.order.paymentMethod;
 
             setOrderData((prev) => {
               const prevTotal = Number(prev?.total ?? 0);
               const mergedOrderData = {
-                items: apiItems.length > 0 ? apiItems : (prev?.items || []),
+                items: apiItems.length > 0 ? apiItems : prev?.items || [],
                 // Never overwrite a valid local total with 0 from stale/incomplete API data.
                 total: apiTotal > 0 ? apiTotal : prevTotal,
-                timeSlot: data.order.timeSlot || prev?.timeSlot || 'ASAP',
-                paymentMethod: apiPaymentMethod || prev?.paymentMethod || selectedPaymentMethod || 'online',
-                username: data.order.username || prev?.username || 'Customer'
+                timeSlot: data.order.timeSlot || prev?.timeSlot || "ASAP",
+                paymentMethod:
+                  apiPaymentMethod ||
+                  prev?.paymentMethod ||
+                  selectedPaymentMethod ||
+                  "online",
+                username: data.order.username || prev?.username || "Customer",
               };
-              console.log('[Payment Success] ✅ Order data prepared:', mergedOrderData);
+              logger.info(
+                "[Payment Success] ✅ Order data prepared:",
+                mergedOrderData,
+              );
               return mergedOrderData;
             });
-            setOrderId(data.order.id || data.order.orderId || `#${Math.floor(10000000 + Math.random() * 90000000)}`);
+            setOrderId(
+              data.order.id ||
+                data.order.orderId ||
+                `#${Math.floor(10000000 + Math.random() * 90000000)}`,
+            );
           } else {
-            console.log('[Payment Success] ⚠️ No recent order found');
+            logger.info("[Payment Success] ⚠️ No recent order found");
           }
         } else {
-          console.log('[Payment Success] ❌ Failed to fetch recent order');
+          logger.info("[Payment Success] ❌ Failed to fetch recent order");
           const errorData = await response.json().catch(() => ({}));
-          console.error('[Payment Success] API Error:', errorData);
+          logger.error("[Payment Success] API Error:", errorData);
         }
-        
       } catch (error) {
-        console.error('[Payment Success] ❌ Error fetching recent order:', error);
+        logger.error(
+          "[Payment Success] ❌ Error fetching recent order:",
+          error,
+        );
       }
-      
+
       setShowConfetti(true);
     };
 
@@ -309,9 +387,9 @@ export default function PaymentSuccessPage() {
   // Define processOrder as a memoized callback
   const processOrder = useCallback(async () => {
     if (!orderData || orderProcessedRef.current) {
-      console.log('[Payment Success] Skipping order processing:', {
+      logger.info("[Payment Success] Skipping order processing:", {
         hasOrderData: !!orderData,
-        alreadyProcessed: orderProcessedRef.current
+        alreadyProcessed: orderProcessedRef.current,
       });
       return;
     }
@@ -319,84 +397,105 @@ export default function PaymentSuccessPage() {
     orderProcessedRef.current = true;
 
     // Get payment method with fallback - check multiple sources
-    const storedMethod = typeof window !== 'undefined' ? localStorage.getItem('selectedPaymentMethod') : null;
-    const currentPaymentMethod = storedMethod || orderData.paymentMethod || selectedPaymentMethod || 'online';
+    const storedMethod =
+      typeof window !== "undefined"
+        ? localStorage.getItem("selectedPaymentMethod")
+        : null;
+    const currentPaymentMethod =
+      storedMethod ||
+      orderData.paymentMethod ||
+      selectedPaymentMethod ||
+      "online";
 
-    console.log('[Payment Success] Order validation passed, paymentMethod:', currentPaymentMethod);
+    logger.info(
+      "[Payment Success] Order validation passed, paymentMethod:",
+      currentPaymentMethod,
+    );
 
     // Create the order in the format expected by OrderContext
     const newOrder = {
-      username: 'You',
-      status: 'Preparing' as const,
-      items: orderData.items.map(item => `${item.quantity}x ${item.name}`).join(', '),
+      username: "You",
+      status: "Preparing" as const,
+      items: orderData.items
+        .map((item) => `${item.quantity}x ${item.name}`)
+        .join(", "),
       price: `₹${orderData.total.toFixed(2)}`,
       total: orderData.total,
-      imageUrl: orderData.items[0]?.image || '/images/default-food.jpg',
+      imageUrl: orderData.items[0]?.image || "/images/default-food.jpg",
       originalPrice: `₹${orderData.total.toFixed(2)}`,
-      itemsArray: orderData.items.map(item => ({
+      itemsArray: orderData.items.map((item) => ({
         id: item.id,
         name: item.name,
         quantity: item.quantity,
         price: item.price,
-        image: item.image
+        image: item.image,
       })),
-      timeSlot: orderData.timeSlot || 'ASAP',
+      timeSlot: orderData.timeSlot || "ASAP",
       paymentMethod: currentPaymentMethod,
-      statusText: 'Preparing your order',
-      progressStep: 0
+      statusText: "Preparing your order",
+      progressStep: 0,
     };
 
-    console.log('[Payment Success] Adding new order:', newOrder);
+    logger.info("[Payment Success] Adding new order:", newOrder);
     // Get the generated order ID from addOrder
     const currentOrderId = await addOrder(newOrder);
-    console.log('[Payment Success] Order created and saved with ID:', currentOrderId);
+    logger.info(
+      "[Payment Success] Order created and saved with ID:",
+      currentOrderId,
+    );
     setOrderId(currentOrderId);
     orderIdRef.current = currentOrderId; // Also set in ref for immediate access
-    console.log('[Payment Success] Set orderId state and ref to:', currentOrderId);
+    logger.info(
+      "[Payment Success] Set orderId state and ref to:",
+      currentOrderId,
+    );
 
     // Create transaction in database
-    console.log('[Payment Success] Creating transaction...');
+    logger.info("[Payment Success] Creating transaction...");
 
     // Prepare transaction data with proper types and validation
     const transactionData = {
       orderId: currentOrderId,
-      customer: 'You',
+      customer: "You",
       amount: parseFloat(orderData.total.toString()), // Ensure It&apos;s a number
       method: currentPaymentMethod.trim(), // Use the resolved payment method
-      status: 'Success'
+      status: "Success",
     };
 
-    console.log('[Payment Success] Transaction data being sent to API:', {
+    logger.info("[Payment Success] Transaction data being sent to API:", {
       orderId: transactionData.orderId,
       customer: transactionData.customer,
       amount: transactionData.amount,
       method: transactionData.method,
-      status: transactionData.status
+      status: transactionData.status,
     });
 
     try {
-      const response = await fetch('/api/transactions', {
-        method: 'POST',
+      const response = await fetch("/api/transactions", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
-        body: JSON.stringify(transactionData)
+        credentials: "include",
+        body: JSON.stringify(transactionData),
       });
 
       if (response.ok) {
         const txnData = await response.json();
-        console.log('[Payment Success] Transaction created:', txnData);
-        
+        logger.info("[Payment Success] Transaction created:", txnData);
+
         // Show success message
-        toast.success('Payment successful! Transaction recorded.');
+        toast.success("Payment successful! Transaction recorded.");
       } else {
         const errorData = await response.json().catch(() => ({}));
-        console.error('[Payment Success] Transaction creation failed:', errorData);
-        toast.error('Payment successful but transaction recording failed.');
+        logger.error(
+          "[Payment Success] Transaction creation failed:",
+          errorData,
+        );
+        toast.error("Payment successful but transaction recording failed.");
       }
     } catch (error: unknown) {
-      console.error('[Payment Success] Error processing order:', error);
+      logger.error("[Payment Success] Error processing order:", error);
     }
   }, [orderData, orderProcessedRef, addOrder, router, selectedPaymentMethod]);
 
@@ -404,18 +503,34 @@ export default function PaymentSuccessPage() {
   useEffect(() => {
     const runProcessing = async () => {
       // If we already have an orderId that isn't a placeholder, it's already created
-      const savedOrderId = localStorage.getItem('orderId') || localStorage.getItem('lastOrderId');
-      if (savedOrderId && !savedOrderId.startsWith('#')) {
-        console.log('[Payment Success] Order already exists in localStorage, skipping creation:', savedOrderId);
+      const savedOrderId =
+        localStorage.getItem("orderId") || localStorage.getItem("lastOrderId");
+      if (savedOrderId && !savedOrderId.startsWith("#")) {
+        logger.info(
+          "[Payment Success] Order already exists in localStorage, skipping creation:",
+          savedOrderId,
+        );
         orderProcessedRef.current = true;
         return;
       }
 
-      if (orderData && orderData.items && orderData.items.length > 0 && !orderProcessedRef.current) {
-        console.log('[Payment Success] No existing order found, creating new order...');
+      if (
+        orderData &&
+        orderData.items &&
+        orderData.items.length > 0 &&
+        !orderProcessedRef.current
+      ) {
+        logger.info(
+          "[Payment Success] No existing order found, creating new order...",
+        );
         await processOrder();
-      } else if (orderData && (!orderData.items || orderData.items.length === 0)) {
-        console.log('[Payment Success] Order data has no items, skipping creation');
+      } else if (
+        orderData &&
+        (!orderData.items || orderData.items.length === 0)
+      ) {
+        logger.info(
+          "[Payment Success] Order data has no items, skipping creation",
+        );
         orderProcessedRef.current = true;
       }
     };
@@ -424,39 +539,55 @@ export default function PaymentSuccessPage() {
   }, [orderData, processOrder]);
 
   const handleGoToAccount = () => {
-    console.log('🔘 View Order Status clicked');
-    
+    logger.info("🔘 View Order Status clicked");
+
     // Try ref first (most reliable), then state, then localStorage
     let finalOrderId = orderIdRef.current || orderId;
-    console.log('📌 OrderId from ref:', orderIdRef.current, 'from state:', orderId);
-    
+    logger.info(
+      "📌 OrderId from ref:",
+      orderIdRef.current,
+      "from state:",
+      orderId,
+    );
+
     // If orderId is empty or placeholder, try localStorage
-    if (!finalOrderId || finalOrderId === '' || finalOrderId.startsWith('#')) {
-      console.log('⚠️ OrderId not set, checking localStorage...');
-      const savedOrderId = localStorage.getItem('lastOrderId') || localStorage.getItem('orderId');
-      console.log('💾 LocalStorage orderId:', savedOrderId);
-      
-      if (savedOrderId && !savedOrderId.startsWith('#')) {
+    if (!finalOrderId || finalOrderId === "" || finalOrderId.startsWith("#")) {
+      logger.info("⚠️ OrderId not set, checking localStorage...");
+      const savedOrderId =
+        localStorage.getItem("lastOrderId") || localStorage.getItem("orderId");
+      logger.info("💾 LocalStorage orderId:", savedOrderId);
+
+      if (savedOrderId && !savedOrderId.startsWith("#")) {
         finalOrderId = savedOrderId;
-        console.log('✅ Using localStorage orderId:', finalOrderId);
+        logger.info("✅ Using localStorage orderId:", finalOrderId);
       }
     }
-    
+
     // Final check - navigate to customer order status if we have a valid ID
-    if (finalOrderId && !finalOrderId.startsWith('#') && finalOrderId !== '') {
-      console.log('✅ Navigating to order status:', `/customer/orders/${finalOrderId}`);
-      router.push('/customer/orders/');
+    if (finalOrderId && !finalOrderId.startsWith("#") && finalOrderId !== "") {
+      logger.info(
+        "✅ Navigating to order status:",
+        `/customer/orders/${finalOrderId}`,
+      );
+      router.push("/customer/orders/");
       return;
     }
-    
+
     // If we still Don&apos;t have a valid order ID, log error and redirect to account
-    console.error('❌ No valid orderId found. Ref:', orderIdRef.current, 'State:', orderId, 'LocalStorage:', localStorage.getItem('lastOrderId'));
-    console.warn('⚠️ Falling back to account page');
-    router.push('/customer/account');
+    logger.error(
+      "❌ No valid orderId found. Ref:",
+      orderIdRef.current,
+      "State:",
+      orderId,
+      "LocalStorage:",
+      localStorage.getItem("lastOrderId"),
+    );
+    logger.warn("⚠️ Falling back to account page");
+    router.push("/customer/account");
   };
 
   const handleOrderAgain = () => {
-    router.push('/customer/menu');
+    router.push("/customer/menu");
   };
 
   React.useEffect(() => {
@@ -466,23 +597,28 @@ export default function PaymentSuccessPage() {
 
   // Get current date and time
   const now = new Date();
-  const dateTime = now.toLocaleString('en-US', {
-    month: '2-digit',
-    day: '2-digit',
-    year: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true
+  const dateTime = now.toLocaleString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
   });
 
   // Calculate total amount
   const resolvedTotal = Number(orderData?.total ?? 0);
-  const totalAmount = Number.isFinite(resolvedTotal) ? `₹${resolvedTotal.toFixed(2)}` : '₹0.00';
-  const resolvedPaymentMethod = orderData?.paymentMethod || selectedPaymentMethod || 'online';
+  const totalAmount = Number.isFinite(resolvedTotal)
+    ? `₹${resolvedTotal.toFixed(2)}`
+    : "₹0.00";
+  const resolvedPaymentMethod =
+    orderData?.paymentMethod || selectedPaymentMethod || "online";
 
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center bg-gray-100 p-4 overflow-hidden">
-      {showConfetti && <Confetti numberOfPieces={200} recycle={false} gravity={0.4} />}
+      {showConfetti && (
+        <Confetti numberOfPieces={200} recycle={false} gravity={0.4} />
+      )}
       <OrderConfirmationCard
         orderId={orderId}
         paymentMethod={displayPaymentMethod(resolvedPaymentMethod)}

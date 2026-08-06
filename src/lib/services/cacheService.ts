@@ -1,3 +1,4 @@
+import logger from "@/lib/logger";
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
@@ -12,7 +13,7 @@ class SimpleCache {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
-      ttl
+      ttl,
     });
   }
 
@@ -69,23 +70,48 @@ setInterval(() => {
 export class CacheService {
   // Cache keys for different data types
   static KEYS = {
-    STAFF_LIST: (page: number, limit: number, search?: string, role?: string, status?: string) => 
-      `staff:list:${page}:${limit}:${search || ''}:${role || ''}:${status || ''}`,
+    STAFF_LIST: (
+      page: number,
+      limit: number,
+      search?: string,
+      role?: string,
+      status?: string,
+    ) =>
+      `staff:list:${page}:${limit}:${search || ""}:${role || ""}:${status || ""}`,
     STAFF_BY_ID: (id: string) => `staff:byId:${id}`,
-    STAFF_STATS: () => 'staff:stats',
-    MENU_LIST: (page: number, limit: number, category?: string, adminView?: boolean) => 
-      `menu:list:${page}:${limit}:${category || 'all'}:${adminView ? 'admin' : 'user'}`,
-    INVENTORY_LIST: (page: number, limit: number) => `inventory:list:${page}:${limit}`
+    STAFF_STATS: () => "staff:stats",
+    MENU_LIST: (
+      page: number,
+      limit: number,
+      category?: string,
+      adminView?: boolean,
+    ) =>
+      `menu:list:${page}:${limit}:${category || "all"}:${adminView ? "admin" : "user"}`,
+    INVENTORY_LIST: (page: number, limit: number) =>
+      `inventory:list:${page}:${limit}`,
   };
 
   // Cache staff list
-  static cacheStaffList(data: unknown, page: number = 1, limit: number = 10, search?: string, role?: string, status?: string): void {
+  static cacheStaffList(
+    data: unknown,
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+    role?: string,
+    status?: string,
+  ): void {
     const key = this.KEYS.STAFF_LIST(page, limit, search, role, status);
     globalCache.set(key, data, 2 * 60 * 1000); // 2 minutes for lists
   }
 
   // Get cached staff list
-  static getCachedStaffList(page: number = 1, limit: number = 10, search?: string, role?: string, status?: string): unknown {
+  static getCachedStaffList(
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+    role?: string,
+    status?: string,
+  ): unknown {
     const key = this.KEYS.STAFF_LIST(page, limit, search, role, status);
     return globalCache.get(key);
   }
@@ -120,20 +146,24 @@ export class CacheService {
       // Invalidate specific staff member
       globalCache.delete(this.KEYS.STAFF_BY_ID(id));
     }
-    
+
     // Invalidate all staff lists
-    const keys = globalCache.keys().filter(key => key.startsWith('staff:list:'));
-    keys.forEach(key => globalCache.delete(key));
-    
+    const keys = globalCache
+      .keys()
+      .filter((key) => key.startsWith("staff:list:"));
+    keys.forEach((key) => globalCache.delete(key));
+
     // Invalidate stats
     globalCache.delete(this.KEYS.STAFF_STATS());
   }
 
   // Invalidate menu cache
   static invalidateMenuCache(): void {
-    const keys = globalCache.keys().filter(key => key.startsWith('menu:list:'));
-    keys.forEach(key => globalCache.delete(key));
-    console.log('♻️ Menu cache invalidated');
+    const keys = globalCache
+      .keys()
+      .filter((key) => key.startsWith("menu:list:"));
+    keys.forEach((key) => globalCache.delete(key));
+    logger.info("♻️ Menu cache invalidated");
   }
 
   // Generic cache methods
@@ -160,7 +190,7 @@ export class CacheService {
   } {
     return {
       size: globalCache.size(),
-      keys: globalCache.keys()
+      keys: globalCache.keys(),
     };
   }
 
@@ -170,7 +200,7 @@ export class CacheService {
       return {
         get: () => this.get(key),
         set: (data: unknown) => this.set(key, data, ttl),
-        invalidate: () => this.delete(key)
+        invalidate: () => this.delete(key),
       };
     };
   }

@@ -12,16 +12,16 @@ export interface MenuItem {
 }
 
 export const categories = [
-  'All',
-  'Tiffins',
-  'Fast Food',
-  'Curries',
-  'Drinks',
-  'Juices',
-  'Mocktails',
-  'Hot N Crunch',
-  'Snacks',
-  'Tea Corner'
+  "All",
+  "Tiffins",
+  "Fast Food",
+  "Curries",
+  "Drinks",
+  "Juices",
+  "Mocktails",
+  "Hot N Crunch",
+  "Snacks",
+  "Tea Corner",
 ] as const;
 
-export type Category = typeof categories[number];
+export type Category = (typeof categories)[number];

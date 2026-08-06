@@ -1,13 +1,13 @@
-export type Sentiment = 'Positive' | 'Neutral' | 'Negative';
+export type Sentiment = "Positive" | "Neutral" | "Negative";
 
 export interface Feedback {
-    id: number;
-    customerName: string;
-    avatar: string;
-    rating: number;
-    comment: string;
-    sentiment: Sentiment;
-    timestamp: string;
+  id: number;
+  customerName: string;
+  avatar: string;
+  rating: number;
+  comment: string;
+  sentiment: Sentiment;
+  timestamp: string;
 }
 
 export interface FeedbackItem {
@@ -27,12 +27,12 @@ export interface FeedbackItem {
 }
 
 export interface FeedbackClassification {
-  overallSentiment: 'Positive' | 'Mixed' | 'Negative' | 'Neutral';
+  overallSentiment: "Positive" | "Mixed" | "Negative" | "Neutral";
   userIntent: string[];
-  emotionalIntensity: 'Low' | 'Medium' | 'High';
+  emotionalIntensity: "Low" | "Medium" | "High";
   keyInsight: string;
-  operationalImpact: 'None' | 'Low' | 'Medium' | 'High';
-  priorityLevel: 'Informational' | 'Monitor' | 'Needs Attention' | 'Urgent';
+  operationalImpact: "None" | "Low" | "Medium" | "High";
+  priorityLevel: "Informational" | "Monitor" | "Needs Attention" | "Urgent";
   recommendedAction: string;
   tags: string[];
   suggestedResponse: string;

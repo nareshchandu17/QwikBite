@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Crown, Sparkles } from 'lucide-react';
+import React from "react";
+import { motion } from "framer-motion";
+import { Crown, Sparkles } from "lucide-react";
 
 interface HeaderPremiumProps {
   query: string;
@@ -21,10 +21,10 @@ export default function HeaderPremium({
   selectedCategory,
   onSelectCategory,
   sort,
-  setSort
+  setSort,
 }: HeaderPremiumProps) {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       className="bg-gradient-to-r from-amber-500 to-orange-500 text-white p-6 rounded-2xl mb-8"
@@ -49,7 +49,7 @@ export default function HeaderPremium({
             onChange={(e) => onQuery(e.target.value)}
             className="w-full px-4 py-2 rounded-lg bg-amber-50 bg-opacity-10 text-white placeholder-amber-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
           />
-          
+
           <div className="flex flex-wrap gap-2">
             <select
               value={selectedCategory}
@@ -63,7 +63,7 @@ export default function HeaderPremium({
                 </option>
               ))}
             </select>
-            
+
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value)}

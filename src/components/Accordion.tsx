@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown } from 'lucide-react';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronDown } from "lucide-react";
 
 type AccordionItem = {
   id: string;
@@ -16,13 +16,13 @@ export function Accordion({ items }: { items: AccordionItem[] }) {
 
   return (
     <div className="space-y-4">
-      {items.map(item => (
-        <div 
-          key={item.id} 
+      {items.map((item) => (
+        <div
+          key={item.id}
           className={`relative p-[1px] rounded-lg transition-all duration-300 ${
-            hoveredItem === item.id 
-              ? 'bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400 shadow-lg shadow-amber-500/30' 
-              : 'bg-gray-200 dark:bg-gray-700'
+            hoveredItem === item.id
+              ? "bg-gradient-to-r from-amber-400 via-orange-500 to-amber-400 shadow-lg shadow-amber-500/30"
+              : "bg-gray-200 dark:bg-gray-700"
           }`}
           onMouseEnter={() => setHoveredItem(item.id)}
           onMouseLeave={() => setHoveredItem(null)}
@@ -36,10 +36,10 @@ export function Accordion({ items }: { items: AccordionItem[] }) {
               <span className="font-semibold text-lg md:text-xl text-gray-800 dark:text-gray-100">
                 {item.title}
               </span>
-              <ChevronDown 
+              <ChevronDown
                 className={`h-6 w-6 text-gray-500 transform transition-transform duration-200 ${
-                  open === item.id ? 'rotate-180' : ''
-                }`} 
+                  open === item.id ? "rotate-180" : ""
+                }`}
               />
             </button>
 
@@ -48,7 +48,7 @@ export function Accordion({ items }: { items: AccordionItem[] }) {
                 <motion.div
                   key="content"
                   initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
+                  animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
                   transition={{ duration: 0.25 }}
                   className="px-6 pt-2 pb-4 bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-base md:text-lg overflow-hidden"

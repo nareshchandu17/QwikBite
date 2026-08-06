@@ -1,46 +1,47 @@
-import type { Metadata, Viewport } from 'next';
-import { Inter, Plus_Jakarta_Sans, Be_Vietnam_Pro } from 'next/font/google';
-import './globals.css';
-import { AuthProvider } from '@/context/AuthContext';
-import { AuthModalProvider } from '@/context/AuthModalContext';
-import { PusherProvider } from '@/context/PusherContext';
-import { SessionProvider } from '@/providers/SessionProvider';
-import { Toaster } from '@/components/ui/toaster';
-import { AuthRedirector, AuthModal } from '@/components/auth';
-import ErrorBoundary from '@/components/ErrorBoundary';
-import GlobalStyles from '@/components/GlobalStyles';
-import { NextAuthErrorBoundary } from '@/components/NextAuthErrorBoundary';
-import { Analytics } from '@vercel/analytics/next';
-import { SpeedInsights } from '@vercel/speed-insights/next';
+import type { Metadata, Viewport } from "next";
+import { Inter, Plus_Jakarta_Sans, Be_Vietnam_Pro } from "next/font/google";
+import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
+import { AuthModalProvider } from "@/context/AuthModalContext";
+import { PusherProvider } from "@/context/PusherContext";
+import { SessionProvider } from "@/providers/SessionProvider";
+import { Toaster } from "@/components/ui/toaster";
+import { AuthRedirector, AuthModal } from "@/components/auth";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import GlobalStyles from "@/components/GlobalStyles";
+import { NextAuthErrorBoundary } from "@/components/NextAuthErrorBoundary";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
-const inter = Inter({ 
-  subsets: ['latin'], 
-  variable: '--font-inter',
-  display: 'swap',
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
 });
 
 const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  variable: '--font-plus-jakarta',
-  display: 'swap',
+  subsets: ["latin"],
+  variable: "--font-plus-jakarta",
+  display: "swap",
 });
 
 const beVietnamPro = Be_Vietnam_Pro({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-be-vietnam',
-  display: 'swap',
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-be-vietnam",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: 'qwikBite - Smart Campus Dining',
-  description: 'Order from your canteen in seconds. Skip the queues. Enjoy your break.',
+  title: "qwikBite - Smart Campus Dining",
+  description:
+    "Order from your canteen in seconds. Skip the queues. Enjoy your break.",
 };
 
 export const viewport: Viewport = {
-  width: 'device-width',
+  width: "device-width",
   initialScale: 1,
-  themeColor: '#050505',
+  themeColor: "#050505",
 };
 
 export default async function RootLayout({
@@ -49,9 +50,15 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${plusJakartaSans.variable} ${beVietnamPro.variable}`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${plusJakartaSans.variable} ${beVietnamPro.variable}`}
+    >
       <head>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        />
       </head>
       <body className={`${inter.className} bg-dark-bg text-white`}>
         <ErrorBoundary>

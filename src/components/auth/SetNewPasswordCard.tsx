@@ -3,11 +3,19 @@
 import { useState, useEffect, FormEvent } from "react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { Eye, EyeOff, Lock, KeyRound, Rocket, Verified, CheckCircle } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  KeyRound,
+  Rocket,
+  Verified,
+  CheckCircle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuthModal } from '@/context/AuthModalContext';
+import { useAuthModal } from "@/context/AuthModalContext";
 
-type PasswordStrength = 'weak' | 'medium' | 'strong' | 'very-strong';
+type PasswordStrength = "weak" | "medium" | "strong" | "very-strong";
 
 type SetNewPasswordCardProps = {
   token?: string;
@@ -41,22 +49,26 @@ export function SetNewPasswordCard({
   });
 
   const passwordStrength: PasswordStrength =
-    Object.values(validations).filter(Boolean).length <= 2 ? 'weak' :
-      Object.values(validations).filter(Boolean).length <= 3 ? 'medium' :
-        Object.values(validations).filter(Boolean).length <= 4 ? 'strong' : 'very-strong';
+    Object.values(validations).filter(Boolean).length <= 2
+      ? "weak"
+      : Object.values(validations).filter(Boolean).length <= 3
+        ? "medium"
+        : Object.values(validations).filter(Boolean).length <= 4
+          ? "strong"
+          : "very-strong";
 
   const strengthColors = {
-    weak: 'bg-red-500',
-    medium: 'bg-yellow-500',
-    strong: 'bg-blue-500',
-    'very-strong': 'bg-green-500'
+    weak: "bg-red-500",
+    medium: "bg-yellow-500",
+    strong: "bg-blue-500",
+    "very-strong": "bg-green-500",
   };
 
   const strengthLabels = {
-    weak: 'WEAK',
-    medium: 'MEDIUM',
-    strong: 'STRONG',
-    'very-strong': 'VERY STRONG'
+    weak: "WEAK",
+    medium: "MEDIUM",
+    strong: "STRONG",
+    "very-strong": "VERY STRONG",
   };
 
   useEffect(() => {
@@ -73,22 +85,26 @@ export function SetNewPasswordCard({
     e.preventDefault();
 
     if (!token) {
-      toast.error('Reset link is invalid or missing. Please check your email link or request a new reset.');
+      toast.error(
+        "Reset link is invalid or missing. Please check your email link or request a new reset.",
+      );
       return;
     }
 
     if (!password || !confirmPassword) {
-      toast.error('Please fill in all fields');
+      toast.error("Please fill in all fields");
       return;
     }
 
     if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error("Passwords do not match");
       return;
     }
 
     if (!Object.values(validations).every(Boolean)) {
-      toast.error('Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character');
+      toast.error(
+        "Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number, and one special character",
+      );
       return;
     }
 
@@ -96,44 +112,49 @@ export function SetNewPasswordCard({
 
     try {
       // Call the reset password API with token
-      const response = await fetch('/api/auth/reset-password/confirm', {
-        method: 'POST',
+      const response = await fetch("/api/auth/reset-password/confirm", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           token,
           password,
-          confirmPassword
+          confirmPassword,
         }),
       });
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.error || error.message || 'Failed to reset password');
+        throw new Error(
+          error.error || error.message || "Failed to reset password",
+        );
       }
 
-      toast.success('Password reset successfully! Please sign in with your new password.');
+      toast.success(
+        "Password reset successfully! Please sign in with your new password.",
+      );
 
       if (isModal) {
         // Navigate to password reset success modal
         closeModal();
         setTimeout(() => {
-          openModal('passwordresetsuccess');
+          openModal("passwordresetsuccess");
         }, 100);
       }
 
       onSuccess?.();
     } catch (error) {
-      console.error('Password reset error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to reset password');
+      toast.error(
+        error instanceof Error ? error.message : "Failed to reset password",
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const strengthBars = Array.from({ length: 4 }, (_, i) => {
-    const strengthLevels = ['weak', 'medium', 'strong', 'very-strong'];
+    const strengthLevels = ["weak", "medium", "strong", "very-strong"];
     const currentLevelIndex = strengthLevels.indexOf(passwordStrength);
     const isActive = i <= currentLevelIndex;
 
@@ -142,7 +163,9 @@ export function SetNewPasswordCard({
         key={i}
         className={cn(
           "h-full flex-1 transition-all duration-300",
-          isActive ? strengthColors[passwordStrength] : "bg-gray-200 dark:bg-gray-700"
+          isActive
+            ? strengthColors[passwordStrength]
+            : "bg-gray-200 dark:bg-gray-700",
         )}
       />
     );
@@ -152,7 +175,7 @@ export function SetNewPasswordCard({
     <motion.div
       className={cn(
         "relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden",
-        className
+        className,
       )}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -164,8 +187,19 @@ export function SetNewPasswordCard({
         className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors z-20"
         aria-label="Go back to sign in"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
         </svg>
       </button>
 
@@ -204,7 +238,11 @@ export function SetNewPasswordCard({
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-500 transition-colors"
             >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
             </button>
           </div>
         </div>
@@ -215,7 +253,12 @@ export function SetNewPasswordCard({
             <p className="text-[#111827] dark:text-gray-300 text-xs font-semibold uppercase tracking-wider">
               Password Strength
             </p>
-            <p className={cn("text-xs font-bold", strengthColors[passwordStrength])}>
+            <p
+              className={cn(
+                "text-xs font-bold",
+                strengthColors[passwordStrength],
+              )}
+            >
               {strengthLabels[passwordStrength]}
             </p>
           </div>
@@ -225,23 +268,58 @@ export function SetNewPasswordCard({
 
           {/* Validation Checks */}
           <div className="mt-4 grid grid-cols-1 gap-2">
-            <div className={cn("flex items-center gap-2 text-sm", validations.length ? "text-green-600 dark:text-green-400" : "text-gray-400")}>
+            <div
+              className={cn(
+                "flex items-center gap-2 text-sm",
+                validations.length
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-gray-400",
+              )}
+            >
               <CheckCircle className="w-4 h-4" />
               <span>At least 8 characters</span>
             </div>
-            <div className={cn("flex items-center gap-2 text-sm", validations.number ? "text-green-600 dark:text-green-400" : "text-gray-400")}>
+            <div
+              className={cn(
+                "flex items-center gap-2 text-sm",
+                validations.number
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-gray-400",
+              )}
+            >
               <CheckCircle className="w-4 h-4" />
               <span>One number</span>
             </div>
-            <div className={cn("flex items-center gap-2 text-sm", validations.specialChar ? "text-green-600 dark:text-green-400" : "text-gray-400")}>
+            <div
+              className={cn(
+                "flex items-center gap-2 text-sm",
+                validations.specialChar
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-gray-400",
+              )}
+            >
               <CheckCircle className="w-4 h-4" />
               <span>One special character</span>
             </div>
-            <div className={cn("flex items-center gap-2 text-sm", validations.uppercase ? "text-green-600 dark:text-green-400" : "text-gray-400")}>
+            <div
+              className={cn(
+                "flex items-center gap-2 text-sm",
+                validations.uppercase
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-gray-400",
+              )}
+            >
               <CheckCircle className="w-4 h-4" />
               <span>One uppercase letter</span>
             </div>
-            <div className={cn("flex items-center gap-2 text-sm", validations.lowercase ? "text-green-600 dark:text-green-400" : "text-gray-400")}>
+            <div
+              className={cn(
+                "flex items-center gap-2 text-sm",
+                validations.lowercase
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-gray-400",
+              )}
+            >
               <CheckCircle className="w-4 h-4" />
               <span>One lowercase letter</span>
             </div>
@@ -268,7 +346,11 @@ export function SetNewPasswordCard({
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
               className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-orange-500 transition-colors"
             >
-              {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {showConfirmPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
             </button>
           </div>
         </div>

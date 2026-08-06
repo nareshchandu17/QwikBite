@@ -1,23 +1,27 @@
-'use client';
+"use client";
 
-import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { useAdminGuard, useCustomerGuard } from '@/lib/auth/roleGuard';
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useAdminGuard, useCustomerGuard } from "@/lib/auth/roleGuard";
 
 export default function DashboardPage() {
   const { user, isAuthenticated, loading, logout } = useAuth();
   const router = useRouter();
-  
+
   // Use effects for redirection instead of conditional hooks
   useEffect(() => {
     if (!loading && !isAuthenticated) {
-      router.push('/signin');
+      router.push("/signin");
     }
   }, [isAuthenticated, loading, router]);
 
   if (!isAuthenticated) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
   }
 
   const handleLogout = () => {
@@ -40,7 +44,9 @@ export default function DashboardPage() {
           </div>
 
           <div className="border-t border-gray-200 pt-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">User Information</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">
+              User Information
+            </h2>
             {user && (
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -54,7 +60,9 @@ export default function DashboardPage() {
                   </div>
                   {user.regNo && (
                     <div>
-                      <p className="text-sm font-medium text-gray-500">Registration Number</p>
+                      <p className="text-sm font-medium text-gray-500">
+                        Registration Number
+                      </p>
                       <p className="mt-1 text-sm text-gray-900">{user.regNo}</p>
                     </div>
                   )}
@@ -68,7 +76,9 @@ export default function DashboardPage() {
           </div>
 
           <div className="border-t border-gray-200 pt-6 mt-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Console Output</h2>
+            <h2 className="text-lg font-medium text-gray-900 mb-4">
+              Console Output
+            </h2>
             <div className="bg-black text-green-400 rounded-lg p-4 font-mono text-sm">
               <p>$ User logged in successfully</p>
               <p>$ Email: {user?.email}</p>

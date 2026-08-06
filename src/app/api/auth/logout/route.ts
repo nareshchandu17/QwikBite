@@ -1,3 +1,4 @@
+import logger from "@/lib/logger";
 import { NextResponse } from "next/server";
 import { clearAuthCookie } from "@/lib/auth";
 import { getServerSession } from "next-auth";
@@ -40,11 +41,8 @@ export async function POST() {
 
     return response;
   } catch (error) {
-    console.error("Logout error:", error);
-    return NextResponse.json(
-      { error: "Failed to logout" },
-      { status: 500 }
-    );
+    logger.error("Logout error:", error);
+    return NextResponse.json({ error: "Failed to logout" }, { status: 500 });
   }
 }
 

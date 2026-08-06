@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, forwardRef } from 'react';
-import { Search } from 'lucide-react';
+import React, { useState, useEffect, useRef, forwardRef } from "react";
+import { Search } from "lucide-react";
 
 interface AnimatedGlowingSearchBarProps extends React.InputHTMLAttributes<HTMLInputElement> {
   className?: string;
@@ -8,12 +8,10 @@ interface AnimatedGlowingSearchBarProps extends React.InputHTMLAttributes<HTMLIn
   placeholder?: string;
 }
 
-const AnimatedGlowingSearchBar = forwardRef<HTMLInputElement, AnimatedGlowingSearchBarProps>(({
-  className = '',
-  value = '',
-  onChange,
-  ...props
-}, ref) => {
+const AnimatedGlowingSearchBar = forwardRef<
+  HTMLInputElement,
+  AnimatedGlowingSearchBarProps
+>(({ className = "", value = "", onChange, ...props }, ref) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -59,13 +57,13 @@ const AnimatedGlowingSearchBar = forwardRef<HTMLInputElement, AnimatedGlowingSea
             transparent 45%
           )`,
           opacity: isFocused ? 1 : isHovered ? 0.85 : 0.6,
-          transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
-          boxShadow: isFocused 
-            ? '0 0 0 2px rgba(251, 191, 36, 0.5), 0 0 25px 3px rgba(251, 191, 36, 0.25)'
+          transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+          boxShadow: isFocused
+            ? "0 0 0 2px rgba(251, 191, 36, 0.5), 0 0 25px 3px rgba(251, 191, 36, 0.25)"
             : isHovered
-            ? '0 0 0 1.5px rgba(251, 191, 36, 0.4), 0 0 20px 2px rgba(251, 191, 36, 0.2)'
-            : '0 0 0 1px rgba(251, 191, 36, 0.2)',
-          transform: 'translateZ(0)'
+              ? "0 0 0 1.5px rgba(251, 191, 36, 0.4), 0 0 20px 2px rgba(251, 191, 36, 0.2)"
+              : "0 0 0 1px rgba(251, 191, 36, 0.2)",
+          transform: "translateZ(0)",
         }}
       />
 
@@ -76,7 +74,7 @@ const AnimatedGlowingSearchBar = forwardRef<HTMLInputElement, AnimatedGlowingSea
           <Search className="h-5 w-5" />
           <span className="mx-3 text-amber-600/50">|</span>
         </div>
-        
+
         <input
           ref={ref}
           type="text"
@@ -96,6 +94,6 @@ const AnimatedGlowingSearchBar = forwardRef<HTMLInputElement, AnimatedGlowingSea
   );
 });
 
-AnimatedGlowingSearchBar.displayName = 'AnimatedGlowingSearchBar';
+AnimatedGlowingSearchBar.displayName = "AnimatedGlowingSearchBar";
 
 export default AnimatedGlowingSearchBar;

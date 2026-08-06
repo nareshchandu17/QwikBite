@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 export default function CustomerLoading() {
   return (
@@ -36,7 +36,10 @@ export default function CustomerLoading() {
         {/* Carousel Skeleton */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="bg-white rounded-2xl overflow-hidden border border-gray-100 p-4 space-y-4">
+            <div
+              key={i}
+              className="bg-white rounded-2xl overflow-hidden border border-gray-100 p-4 space-y-4"
+            >
               <div className="aspect-square w-full bg-gray-100 rounded-xl" />
               <div className="h-6 w-3/4 bg-gray-100 rounded" />
               <div className="flex justify-between items-center">

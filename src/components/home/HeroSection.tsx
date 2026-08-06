@@ -7,7 +7,6 @@ export const HeroSection: React.FC = () => {
   const { openModal } = useAuthModal();
   return (
     <section className="relative min-h-screen overflow-hidden bg-white px-4 pt-32 sm:px-6 lg:px-8">
-      
       {/* 🌟 Multi-layered Background Gradients */}
       <div
         aria-hidden
@@ -21,9 +20,9 @@ export const HeroSection: React.FC = () => {
           `,
         }}
       />
-      
+
       {/* Subtle amber overlay gradient */}
-      <div 
+      <div
         className="absolute inset-0 -z-10 opacity-40"
         style={{
           background: `
@@ -34,17 +33,19 @@ export const HeroSection: React.FC = () => {
               rgba(251, 191, 36, 0.12) 75%, 
               rgba(245, 158, 11, 0.08) 100%
             )
-          `
+          `,
         }}
       />
 
       {/* Animated gradient orbs */}
       <div className="absolute top-20 left-10 h-96 w-96 rounded-full bg-gradient-to-br from-amber-300/25 to-orange-400/15 blur-3xl animate-pulse" />
-      <div className="absolute bottom-20 right-10 h-[500px] w-[500px] rounded-full bg-gradient-to-tl from-orange-400/20 to-amber-300/15 blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+      <div
+        className="absolute bottom-20 right-10 h-[500px] w-[500px] rounded-full bg-gradient-to-tl from-orange-400/20 to-amber-300/15 blur-3xl animate-pulse"
+        style={{ animationDelay: "2s" }}
+      />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-gradient-to-r from-amber-200/15 to-orange-300/15 blur-3xl" />
 
       <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-20 lg:grid-cols-2">
-
         {/* LEFT — CONTENT */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -86,20 +87,19 @@ export const HeroSection: React.FC = () => {
 
           {/* Subtext */}
           <p className="mx-auto mb-12 max-w-xl text-xl text-gray-600 lg:mx-0">
-            Pre-order, pay securely, and pick up fresh food in minutes.
-            Campus dining — finally upgraded.
+            Pre-order, pay securely, and pick up fresh food in minutes. Campus
+            dining — finally upgraded.
           </p>
 
           {/* CTAs */}
           <div className="flex flex-col gap-5 sm:flex-row sm:justify-center lg:justify-start">
-            <button className="group relative overflow-hidden rounded-full bg-orange-500 px-12 py-5 text-lg font-black text-white shadow-xl shadow-orange-500/30 transition-all hover:scale-[1.04] cursor-pointer"
-            onClick={() => openModal('signin')}
+            <button
+              className="group relative overflow-hidden rounded-full bg-orange-500 px-12 py-5 text-lg font-black text-white shadow-xl shadow-orange-500/30 transition-all hover:scale-[1.04] cursor-pointer"
+              onClick={() => openModal("signin")}
             >
               Order Lunch Now
               <span className="absolute inset-0 bg-white/10 opacity-0 transition-opacity group-hover:opacity-100" />
             </button>
-
-            
           </div>
         </motion.div>
 

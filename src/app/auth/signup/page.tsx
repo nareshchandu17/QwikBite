@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthModal } from '@/context/AuthModalContext';
-import { useAuth } from '@/context/AuthContext';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthModal } from "@/context/AuthModalContext";
+import { useAuth } from "@/context/AuthContext";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -13,20 +13,21 @@ export default function SignUpPage() {
   useEffect(() => {
     // If user is already authenticated, redirect them
     if (isAuthenticated) {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      const redirectPath = user.role === 'admin' ? '/admin/dashboard' : '/customer';
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const redirectPath =
+        user.role === "admin" ? "/admin/dashboard" : "/customer";
       router.replace(redirectPath);
       return;
     }
 
     // Open the sign up modal
-    openModal('signup');
-    
+    openModal("signup");
+
     // Add a slight delay to ensure modal opens before potential redirect
     const timer = setTimeout(() => {
       // If for some reason modal doesn&apos;t open, redirect to home
       if (!document.querySelector('[role="dialog"]')) {
-        router.push('/');
+        router.push("/");
       }
     }, 1000);
 

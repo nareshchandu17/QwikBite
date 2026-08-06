@@ -1,13 +1,24 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useTheme } from 'next-themes';
-import { Bell, Lock, User, CreditCard, Clock, Globe, LogOut, Palette, Eye, EyeOff } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { useCustomerGuard } from '@/hooks/use-customer-guard';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
+import {
+  Bell,
+  Lock,
+  User,
+  CreditCard,
+  Clock,
+  Globe,
+  LogOut,
+  Palette,
+  Eye,
+  EyeOff,
+} from "lucide-react";
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { useCustomerGuard } from "@/hooks/use-customer-guard";
+import { toast } from "sonner";
 
 export default function SettingsPage() {
   useCustomerGuard();
@@ -15,12 +26,12 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const router = useRouter();
   const { logout } = useAuth();
-  
+
   // Load settings from localStorage on mount
   useEffect(() => {
-    const savedNotifications = localStorage.getItem('notifications');
-    const savedPreferences = localStorage.getItem('preferences');
-    
+    const savedNotifications = localStorage.getItem("notifications");
+    const savedPreferences = localStorage.getItem("preferences");
+
     if (savedNotifications) {
       setNotifications(JSON.parse(savedNotifications));
     }
@@ -33,14 +44,14 @@ export default function SettingsPage() {
     email: true,
     push: false,
     orderUpdates: true,
-    promotions: false
+    promotions: false,
   });
 
   const [preferences, setPreferences] = useState({
-    defaultPayment: 'Pay on Pickup',
-    language: 'English',
+    defaultPayment: "Pay on Pickup",
+    language: "English",
     remindBeforeLunch: true,
-    autoRefreshOrderStatus: false
+    autoRefreshOrderStatus: false,
   });
 
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -48,35 +59,35 @@ export default function SettingsPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [betaLayout, setBetaLayout] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
   const [showPassword, setShowPassword] = useState(false);
 
   // Save settings to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('notifications', JSON.stringify(notifications));
+    localStorage.setItem("notifications", JSON.stringify(notifications));
   }, [notifications]);
 
   useEffect(() => {
-    localStorage.setItem('preferences', JSON.stringify(preferences));
+    localStorage.setItem("preferences", JSON.stringify(preferences));
   }, [preferences]);
 
   const toggleNotification = (key: keyof typeof notifications) => {
-    setNotifications(prev => ({
+    setNotifications((prev) => ({
       ...prev,
-      [key]: !prev[key]
+      [key]: !prev[key],
     }));
-    toast.success('Notification preference updated');
+    toast.success("Notification preference updated");
   };
 
   const togglePreference = (key: keyof typeof preferences) => {
-    setPreferences(prev => ({
+    setPreferences((prev) => ({
       ...prev,
-      [key]: !prev[key]
+      [key]: !prev[key],
     }));
-    toast.success('Preference updated');
+    toast.success("Preference updated");
   };
 
   const handleSignOut = () => {
@@ -84,23 +95,31 @@ export default function SettingsPage() {
   };
 
   const handleChangePassword = () => {
-    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-      toast.error('Please fill all password fields');
+    if (
+      !passwordForm.currentPassword ||
+      !passwordForm.newPassword ||
+      !passwordForm.confirmPassword
+    ) {
+      toast.error("Please fill all password fields");
       return;
     }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error('New passwords do not match');
+      toast.error("New passwords do not match");
       return;
     }
     if (passwordForm.newPassword.length < 6) {
-      toast.error('Password must be at least 6 characters');
+      toast.error("Password must be at least 6 characters");
       return;
     }
-    
+
     // Simulate password change (in real app, call API)
-    toast.success('Password changed successfully');
+    toast.success("Password changed successfully");
     setShowPasswordModal(false);
-    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    setPasswordForm({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
   };
 
   const handleViewSessions = () => {
@@ -113,13 +132,13 @@ export default function SettingsPage() {
 
   const confirmDeleteAccount = () => {
     // Simulate account deletion (in real app, call API)
-    toast.success('Account deleted successfully');
+    toast.success("Account deleted successfully");
     logout();
   };
 
   const handleEnableBeta = () => {
     setBetaLayout(true);
-    toast.success('Beta layout enabled');
+    toast.success("Beta layout enabled");
   };
 
   return (
@@ -141,7 +160,9 @@ export default function SettingsPage() {
             <div className="mb-8">
               <div className="flex items-center mb-4">
                 <Palette className="h-5 w-5 text-amber-500 mr-2" />
-                <h2 className="text-xl font-semibold text-gray-900">App Preferences</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  App Preferences
+                </h2>
               </div>
 
               <div className="space-y-4">
@@ -154,14 +175,23 @@ export default function SettingsPage() {
                     <div className="flex items-center">
                       <CreditCard className="h-5 w-5 text-amber-500 mr-3" />
                       <div>
-                        <p className="text-gray-900 font-medium">Default Payment Method</p>
-                        <p className="text-gray-500 text-sm">Choose your preferred payment option</p>
+                        <p className="text-gray-900 font-medium">
+                          Default Payment Method
+                        </p>
+                        <p className="text-gray-500 text-sm">
+                          Choose your preferred payment option
+                        </p>
                       </div>
                     </div>
 
                     <select
                       value={preferences.defaultPayment}
-                      onChange={(e) => setPreferences({ ...preferences, defaultPayment: e.target.value })}
+                      onChange={(e) =>
+                        setPreferences({
+                          ...preferences,
+                          defaultPayment: e.target.value,
+                        })
+                      }
                       className="bg-amber-50 border border-amber-200 text-gray-900 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     >
                       <option>Pay on Pickup</option>
@@ -179,36 +209,56 @@ export default function SettingsPage() {
                     <div className="flex items-center">
                       <Bell className="h-5 w-5 text-amber-500 mr-3" />
                       <div>
-                        <p className="text-gray-900 font-medium">Notifications</p>
-                        <p className="text-gray-500 text-sm">Manage your notification preferences</p>
+                        <p className="text-gray-900 font-medium">
+                          Notifications
+                        </p>
+                        <p className="text-gray-500 text-sm">
+                          Manage your notification preferences
+                        </p>
                       </div>
                     </div>
 
                     <div className="flex space-x-4">
                       <div className="flex items-center">
-                        <span className="text-gray-700 mr-2 text-sm">Order Updates</span>
+                        <span className="text-gray-700 mr-2 text-sm">
+                          Order Updates
+                        </span>
                         <button
-                          onClick={() => toggleNotification('orderUpdates')}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${notifications.orderUpdates ? 'bg-amber-500' : 'bg-gray-300'
-                            }`}
+                          onClick={() => toggleNotification("orderUpdates")}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            notifications.orderUpdates
+                              ? "bg-amber-500"
+                              : "bg-gray-300"
+                          }`}
                         >
                           <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${notifications.orderUpdates ? 'translate-x-6' : 'translate-x-1'
-                              }`}
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              notifications.orderUpdates
+                                ? "translate-x-6"
+                                : "translate-x-1"
+                            }`}
                           />
                         </button>
                       </div>
 
                       <div className="flex items-center">
-                        <span className="text-gray-700 mr-2 text-sm">Promotions</span>
+                        <span className="text-gray-700 mr-2 text-sm">
+                          Promotions
+                        </span>
                         <button
-                          onClick={() => toggleNotification('promotions')}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${notifications.promotions ? 'bg-amber-500' : 'bg-gray-300'
-                            }`}
+                          onClick={() => toggleNotification("promotions")}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                            notifications.promotions
+                              ? "bg-amber-500"
+                              : "bg-gray-300"
+                          }`}
                         >
                           <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${notifications.promotions ? 'translate-x-6' : 'translate-x-1'
-                              }`}
+                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                              notifications.promotions
+                                ? "translate-x-6"
+                                : "translate-x-1"
+                            }`}
                           />
                         </button>
                       </div>
@@ -226,13 +276,20 @@ export default function SettingsPage() {
                       <Globe className="h-5 w-5 text-amber-500 mr-3" />
                       <div>
                         <p className="text-gray-900 font-medium">Language</p>
-                        <p className="text-gray-500 text-sm">Select your preferred language</p>
+                        <p className="text-gray-500 text-sm">
+                          Select your preferred language
+                        </p>
                       </div>
                     </div>
 
                     <select
                       value={preferences.language}
-                      onChange={(e) => setPreferences({ ...preferences, language: e.target.value })}
+                      onChange={(e) =>
+                        setPreferences({
+                          ...preferences,
+                          language: e.target.value,
+                        })
+                      }
                       className="bg-amber-50 border border-amber-200 text-gray-900 rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     >
                       <option>English</option>
@@ -247,7 +304,9 @@ export default function SettingsPage() {
             <div className="mb-8">
               <div className="flex items-center mb-4">
                 <Lock className="h-5 w-5 text-amber-500 mr-2" />
-                <h2 className="text-xl font-semibold text-gray-900">Privacy & Security</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Privacy & Security
+                </h2>
               </div>
 
               <div className="space-y-4">
@@ -260,11 +319,15 @@ export default function SettingsPage() {
                     <div className="flex items-center">
                       <Lock className="h-5 w-5 text-amber-500 mr-3" />
                       <div>
-                        <p className="text-gray-900 font-medium">Change Password</p>
-                        <p className="text-gray-500 text-sm">Update your password</p>
+                        <p className="text-gray-900 font-medium">
+                          Change Password
+                        </p>
+                        <p className="text-gray-500 text-sm">
+                          Update your password
+                        </p>
                       </div>
                     </div>
-                    <button 
+                    <button
                       onClick={() => setShowPasswordModal(true)}
                       className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-sm font-medium transition-colors"
                     >
@@ -282,11 +345,15 @@ export default function SettingsPage() {
                     <div className="flex items-center">
                       <User className="h-5 w-5 text-amber-500 mr-3" />
                       <div>
-                        <p className="text-gray-900 font-medium">Active Sessions</p>
-                        <p className="text-gray-500 text-sm">Manage your active sessions</p>
+                        <p className="text-gray-900 font-medium">
+                          Active Sessions
+                        </p>
+                        <p className="text-gray-500 text-sm">
+                          Manage your active sessions
+                        </p>
                       </div>
                     </div>
-                    <button 
+                    <button
                       onClick={handleViewSessions}
                       className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-sm font-medium transition-colors"
                     >
@@ -304,11 +371,15 @@ export default function SettingsPage() {
                     <div className="flex items-center">
                       <User className="h-5 w-5 text-red-500 mr-3" />
                       <div>
-                        <p className="text-gray-900 font-medium">Delete Account</p>
-                        <p className="text-gray-500 text-sm">Permanently delete your account</p>
+                        <p className="text-gray-900 font-medium">
+                          Delete Account
+                        </p>
+                        <p className="text-gray-500 text-sm">
+                          Permanently delete your account
+                        </p>
                       </div>
                     </div>
-                    <button 
+                    <button
                       onClick={handleDeleteAccount}
                       className="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-sm font-medium transition-colors"
                     >
@@ -323,7 +394,9 @@ export default function SettingsPage() {
             <div className="mb-8">
               <div className="flex items-center mb-4">
                 <Clock className="h-5 w-5 text-amber-500 mr-2" />
-                <h2 className="text-xl font-semibold text-gray-900">Order & Reminder Settings</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Order & Reminder Settings
+                </h2>
               </div>
 
               <div className="space-y-4">
@@ -336,18 +409,28 @@ export default function SettingsPage() {
                     <div className="flex items-center">
                       <Clock className="h-5 w-5 text-amber-500 mr-3" />
                       <div>
-                        <p className="text-gray-900 font-medium">Remind me before lunch</p>
-                        <p className="text-gray-500 text-sm">Get a reminder before lunch time</p>
+                        <p className="text-gray-900 font-medium">
+                          Remind me before lunch
+                        </p>
+                        <p className="text-gray-500 text-sm">
+                          Get a reminder before lunch time
+                        </p>
                       </div>
                     </div>
                     <button
-                      onClick={() => togglePreference('remindBeforeLunch')}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${preferences.remindBeforeLunch ? 'bg-amber-500' : 'bg-gray-300'
-                        }`}
+                      onClick={() => togglePreference("remindBeforeLunch")}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        preferences.remindBeforeLunch
+                          ? "bg-amber-500"
+                          : "bg-gray-300"
+                      }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${preferences.remindBeforeLunch ? 'translate-x-6' : 'translate-x-1'
-                          }`}
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          preferences.remindBeforeLunch
+                            ? "translate-x-6"
+                            : "translate-x-1"
+                        }`}
                       />
                     </button>
                   </div>
@@ -362,18 +445,28 @@ export default function SettingsPage() {
                     <div className="flex items-center">
                       <Clock className="h-5 w-5 text-amber-500 mr-3" />
                       <div>
-                        <p className="text-gray-900 font-medium">Auto-refresh Order Status</p>
-                        <p className="text-gray-500 text-sm">Automatically refresh order status</p>
+                        <p className="text-gray-900 font-medium">
+                          Auto-refresh Order Status
+                        </p>
+                        <p className="text-gray-500 text-sm">
+                          Automatically refresh order status
+                        </p>
                       </div>
                     </div>
                     <button
-                      onClick={() => togglePreference('autoRefreshOrderStatus')}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${preferences.autoRefreshOrderStatus ? 'bg-amber-500' : 'bg-gray-300'
-                        }`}
+                      onClick={() => togglePreference("autoRefreshOrderStatus")}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        preferences.autoRefreshOrderStatus
+                          ? "bg-amber-500"
+                          : "bg-gray-300"
+                      }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${preferences.autoRefreshOrderStatus ? 'translate-x-6' : 'translate-x-1'
-                          }`}
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          preferences.autoRefreshOrderStatus
+                            ? "translate-x-6"
+                            : "translate-x-1"
+                        }`}
                       />
                     </button>
                   </div>
@@ -385,7 +478,9 @@ export default function SettingsPage() {
             <div className="mb-8">
               <div className="flex items-center mb-4">
                 <Palette className="h-5 w-5 text-amber-500 mr-2" />
-                <h2 className="text-xl font-semibold text-gray-900">Developer / Beta Features</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Developer / Beta Features
+                </h2>
               </div>
 
               <div className="space-y-4">
@@ -398,15 +493,19 @@ export default function SettingsPage() {
                     <div className="flex items-center">
                       <Palette className="h-5 w-5 text-amber-500 mr-3" />
                       <div>
-                        <p className="text-gray-900 font-medium">Try new layout (Beta)</p>
-                        <p className="text-gray-500 text-sm">Test the new interface design</p>
+                        <p className="text-gray-900 font-medium">
+                          Try new layout (Beta)
+                        </p>
+                        <p className="text-gray-500 text-sm">
+                          Test the new interface design
+                        </p>
                       </div>
                     </div>
-                    <button 
+                    <button
                       onClick={handleEnableBeta}
                       className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-sm font-medium transition-colors"
                     >
-                      {betaLayout ? 'Enabled' : 'Enable'}
+                      {betaLayout ? "Enabled" : "Enable"}
                     </button>
                   </div>
                 </motion.div>
@@ -430,12 +529,16 @@ export default function SettingsPage() {
                     <div className="flex items-center">
                       <User className="h-5 w-5 text-amber-500 mr-3" />
                       <div>
-                        <p className="text-gray-900 font-medium">View Profile</p>
-                        <p className="text-gray-500 text-sm">See your profile information</p>
+                        <p className="text-gray-900 font-medium">
+                          View Profile
+                        </p>
+                        <p className="text-gray-500 text-sm">
+                          See your profile information
+                        </p>
                       </div>
                     </div>
                     <button
-                      onClick={() => router.push('/profile')}
+                      onClick={() => router.push("/profile")}
                       className="px-4 py-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg text-sm font-medium transition-colors"
                     >
                       View
@@ -470,21 +573,35 @@ export default function SettingsPage() {
             <h3 className="text-xl font-semibold mb-4">Change Password</h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Current Password
+                </label>
                 <input
                   type="password"
                   value={passwordForm.currentPassword}
-                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      currentPassword: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  New Password
+                </label>
                 <div className="relative">
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     value={passwordForm.newPassword}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                    onChange={(e) =>
+                      setPasswordForm({
+                        ...passwordForm,
+                        newPassword: e.target.value,
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                   />
                   <button
@@ -492,16 +609,27 @@ export default function SettingsPage() {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-2 top-2 text-gray-500"
                   >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirm New Password
+                </label>
                 <input
                   type="password"
                   value={passwordForm.confirmPassword}
-                  onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                  onChange={(e) =>
+                    setPasswordForm({
+                      ...passwordForm,
+                      confirmPassword: e.target.value,
+                    })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 />
               </div>
@@ -510,7 +638,11 @@ export default function SettingsPage() {
               <button
                 onClick={() => {
                   setShowPasswordModal(false);
-                  setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                  setPasswordForm({
+                    currentPassword: "",
+                    newPassword: "",
+                    confirmPassword: "",
+                  });
                 }}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
               >
@@ -541,18 +673,26 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-gray-900">Current Session</p>
-                    <p className="text-sm text-gray-500">Chrome on Windows • Active now</p>
+                    <p className="text-sm text-gray-500">
+                      Chrome on Windows • Active now
+                    </p>
                   </div>
-                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Current</span>
+                  <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                    Current
+                  </span>
                 </div>
               </div>
               <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium text-gray-900">Mobile App</p>
-                    <p className="text-sm text-gray-500">iOS • Last active 2 hours ago</p>
+                    <p className="text-sm text-gray-500">
+                      iOS • Last active 2 hours ago
+                    </p>
                   </div>
-                  <button className="text-red-600 text-sm hover:underline">Revoke</button>
+                  <button className="text-red-600 text-sm hover:underline">
+                    Revoke
+                  </button>
                 </div>
               </div>
             </div>
@@ -576,9 +716,12 @@ export default function SettingsPage() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white rounded-2xl p-6 w-full max-w-md mx-4"
           >
-            <h3 className="text-xl font-semibold mb-4 text-red-600">Delete Account</h3>
+            <h3 className="text-xl font-semibold mb-4 text-red-600">
+              Delete Account
+            </h3>
             <p className="text-gray-600 mb-4">
-              Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently lost.
+              Are you sure you want to delete your account? This action cannot
+              be undone and all your data will be permanently lost.
             </p>
             <div className="flex justify-end gap-3">
               <button

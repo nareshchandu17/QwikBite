@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { ReactNode } from 'react';
+import React, { ReactNode } from "react";
 
 interface HeroSectionProps {
   children?: ReactNode;
@@ -12,22 +12,22 @@ interface HeroSectionProps {
 
 const HeroSection: React.FC<HeroSectionProps> = ({
   children,
-  className = '',
-  backgroundImage = '/images/herosection.jpg',
+  className = "",
+  backgroundImage = "/images/herosection.jpg",
   overlayOpacity = 0.6,
-  overlayColor = '0, 0, 0',
+  overlayColor = "0, 0, 0",
 }) => {
   const overlayStyle = `linear-gradient(rgba(${overlayColor}, ${overlayOpacity}), rgba(${overlayColor}, ${overlayOpacity}))`;
-  
+
   return (
-    <div 
+    <div
       className={`relative w-full ${className}`}
       style={{
         backgroundImage: `${overlayStyle}, url(${backgroundImage})`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-        backgroundRepeat: 'no-repeat',
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundAttachment: "fixed",
+        backgroundRepeat: "no-repeat",
       }}
     >
       {children}

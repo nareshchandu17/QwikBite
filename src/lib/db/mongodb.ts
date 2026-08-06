@@ -1,18 +1,16 @@
-import { MongoClient, Db } from 'mongodb';
+import { MongoClient, Db } from "mongodb";
 
 if (!process.env.MONGODB_URI) {
-  if (process.env.NEXT_PHASE === 'phase-production-build') {
-    console.warn('⚠️ MONGODB_URI is missing at build time. Using placeholder for build safety.');
+  if (process.env.NEXT_PHASE === "phase-production-build") {
   } else {
-    throw new Error('Please define the MONGODB_URI environment variable');
+    throw new Error("Please define the MONGODB_URI environment variable");
   }
 }
 
 if (!process.env.MONGODB_DB) {
-  if (process.env.NEXT_PHASE === 'phase-production-build') {
-    console.warn('⚠️ MONGODB_DB is missing at build time. Using placeholder for build safety.');
+  if (process.env.NEXT_PHASE === "phase-production-build") {
   } else {
-    throw new Error('Please define the MONGODB_DB environment variable');
+    throw new Error("Please define the MONGODB_DB environment variable");
   }
 }
 
@@ -35,8 +33,8 @@ export async function connectToDatabase() {
 }
 
 export const collections = {
-  users: 'users',
-  orders: 'orders',
-  menuItems: 'menuItems',
-  orderStatusUpdates: 'orderStatusUpdates'
+  users: "users",
+  orders: "orders",
+  menuItems: "menuItems",
+  orderStatusUpdates: "orderStatusUpdates",
 };

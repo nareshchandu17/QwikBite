@@ -1,23 +1,23 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import mongoose, { Schema, Document, Model } from "mongoose";
 
 /**
  * Role Enum (centralized for consistency across system)
  */
 export enum StaffRole {
-  MANAGER = 'Manager',
-  CHEF = 'Chef',
-  CASHIER = 'Cashier',
-  SERVER = 'Server',
-  CLEANER = 'Cleaner',
+  MANAGER = "Manager",
+  CHEF = "Chef",
+  CASHIER = "Cashier",
+  SERVER = "Server",
+  CLEANER = "Cleaner",
 }
 
 /**
  * Status Enum for staff availability
  */
 export enum StaffStatus {
-  ACTIVE = 'Active',
-  ON_LEAVE = 'On Leave',
-  OFF_SHIFT = 'Off Shift',
+  ACTIVE = "Active",
+  ON_LEAVE = "On Leave",
+  OFF_SHIFT = "Off Shift",
 }
 
 /**
@@ -47,7 +47,7 @@ const staffSchema = new Schema<IStaff>(
   {
     name: {
       type: String,
-      required: [true, 'Name is required'],
+      required: [true, "Name is required"],
       trim: true,
       minlength: 2,
       maxlength: 50,
@@ -55,10 +55,13 @@ const staffSchema = new Schema<IStaff>(
 
     email: {
       type: String,
-      required: [true, 'Email is required'],
+      required: [true, "Email is required"],
       trim: true,
       lowercase: true,
-      match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Invalid email address'],
+      match: [
+        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+        "Invalid email address",
+      ],
     },
 
     role: {
@@ -70,14 +73,14 @@ const staffSchema = new Schema<IStaff>(
 
     phone: {
       type: String,
-      required: [true, 'Phone number is required'],
+      required: [true, "Phone number is required"],
       trim: true,
-      match: [/^[6-9]\d{9}$/, 'Invalid phone number'],
+      match: [/^[6-9]\d{9}$/, "Invalid phone number"],
     },
 
     shift: {
       type: String,
-      required: [true, 'Shift is required'],
+      required: [true, "Shift is required"],
       trim: true,
       maxlength: 30,
     },
@@ -125,7 +128,7 @@ const staffSchema = new Schema<IStaff>(
   {
     timestamps: true,
     versionKey: false, // cleaner documents
-  }
+  },
 );
 
 /**
@@ -146,7 +149,7 @@ staffSchema.index({ status: 1, isActive: 1 });
 /**
  * PRE-SAVE HOOK (optional formatting / normalization)
  */
-staffSchema.pre<IStaff>('save', async function () {
+staffSchema.pre<IStaff>("save", async function () {
   this.name = this.name.trim();
   this.phone = this.phone.trim();
 });
@@ -162,5 +165,4 @@ staffSchema.statics.findActiveStaff = function () {
  * MODEL EXPORT (safe for Next.js hot reload)
  */
 export const Staff: Model<IStaff> =
-  mongoose.models.Staff ||
-  mongoose.model<IStaff>('Staff', staffSchema);
+  mongoose.models.Staff || mongoose.model<IStaff>("Staff", staffSchema);

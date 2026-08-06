@@ -1,9 +1,11 @@
 "use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
+import React from "react";
+import { motion } from "framer-motion";
 
-const PageTransition: React.FC<React.PropsWithChildren<object>> = ({ children }) => {
+const PageTransition: React.FC<React.PropsWithChildren<object>> = ({
+  children,
+}) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}

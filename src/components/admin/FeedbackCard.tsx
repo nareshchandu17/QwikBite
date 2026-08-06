@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { FeedbackItem } from '@/types/feedback';
+import { useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { FeedbackItem } from "@/types/feedback";
 
 interface FeedbackCardProps {
   feedback: FeedbackItem;
@@ -10,13 +10,15 @@ interface FeedbackCardProps {
 export function FeedbackCard({ feedback, onReply }: FeedbackCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  const [replyText, setReplyText] = useState('');
+  const [replyText, setReplyText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const getFeedbackType = (rating: number) => {
-    if (rating >= 4) return { label: 'Positive', color: 'bg-green-500/20 text-green-400' };
-    if (rating >= 2) return { label: 'Neutral', color: 'bg-yellow-500/20 text-yellow-400' };
-    return { label: 'Negative', color: 'bg-red-500/20 text-red-400' };
+    if (rating >= 4)
+      return { label: "Positive", color: "bg-green-500/20 text-green-400" };
+    if (rating >= 2)
+      return { label: "Neutral", color: "bg-yellow-500/20 text-yellow-400" };
+    return { label: "Negative", color: "bg-red-500/20 text-red-400" };
   };
 
   const feedbackType = getFeedbackType(feedback.starRating);
@@ -26,13 +28,11 @@ export function FeedbackCard({ feedback, onReply }: FeedbackCardProps) {
     if (!replyText.trim()) return;
     setIsSubmitting(true);
     try {
-      console.log('[FeedbackCard] Submitting reply for feedback:', feedback._id);
       await onReply(feedback._id, replyText);
-      console.log('[FeedbackCard] ✅ Reply submitted successfully');
-      setReplyText('');
+
+      setReplyText("");
       setIsExpanded(false);
     } catch (error) {
-      console.error('[FeedbackCard] ❌ Error submitting reply:', error);
       // Error toast is handled in parent component
     } finally {
       setIsSubmitting(false);
@@ -46,12 +46,18 @@ export function FeedbackCard({ feedback, onReply }: FeedbackCardProps) {
         <div className="flex justify-between items-start mb-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white font-bold">
-              {feedback.name?.charAt(0)?.toUpperCase() || 'U'}
+              {feedback.name?.charAt(0)?.toUpperCase() || "U"}
             </div>
             <div>
-              <h3 className="font-medium text-white">{feedback.name || 'Unknown User'}</h3>
+              <h3 className="font-medium text-white">
+                {feedback.name || "Unknown User"}
+              </h3>
               <div className="flex items-center gap-2 text-xs text-[#9ca3af]">
-                <span>{formatDistanceToNow(new Date(feedback.createdAt), { addSuffix: true })}</span>
+                <span>
+                  {formatDistanceToNow(new Date(feedback.createdAt), {
+                    addSuffix: true,
+                  })}
+                </span>
                 {feedback.orderReference && (
                   <span className="bg-white/5 px-2 py-0.5 rounded-full">
                     Order #{feedback.orderReference}
@@ -60,11 +66,16 @@ export function FeedbackCard({ feedback, onReply }: FeedbackCardProps) {
               </div>
             </div>
           </div>
-          
+
           {/* Star rating in top right */}
           <div className="flex items-center gap-1">
             {[...Array(5)].map((_, i) => (
-              <span key={i} className={i < feedback.starRating ? 'text-amber-500' : 'text-white/20'}>
+              <span
+                key={i}
+                className={
+                  i < feedback.starRating ? "text-amber-500" : "text-white/20"
+                }
+              >
                 ★
               </span>
             ))}
@@ -79,17 +90,19 @@ export function FeedbackCard({ feedback, onReply }: FeedbackCardProps) {
         {/* Footer with actions */}
         <div className="mt-4 pt-3 border-t border-white/10">
           <div className="flex justify-between items-center">
-            <span className={`text-xs px-2 py-0.5 rounded-full ${feedbackType.color}`}>
+            <span
+              className={`text-xs px-2 py-0.5 rounded-full ${feedbackType.color}`}
+            >
               {feedbackType.label}
             </span>
-            
+
             <div className="flex items-center gap-3">
               {!hasReply && (
                 <button
                   onClick={() => setIsExpanded(!isExpanded)}
                   className="text-xs font-medium text-[#FF512F] hover:text-white transition-colors"
                 >
-                  {isExpanded ? 'Cancel' : 'Respond'}
+                  {isExpanded ? "Cancel" : "Respond"}
                 </button>
               )}
               <button
@@ -124,7 +137,7 @@ export function FeedbackCard({ feedback, onReply }: FeedbackCardProps) {
                   disabled={isSubmitting || !replyText.trim()}
                   className="px-3 py-1.5 text-xs font-medium bg-[#FF512F] text-white rounded-lg hover:bg-[#FF512F]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? 'Sending...' : 'Send Reply'}
+                  {isSubmitting ? "Sending..." : "Send Reply"}
                 </button>
               </div>
             </div>
@@ -138,13 +151,25 @@ export function FeedbackCard({ feedback, onReply }: FeedbackCardProps) {
           <div className="bg-gray-900/60 backdrop-blur-md rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-[0_8px_32px_0_rgba(0,0,0,0.3)]">
             <div className="p-6">
               <div className="flex justify-between items-start mb-6">
-                <h2 className="text-xl font-bold text-white">Feedback Details</h2>
+                <h2 className="text-xl font-bold text-white">
+                  Feedback Details
+                </h2>
                 <button
                   onClick={() => setShowDetails(false)}
                   className="text-[#9ca3af] hover:text-white transition-colors"
                 >
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
@@ -152,12 +177,16 @@ export function FeedbackCard({ feedback, onReply }: FeedbackCardProps) {
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white font-bold text-xl">
-                    {feedback.name?.charAt(0)?.toUpperCase() || 'U'}
+                    {feedback.name?.charAt(0)?.toUpperCase() || "U"}
                   </div>
                   <div>
-                    <h3 className="font-bold text-white">{feedback.name || 'Unknown User'}</h3>
+                    <h3 className="font-bold text-white">
+                      {feedback.name || "Unknown User"}
+                    </h3>
                     <p className="text-sm text-[#9ca3af]">
-                      {formatDistanceToNow(new Date(feedback.createdAt), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(feedback.createdAt), {
+                        addSuffix: true,
+                      })}
                     </p>
                   </div>
                 </div>
@@ -189,7 +218,14 @@ export function FeedbackCard({ feedback, onReply }: FeedbackCardProps) {
                   <p className="text-[#9ca3af]">Rating</p>
                   <div className="flex items-center gap-1">
                     {[...Array(5)].map((_, i) => (
-                      <span key={i} className={i < feedback.starRating ? 'text-amber-500 text-xl' : 'text-white/20 text-xl'}>
+                      <span
+                        key={i}
+                        className={
+                          i < feedback.starRating
+                            ? "text-amber-500 text-xl"
+                            : "text-white/20 text-xl"
+                        }
+                      >
                         ★
                       </span>
                     ))}
@@ -204,7 +240,10 @@ export function FeedbackCard({ feedback, onReply }: FeedbackCardProps) {
                     <p className="text-neutral-400">Issues Reported</p>
                     <div className="flex flex-wrap gap-2">
                       {feedback.reportIssue.map((issue: string, i: number) => (
-                        <span key={i} className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full">
+                        <span
+                          key={i}
+                          className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full"
+                        >
                           {issue}
                         </span>
                       ))}
@@ -225,7 +264,8 @@ export function FeedbackCard({ feedback, onReply }: FeedbackCardProps) {
                     <div className="bg-[#FF512F]/10 border border-[#FF512F]/20 p-4 rounded-lg">
                       <p className="text-white">{feedback.adminReply}</p>
                       <p className="text-xs text-[#FF512F]/80 mt-1">
-                        Replied on {new Date(feedback.updatedAt).toLocaleString()}
+                        Replied on{" "}
+                        {new Date(feedback.updatedAt).toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -235,7 +275,6 @@ export function FeedbackCard({ feedback, onReply }: FeedbackCardProps) {
           </div>
         </div>
       )}
-    
     </div>
   );
 }

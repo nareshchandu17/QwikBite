@@ -86,9 +86,9 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onSave }) => {
       valid = !error;
     }
 
-    setFieldStates(prev => ({
+    setFieldStates((prev) => ({
       ...prev,
-      [field]: { touched: true, valid, error }
+      [field]: { touched: true, valid, error },
     }));
   };
 
@@ -102,9 +102,11 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onSave }) => {
   };
 
   const isFormValid = () => {
-    return fieldStates.name.valid && 
-           fieldStates.category.valid && 
-           fieldStates.quantity.valid;
+    return (
+      fieldStates.name.valid &&
+      fieldStates.category.valid &&
+      fieldStates.quantity.valid
+    );
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -141,7 +143,6 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onSave }) => {
         onClose();
       }
     } catch (error) {
-      console.error("Error adding item:", error);
       toast.error("Failed to add item");
     } finally {
       setIsSubmitting(false);
@@ -176,7 +177,9 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onSave }) => {
               disabled={isSubmitting}
             />
             {fieldStates.name.touched && fieldStates.name.error && (
-              <p className="text-red-500 text-xs mt-1">{fieldStates.name.error}</p>
+              <p className="text-red-500 text-xs mt-1">
+                {fieldStates.name.error}
+              </p>
             )}
             {fieldStates.name.touched && fieldStates.name.valid && (
               <p className="text-green-500 text-xs mt-1">✓ Valid name</p>
@@ -200,7 +203,9 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onSave }) => {
               disabled={isSubmitting}
             />
             {fieldStates.category.touched && fieldStates.category.error && (
-              <p className="text-red-500 text-xs mt-1">{fieldStates.category.error}</p>
+              <p className="text-red-500 text-xs mt-1">
+                {fieldStates.category.error}
+              </p>
             )}
             {fieldStates.category.touched && fieldStates.category.valid && (
               <p className="text-green-500 text-xs mt-1">✓ Valid category</p>
@@ -228,7 +233,9 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, onSave }) => {
                 disabled={isSubmitting}
               />
               {fieldStates.quantity.touched && fieldStates.quantity.error && (
-                <p className="text-red-500 text-xs mt-1">{fieldStates.quantity.error}</p>
+                <p className="text-red-500 text-xs mt-1">
+                  {fieldStates.quantity.error}
+                </p>
               )}
               {fieldStates.quantity.touched && fieldStates.quantity.valid && (
                 <p className="text-green-500 text-xs mt-1">✓ Valid quantity</p>
@@ -280,21 +287,40 @@ interface RestockConfirmModalProps {
   onConfirm: () => void;
 }
 
-const RestockConfirmModal: React.FC<RestockConfirmModalProps> = ({ item, onClose, onConfirm }) => {
+const RestockConfirmModal: React.FC<RestockConfirmModalProps> = ({
+  item,
+  onClose,
+  onConfirm,
+}) => {
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur">
       <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-white/10">
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 border border-blue-500/20">
-            <svg className="w-8 h-8 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            <svg
+              className="w-8 h-8 text-blue-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">Restock Inventory Item</h3>
+          <h3 className="text-xl font-bold text-white mb-2">
+            Restock Inventory Item
+          </h3>
           <p className="text-gray-400 text-sm">
-            Are you sure you want to restock <span className="text-white font-semibold">{item.name}</span>?
+            Are you sure you want to restock{" "}
+            <span className="text-white font-semibold">{item.name}</span>?
           </p>
-          <p className="text-gray-500 text-xs mt-1">Current quantity: {item.quantity} {item.unit}</p>
+          <p className="text-gray-500 text-xs mt-1">
+            Current quantity: {item.quantity} {item.unit}
+          </p>
         </div>
         <div className="flex justify-end gap-3">
           <button
@@ -324,10 +350,18 @@ interface RestockModalProps {
   onSave: (id: string, quantity: number) => Promise<boolean>;
 }
 
-const RestockModal: React.FC<RestockModalProps> = ({ item, onClose, onSave }) => {
+const RestockModal: React.FC<RestockModalProps> = ({
+  item,
+  onClose,
+  onSave,
+}) => {
   const [quantity, setQuantity] = useState<string>(item.quantity.toString());
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [fieldState, setFieldState] = useState({ touched: false, valid: true, error: "" });
+  const [fieldState, setFieldState] = useState({
+    touched: false,
+    valid: true,
+    error: "",
+  });
 
   const handleBlur = () => {
     const error = validateQuantity(quantity);
@@ -357,7 +391,6 @@ const RestockModal: React.FC<RestockModalProps> = ({ item, onClose, onSave }) =>
         onClose();
       }
     } catch (error) {
-      console.error("Error updating inventory:", error);
       toast.error("Failed to update inventory");
     } finally {
       setIsSubmitting(false);
@@ -427,7 +460,11 @@ interface DeleteConfirmModalProps {
   onConfirm: (id: string) => Promise<boolean>;
 }
 
-const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ item, onClose, onConfirm }) => {
+const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
+  item,
+  onClose,
+  onConfirm,
+}) => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleConfirm = async () => {
@@ -439,7 +476,6 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ item, onClose, 
         onClose();
       }
     } catch (error) {
-      console.error("Error deleting item:", error);
       toast.error("Failed to delete item");
     } finally {
       setIsDeleting(false);
@@ -451,15 +487,30 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ item, onClose, 
       <div className="bg-gray-900 rounded-2xl p-6 w-full max-w-md border border-white/10">
         <div className="flex flex-col items-center text-center mb-6">
           <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4 border border-red-500/20">
-            <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            <svg
+              className="w-8 h-8 text-red-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
             </svg>
           </div>
-          <h3 className="text-xl font-bold text-white mb-2">Delete Inventory Item</h3>
+          <h3 className="text-xl font-bold text-white mb-2">
+            Delete Inventory Item
+          </h3>
           <p className="text-gray-400 text-sm">
-            Are you sure you want to delete <span className="text-white font-semibold">{item.name}</span>?
+            Are you sure you want to delete{" "}
+            <span className="text-white font-semibold">{item.name}</span>?
           </p>
-          <p className="text-gray-500 text-xs mt-1">This action cannot be undone.</p>
+          <p className="text-gray-500 text-xs mt-1">
+            This action cannot be undone.
+          </p>
         </div>
         <div className="flex justify-end gap-3">
           <button
@@ -488,12 +539,24 @@ const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({ item, onClose, 
 const InventorySkeleton: React.FC = () => {
   return (
     <tr className="border-t border-white/5 animate-pulse">
-      <td className="p-4"><div className="w-32 h-4 rounded bg-white/10"></div></td>
-      <td className="p-4"><div className="w-24 h-4 rounded bg-white/10"></div></td>
-      <td className="p-4"><div className="w-16 h-4 rounded bg-white/10"></div></td>
-      <td className="p-4"><div className="w-24 h-6 rounded-full bg-white/10"></div></td>
-      <td className="p-4"><div className="w-24 h-4 rounded bg-white/10"></div></td>
-      <td className="p-4 text-right"><div className="w-20 h-8 rounded-lg bg-white/10 ml-auto"></div></td>
+      <td className="p-4">
+        <div className="w-32 h-4 rounded bg-white/10"></div>
+      </td>
+      <td className="p-4">
+        <div className="w-24 h-4 rounded bg-white/10"></div>
+      </td>
+      <td className="p-4">
+        <div className="w-16 h-4 rounded bg-white/10"></div>
+      </td>
+      <td className="p-4">
+        <div className="w-24 h-6 rounded-full bg-white/10"></div>
+      </td>
+      <td className="p-4">
+        <div className="w-24 h-4 rounded bg-white/10"></div>
+      </td>
+      <td className="p-4 text-right">
+        <div className="w-20 h-8 rounded-lg bg-white/10 ml-auto"></div>
+      </td>
     </tr>
   );
 };
@@ -524,19 +587,25 @@ const InventoryAlerts: React.FC = () => {
         const data = await res.json();
 
         setItems(
-          Array.isArray(data) ? data.map((item: any) => ({
-            id: item._id,
-            name: item.name,
-            category: item.category,
-            quantity: typeof item.quantity === 'number' ? item.quantity : parseFloat(item.quantity) || 0,
-            unit: item.unit || "pcs",
-            status: item.status,
-            lastUpdated: new Date(item.updatedAt).toLocaleString(),
-          })) : []
+          Array.isArray(data)
+            ? data.map((item: any) => ({
+                id: item._id,
+                name: item.name,
+                category: item.category,
+                quantity:
+                  typeof item.quantity === "number"
+                    ? item.quantity
+                    : parseFloat(item.quantity) || 0,
+                unit: item.unit || "pcs",
+                status: item.status,
+                lastUpdated: new Date(item.updatedAt).toLocaleString(),
+              }))
+            : [],
         );
       } catch (error) {
-        console.error('Error fetching inventory:', error);
-        toast.error(error instanceof Error ? error.message : 'Failed to load inventory');
+        toast.error(
+          error instanceof Error ? error.message : "Failed to load inventory",
+        );
         setItems([]);
       } finally {
         setLoading(false);
@@ -574,7 +643,9 @@ const InventoryAlerts: React.FC = () => {
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || errorData.details || `Server error: ${res.status}`);
+        throw new Error(
+          errorData.error || errorData.details || `Server error: ${res.status}`,
+        );
       }
 
       const data = await res.json();
@@ -594,15 +665,17 @@ const InventoryAlerts: React.FC = () => {
 
       return true;
     } catch (error) {
-      console.error('Error adding item:', error);
       throw error;
     }
   };
 
   /* ===== RESTOCK ===== */
-  const handleRestock = async (id: string, quantity: number): Promise<boolean> => {
+  const handleRestock = async (
+    id: string,
+    quantity: number,
+  ): Promise<boolean> => {
     try {
-      const currentQuantity = items.find(i => i.id === id)?.quantity || 0;
+      const currentQuantity = items.find((i) => i.id === id)?.quantity || 0;
       const quantityDiff = quantity - currentQuantity;
 
       const res = await fetch("/api/inventory", {
@@ -611,7 +684,10 @@ const InventoryAlerts: React.FC = () => {
         body: JSON.stringify({
           id,
           quantity: quantityDiff,
-          status: quantity > 0 ? InventoryStatus.IN_STOCK : InventoryStatus.OUT_OF_STOCK
+          status:
+            quantity > 0
+              ? InventoryStatus.IN_STOCK
+              : InventoryStatus.OUT_OF_STOCK,
         }),
       });
 
@@ -631,13 +707,12 @@ const InventoryAlerts: React.FC = () => {
                 status: updatedItem.status,
                 lastUpdated: "Just now",
               }
-            : item
-        )
+            : item,
+        ),
       );
 
       return true;
     } catch (error) {
-      console.error('Error updating inventory:', error);
       throw error;
     }
   };
@@ -659,7 +734,6 @@ const InventoryAlerts: React.FC = () => {
       setItems((prev) => prev.filter((item) => item.id !== id));
       return true;
     } catch (error) {
-      console.error('Error deleting item:', error);
       throw error;
     }
   };
@@ -667,7 +741,10 @@ const InventoryAlerts: React.FC = () => {
   return (
     <div className="p-6">
       {addOpen && (
-        <AddItemModal onClose={() => setAddOpen(false)} onSave={handleAddItem} />
+        <AddItemModal
+          onClose={() => setAddOpen(false)}
+          onSave={handleAddItem}
+        />
       )}
 
       {showRestockConfirm && restockItem && (
@@ -735,12 +812,15 @@ const InventoryAlerts: React.FC = () => {
                   <td className="p-4 text-white">{item.name}</td>
                   <td className="p-4 text-gray-400">{item.category}</td>
                   <td className="p-4 font-mono text-white">
-                    {item.quantity} <span className="text-xs text-gray-500 uppercase">{item.unit}</span>
+                    {item.quantity}{" "}
+                    <span className="text-xs text-gray-500 uppercase">
+                      {item.unit}
+                    </span>
                   </td>
                   <td className="p-4">
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusStyle(
-                        item.status
+                        item.status,
                       )}`}
                     >
                       {item.status.replace("_", " ")}
@@ -774,10 +854,22 @@ const InventoryAlerts: React.FC = () => {
               <tr>
                 <td colSpan={6} className="p-12 text-center">
                   <div className="flex flex-col items-center justify-center">
-                    <svg className="w-16 h-16 text-gray-600 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    <svg
+                      className="w-16 h-16 text-gray-600 mb-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                      />
                     </svg>
-                    <p className="text-gray-400 mb-4">No inventory items found</p>
+                    <p className="text-gray-400 mb-4">
+                      No inventory items found
+                    </p>
                     <button
                       onClick={() => setAddOpen(true)}
                       className="px-6 py-2 rounded-xl bg-[#FF512F] text-white font-bold cursor-pointer hover:bg-[#FF512F]/80 transition-colors"

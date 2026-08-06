@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   createContext,
@@ -8,9 +8,9 @@ import {
   useRef,
   ReactNode,
   useCallback,
-} from 'react';
-import { toast } from 'sonner';
-import { shouldTreatFavoriteResponseAsSuccess } from '@/lib/favorites';
+} from "react";
+import { toast } from "sonner";
+import { shouldTreatFavoriteResponseAsSuccess } from "@/lib/favorites";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -30,7 +30,9 @@ interface FavoritesContextType {
 // ─────────────────────────────────────────────────────────────────────────────
 // Context
 // ─────────────────────────────────────────────────────────────────────────────
-const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
+const FavoritesContext = createContext<FavoritesContextType | undefined>(
+  undefined,
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Provider
@@ -50,29 +52,28 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
   const fetchFavorites = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/favorites', {
-        credentials: 'include',
-        cache: 'no-store',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/favorites", {
+        credentials: "include",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to fetch favorites');
+        throw new Error(errorData.error || "Failed to fetch favorites");
       }
 
       const { data } = await response.json();
       setFavorites(
         Array.isArray(data)
           ? data
-              .map((fav: any) => String(fav?.itemId ?? '').trim())
+              .map((fav: any) => String(fav?.itemId ?? "").trim())
               .filter(Boolean)
-          : []
+          : [],
       );
       setError(null);
     } catch (err: any) {
-      console.error('[FavoritesContext] Error fetching favorites:', err);
-      setError(err.message || 'Failed to load favorites');
+      setError(err.message || "Failed to load favorites");
       setFavorites([]);
     } finally {
       setLoading(false);
@@ -91,7 +92,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
    *  • inFlightRef prevents duplicate requests from Strict Mode or rapid clicks
    */
   const toggleFavorite = useCallback(
-    async (itemId: string, itemType: string = 'menu') => {
+    async (itemId: string, itemType: string = "menu") => {
       // ── Duplicate-request guard ───────────────────────────────────────────
       if (inFlightRef.current.has(itemId)) {
         return; // already processing this item — swallow silently
@@ -108,30 +109,30 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       setFavorites((prev) =>
         isCurrentlyFavorite
           ? prev.filter((id) => id !== itemId)
-          : [...prev, itemId]
+          : [...prev, itemId],
       );
 
       // ── 2. Show exactly ONE toast (stable ID deduplicates in sonner) ─────
       const toastId = `fav-${itemId}`;
       if (isCurrentlyFavorite) {
-        toast('💔 Removed from Favorites', {
+        toast("💔 Removed from Favorites", {
           id: toastId,
           duration: 2500,
           style: {
-            background: '#fff',
-            color: '#111',
-            border: '1px solid #fee2e2',
+            background: "#fff",
+            color: "#111",
+            border: "1px solid #fee2e2",
             fontWeight: 500,
           },
         });
       } else {
-        toast('❤️ Added to Favorites', {
+        toast("❤️ Added to Favorites", {
           id: toastId,
           duration: 2500,
           style: {
-            background: '#fff',
-            color: '#111',
-            border: '1px solid #fef3c7',
+            background: "#fff",
+            color: "#111",
+            border: "1px solid #fef3c7",
             fontWeight: 500,
           },
         });
@@ -140,11 +141,11 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       // ── 3. Background API sync ────────────────────────────────────────────
       try {
         const url =
-          '/api/favorites' + (isCurrentlyFavorite ? `?itemId=${itemId}` : '');
+          "/api/favorites" + (isCurrentlyFavorite ? `?itemId=${itemId}` : "");
         const options: RequestInit = {
-          method: isCurrentlyFavorite ? 'DELETE' : 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          method: isCurrentlyFavorite ? "DELETE" : "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
         };
 
         if (!isCurrentlyFavorite) {
@@ -154,19 +155,24 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         const response = await fetch(url, options);
         const data = await response.json().catch(() => ({}));
 
-        if (!response.ok && !shouldTreatFavoriteResponseAsSuccess(response.status, data, isCurrentlyFavorite)) {
-          throw new Error(data.error || 'Failed to update favorite');
+        if (
+          !response.ok &&
+          !shouldTreatFavoriteResponseAsSuccess(
+            response.status,
+            data,
+            isCurrentlyFavorite,
+          )
+        ) {
+          throw new Error(data.error || "Failed to update favorite");
         }
         // ✅ Success — optimistic state is already correct, no refetch needed
       } catch (err: any) {
-        console.error('[FavoritesContext] Favorite toggle failed:', err);
-
         // ── 4. Rollback optimistic update ─────────────────────────────────
         setFavorites(previousFavorites);
-        setError(err.message || 'Failed to update favorites');
+        setError(err.message || "Failed to update favorites");
 
         // ── 5. Replace the success toast with an error toast (same ID) ────
-        toast.error('Failed to update favorites. Please try again.', {
+        toast.error("Failed to update favorites. Please try again.", {
           id: toastId,
           duration: 3500,
         });
@@ -175,13 +181,13 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
         inFlightRef.current.delete(itemId);
       }
     },
-    [favorites]
+    [favorites],
   );
 
   // ─── Derived ─────────────────────────────────────────────────────────────
   const isFavorite = useCallback(
     (id: string) => favorites.includes(id),
-    [favorites]
+    [favorites],
   );
 
   // ─── Initial fetch (runs once on mount) ──────────────────────────────────
@@ -212,7 +218,7 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
 export function useFavorites() {
   const context = useContext(FavoritesContext);
   if (context === undefined) {
-    throw new Error('useFavorites must be used within a FavoritesProvider');
+    throw new Error("useFavorites must be used within a FavoritesProvider");
   }
   return context;
 }

@@ -1,6 +1,6 @@
 /**
  * Analytics Type Definitions
- * 
+ *
  * Central type definitions for the analytics system
  */
 
@@ -24,7 +24,7 @@ export interface BlendedAnalyticsData extends AnalyticsData {
     realDataPercentage: number;
     mockDataPercentage: number;
     lastUpdated: Date;
-    dataSource: 'mock' | 'real' | 'blended';
+    dataSource: "mock" | "real" | "blended";
   };
 }
 
@@ -35,12 +35,19 @@ export interface FetchAnalyticsOptions {
 }
 
 export class AnalyticsError extends Error {
-  public readonly code: 'NETWORK_ERROR' | 'TIMEOUT' | 'PARTIAL_DATA' | 'INVALID_RESPONSE';
+  public readonly code:
+    "NETWORK_ERROR" | "TIMEOUT" | "PARTIAL_DATA" | "INVALID_RESPONSE";
   public readonly retryable: boolean;
 
-  constructor(message: string, options: { code: 'NETWORK_ERROR' | 'TIMEOUT' | 'PARTIAL_DATA' | 'INVALID_RESPONSE'; retryable: boolean }) {
+  constructor(
+    message: string,
+    options: {
+      code: "NETWORK_ERROR" | "TIMEOUT" | "PARTIAL_DATA" | "INVALID_RESPONSE";
+      retryable: boolean;
+    },
+  ) {
     super(message);
-    this.name = 'AnalyticsError';
+    this.name = "AnalyticsError";
     this.code = options.code;
     this.retryable = options.retryable;
   }

@@ -1,16 +1,16 @@
-import mongoose, { Schema, Document, model, Types, Model } from 'mongoose';
+import mongoose, { Schema, Document, model, Types, Model } from "mongoose";
 
 export enum PaymentStatus {
-  PENDING = 'Pending',
-  COMPLETED = 'Success',
-  FAILED = 'Failed',
-  REFUNDED = 'Refunded',
+  PENDING = "Pending",
+  COMPLETED = "Success",
+  FAILED = "Failed",
+  REFUNDED = "Refunded",
 }
 
 export enum PaymentMethod {
-  UPI = 'UPI',
-  CARD = 'Card',
-  CASH = 'Cash',
+  UPI = "UPI",
+  CARD = "Card",
+  CASH = "Cash",
 }
 
 export interface IPayment extends Document {
@@ -48,11 +48,13 @@ export interface IPaymentModel extends Model<IPayment> {
     totalTransactions: number;
     completedTransactions: number;
   }>;
-  getDailyRevenue(days?: number): Promise<Array<{
-    _id: string;
-    revenue: number;
-    transactions: number;
-  }>>;
+  getDailyRevenue(days?: number): Promise<
+    Array<{
+      _id: string;
+      revenue: number;
+      transactions: number;
+    }>
+  >;
 }
 
 const PaymentSchema = new Schema<IPayment>(
@@ -70,7 +72,7 @@ const PaymentSchema = new Schema<IPayment>(
     },
     userId: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
     },
     customerName: {
       type: String,
@@ -94,7 +96,7 @@ const PaymentSchema = new Schema<IPayment>(
     currency: {
       type: String,
       required: true,
-      default: 'INR',
+      default: "INR",
       uppercase: true,
     },
     method: {
@@ -117,27 +119,29 @@ const PaymentSchema = new Schema<IPayment>(
       type: String,
       trim: true,
     },
-    items: [{
-      id: {
-        type: String,
-        required: true,
+    items: [
+      {
+        id: {
+          type: String,
+          required: true,
+        },
+        name: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+          min: 1,
+        },
+        price: {
+          type: Number,
+          required: true,
+          min: 0,
+        },
       },
-      name: {
-        type: String,
-        required: true,
-        trim: true,
-      },
-      quantity: {
-        type: Number,
-        required: true,
-        min: 1,
-      },
-      price: {
-        type: Number,
-        required: true,
-        min: 0,
-      },
-    }],
+    ],
     metadata: {
       type: Map,
       of: Schema.Types.Mixed,
@@ -158,7 +162,7 @@ const PaymentSchema = new Schema<IPayment>(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 // Indexes for better query performance
@@ -175,20 +179,20 @@ PaymentSchema.index({ userId: 1, status: 1 });
 PaymentSchema.index({ orderId: 1, status: 1 });
 
 // Pre-save hook to ensure data consistency
-PaymentSchema.pre<IPayment>('save', async function() {
+PaymentSchema.pre<IPayment>("save", async function () {
   // Trim customer name
   if (this.customerName) {
     this.customerName = this.customerName.trim();
   }
-  
+
   // Ensure amount is positive
   if (this.amount < 0) {
     this.amount = 0;
   }
-  
+
   // Validate items
   if (this.items && this.items.length > 0) {
-    this.items = this.items.map(item => ({
+    this.items = this.items.map((item) => ({
       ...item,
       name: item.name.trim(),
       quantity: Math.max(1, Math.floor(item.quantity)),
@@ -198,7 +202,10 @@ PaymentSchema.pre<IPayment>('save', async function() {
 });
 
 // Static方法 to get payment statistics
-PaymentSchema.statics.getStatistics = async function(this: any, dateRange?: { start: Date; end: Date }) {
+PaymentSchema.statics.getStatistics = async function (
+  this: any,
+  dateRange?: { start: Date; end: Date },
+) {
   const matchQuery: any = {};
   if (dateRange) {
     matchQuery.createdAt = {
@@ -215,55 +222,48 @@ PaymentSchema.statics.getStatistics = async function(this: any, dateRange?: { st
         totalRevenue: {
           $sum: {
             $cond: [
-              { $eq: ['$status', PaymentStatus.COMPLETED] },
-              '$amount',
+              { $eq: ["$status", PaymentStatus.COMPLETED] },
+              "$amount",
               0,
             ],
           },
         },
         pendingSettlements: {
           $sum: {
-            $cond: [
-              { $eq: ['$status', PaymentStatus.PENDING] },
-              '$amount',
-              0,
-            ],
+            $cond: [{ $eq: ["$status", PaymentStatus.PENDING] }, "$amount", 0],
           },
         },
         failedTransactions: {
           $sum: {
-            $cond: [
-              { $eq: ['$status', PaymentStatus.FAILED] },
-              1,
-              0,
-            ],
+            $cond: [{ $eq: ["$status", PaymentStatus.FAILED] }, 1, 0],
           },
         },
         totalTransactions: { $sum: 1 },
         completedTransactions: {
           $sum: {
-            $cond: [
-              { $eq: ['$status', PaymentStatus.COMPLETED] },
-              1,
-              0,
-            ],
+            $cond: [{ $eq: ["$status", PaymentStatus.COMPLETED] }, 1, 0],
           },
         },
       },
     },
   ]);
 
-  return stats[0] || {
-    totalRevenue: 0,
-    pendingSettlements: 0,
-    failedTransactions: 0,
-    totalTransactions: 0,
-    completedTransactions: 0,
-  };
+  return (
+    stats[0] || {
+      totalRevenue: 0,
+      pendingSettlements: 0,
+      failedTransactions: 0,
+      totalTransactions: 0,
+      completedTransactions: 0,
+    }
+  );
 };
 
 // Static method to get daily revenue
-PaymentSchema.statics.getDailyRevenue = async function(this: any, days: number = 7) {
+PaymentSchema.statics.getDailyRevenue = async function (
+  this: any,
+  days: number = 7,
+) {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
   startDate.setHours(0, 0, 0, 0);
@@ -279,11 +279,11 @@ PaymentSchema.statics.getDailyRevenue = async function(this: any, days: number =
       $group: {
         _id: {
           $dateToString: {
-            format: '%Y-%m-%d',
-            date: '$createdAt',
+            format: "%Y-%m-%d",
+            date: "$createdAt",
           },
         },
-        revenue: { $sum: '$amount' },
+        revenue: { $sum: "$amount" },
         transactions: { $sum: 1 },
       },
     },
@@ -294,6 +294,8 @@ PaymentSchema.statics.getDailyRevenue = async function(this: any, days: number =
 };
 
 // Create model with proper typing
-const Payment = (mongoose.models.Payment as IPaymentModel) || model<IPayment, IPaymentModel>('Payment', PaymentSchema);
+const Payment =
+  (mongoose.models.Payment as IPaymentModel) ||
+  model<IPayment, IPaymentModel>("Payment", PaymentSchema);
 
 export default Payment;

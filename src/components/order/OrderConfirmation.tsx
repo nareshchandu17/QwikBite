@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { motion, AnimatePresence, easeInOut } from "framer-motion";
 import { CheckCircle2 } from "lucide-react";
@@ -50,14 +50,14 @@ const OrderConfirmationCard = ({
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0, 
-      transition: { 
-        type: "spring" as const, 
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring" as const,
         stiffness: 100,
-        damping: 10
-      } 
+        damping: 10,
+      },
     },
   };
 
@@ -68,14 +68,11 @@ const OrderConfirmationCard = ({
         initial="hidden"
         animate="visible"
         aria-live="polite"
-        className={`relative w-full max-w-sm rounded-xl border bg-white text-gray-900 shadow-lg p-6 sm:p-8 transition-all duration-300 hover:shadow-[0_0_25px_8px_rgba(251,191,36,0.6)] ${className || ''}`}
+        className={`relative w-full max-w-sm rounded-xl border bg-white text-gray-900 shadow-lg p-6 sm:p-8 transition-all duration-300 hover:shadow-[0_0_25px_8px_rgba(251,191,36,0.6)] ${className || ""}`}
       >
         <div className="flex flex-col items-center space-y-6 text-center">
           <motion.div variants={itemVariants}>{icon}</motion.div>
-          <motion.h2 
-            variants={itemVariants} 
-            className="text-2xl font-semibold"
-          >
+          <motion.h2 variants={itemVariants} className="text-2xl font-semibold">
             {title}
           </motion.h2>
 
@@ -84,11 +81,11 @@ const OrderConfirmationCard = ({
               <div
                 key={item.label}
                 className={`flex items-center justify-between border-b pb-4 text-sm text-gray-500 ${
-                  index === details.length - 1 ? 'border-none pb-0' : ''
-                } ${item.isBold ? 'font-bold text-gray-900' : ''}`}
+                  index === details.length - 1 ? "border-none pb-0" : ""
+                } ${item.isBold ? "font-bold text-gray-900" : ""}`}
               >
                 <span>{item.label}</span>
-                <span className={item.isBold ? 'text-lg' : ''}>
+                <span className={item.isBold ? "text-lg" : ""}>
                   {item.value}
                 </span>
               </div>
@@ -117,19 +114,17 @@ export default function OrderConfirmation() {
 
   useEffect(() => {
     // Get order data from localStorage or API
-    const storedOrder = localStorage.getItem('orderData');
-    const orderId = localStorage.getItem('orderId');
-    
+    const storedOrder = localStorage.getItem("orderData");
+    const orderId = localStorage.getItem("orderId");
+
     if (storedOrder) {
       try {
         const order = JSON.parse(storedOrder);
         setOrderData({
           ...order,
-          id: orderId || 'N/A'
+          id: orderId || "N/A",
         });
-      } catch (error) {
-        console.error('Error parsing order data:', error);
-      }
+      } catch (error) {}
     }
     setIsLoading(false);
 
@@ -138,7 +133,7 @@ export default function OrderConfirmation() {
   }, []);
 
   const handleGoToAccount = () => {
-    router.push('/customer/orders');
+    router.push("/customer/orders");
   };
 
   if (isLoading) {
@@ -151,12 +146,12 @@ export default function OrderConfirmation() {
 
   // Format date and time
   const formatDateTime = (date: string) => {
-    return new Date(date).toLocaleString('en-US', {
-      month: '2-digit',
-      day: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(date).toLocaleString("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -197,10 +192,14 @@ export default function OrderConfirmation() {
         </motion.div>
       )}
       <OrderConfirmationCard
-        orderId={orderData?.id || 'N/A'}
-        paymentMethod={orderData?.paymentMethod || 'Credit Card'}
-        dateTime={orderData?.createdAt ? formatDateTime(orderData.createdAt) : new Date().toLocaleString()}
-        totalAmount={`$${orderData?.total?.toFixed(2) || '0.00'}`}
+        orderId={orderData?.id || "N/A"}
+        paymentMethod={orderData?.paymentMethod || "Credit Card"}
+        dateTime={
+          orderData?.createdAt
+            ? formatDateTime(orderData.createdAt)
+            : new Date().toLocaleString()
+        }
+        totalAmount={`$${orderData?.total?.toFixed(2) || "0.00"}`}
         onGoToAccount={handleGoToAccount}
       />
     </div>

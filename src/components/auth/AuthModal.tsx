@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
-import { SignInCard } from './SignInCard';
-import { SignUpCard } from './SignUpCard';
-import { ForgotPasswordCard } from './ForgotPasswordCard';
-import { EmailConfirmationCard } from './EmailConfirmationCard';
-import { SetNewPasswordCard } from './SetNewPasswordCard';
-import { PasswordResetSuccessCard } from './PasswordResetSuccessCard';
-import { useAuthModal } from '@/context/AuthModalContext';
-import { useRouter } from 'next/navigation';
+import { useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { SignInCard } from "./SignInCard";
+import { SignUpCard } from "./SignUpCard";
+import { ForgotPasswordCard } from "./ForgotPasswordCard";
+import { EmailConfirmationCard } from "./EmailConfirmationCard";
+import { SetNewPasswordCard } from "./SetNewPasswordCard";
+import { PasswordResetSuccessCard } from "./PasswordResetSuccessCard";
+import { useAuthModal } from "@/context/AuthModalContext";
+import { useRouter } from "next/navigation";
 
 type AuthModalProps = {
   redirectOnSignIn?: boolean;
@@ -17,8 +17,16 @@ type AuthModalProps = {
 
 export function AuthModal({ redirectOnSignIn = false }: AuthModalProps) {
   const router = useRouter();
-  const { isOpen, mode, redirectUrl, emailData, tokenData, closeModal, openModal } = useAuthModal();
-  
+  const {
+    isOpen,
+    mode,
+    redirectUrl,
+    emailData,
+    tokenData,
+    closeModal,
+    openModal,
+  } = useAuthModal();
+
   // Close modal when clicking outside
   const handleBackgroundClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
@@ -35,13 +43,13 @@ export function AuthModal({ redirectOnSignIn = false }: AuthModalProps) {
 
   useEffect(() => {
     if (isOpen) {
-      document.body.classList.add('overflow-hidden');
+      document.body.classList.add("overflow-hidden");
     } else {
-      document.body.classList.remove('overflow-hidden');
+      document.body.classList.remove("overflow-hidden");
     }
 
     return () => {
-      document.body.classList.remove('overflow-hidden');
+      document.body.classList.remove("overflow-hidden");
     };
   }, [isOpen]);
 
@@ -62,44 +70,44 @@ export function AuthModal({ redirectOnSignIn = false }: AuthModalProps) {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
           >
-            {mode === 'signin' ? (
+            {mode === "signin" ? (
               <SignInCard
                 onSuccess={handleAuthSuccess}
                 onSwitchToSignUp={() => {
                   closeModal();
                   // Open signup modal
                   setTimeout(() => {
-                    openModal('signup');
+                    openModal("signup");
                   }, 100);
                 }}
                 redirectOnSuccess={true}
                 defaultRedirect={redirectUrl}
               />
-            ) : mode === 'signup' ? (
+            ) : mode === "signup" ? (
               <SignUpCard
                 onSuccess={handleAuthSuccess}
                 onSwitchToSignIn={() => {
                   closeModal();
                   // Open signin modal
                   setTimeout(() => {
-                    openModal('signin');
+                    openModal("signin");
                   }, 100);
                 }}
               />
-            ) : mode === 'forgotpassword' ? (
+            ) : mode === "forgotpassword" ? (
               <ForgotPasswordCard
                 onSuccess={handleAuthSuccess}
                 onBackToSignIn={() => {
                   closeModal();
                   // Open signin modal
                   setTimeout(() => {
-                    openModal('signin');
+                    openModal("signin");
                   }, 100);
                 }}
               />
-            ) : mode === 'emailconfirmation' ? (
+            ) : mode === "emailconfirmation" ? (
               <EmailConfirmationCard
                 email={emailData?.email}
                 onSuccess={handleAuthSuccess}
@@ -107,27 +115,27 @@ export function AuthModal({ redirectOnSignIn = false }: AuthModalProps) {
                   closeModal();
                   // Open signin modal
                   setTimeout(() => {
-                    openModal('signin');
+                    openModal("signin");
                   }, 100);
                 }}
                 onResend={async () => {
                   // Resend the reset link
                   if (emailData?.email) {
-                    const response = await fetch('/api/auth/reset-password', {
-                      method: 'POST',
+                    const response = await fetch("/api/auth/reset-password", {
+                      method: "POST",
                       headers: {
-                        'Content-Type': 'application/json',
+                        "Content-Type": "application/json",
                       },
                       body: JSON.stringify({ email: emailData.email }),
                     });
-                    
+
                     if (!response.ok) {
-                      throw new Error('Failed to resend reset link');
+                      throw new Error("Failed to resend reset link");
                     }
                   }
                 }}
               />
-            ) : mode === 'setnewpassword' ? (
+            ) : mode === "setnewpassword" ? (
               <SetNewPasswordCard
                 token={tokenData?.token}
                 onSuccess={handleAuthSuccess}
@@ -135,7 +143,7 @@ export function AuthModal({ redirectOnSignIn = false }: AuthModalProps) {
                   closeModal();
                   // Open signin modal
                   setTimeout(() => {
-                    openModal('signin');
+                    openModal("signin");
                   }, 100);
                 }}
               />
@@ -146,7 +154,7 @@ export function AuthModal({ redirectOnSignIn = false }: AuthModalProps) {
                   closeModal();
                   // Open signin modal
                   setTimeout(() => {
-                    openModal('signin');
+                    openModal("signin");
                   }, 100);
                 }}
               />

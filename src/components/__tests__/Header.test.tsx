@@ -1,14 +1,14 @@
 // @ts-nocheck
-import React from 'react';
-import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom';
-import { Header } from '@/components/home/Header';
-import { ThemeProvider } from '@/components/theme-provider';
-import { SearchProvider } from '@/context/SearchContext';
-import { AuthProvider } from '@/context/AuthContext';
-import { AuthModalProvider } from '@/context/AuthModalContext';
-import { act } from 'react-dom/test-utils';
-import { useCartStore } from '@/stores/cartStore';
+import React from "react";
+import { render, screen } from "@testing-library/react";
+import "@testing-library/jest-dom";
+import { Header } from "@/components/home/Header";
+import { ThemeProvider } from "@/components/theme-provider";
+import { SearchProvider } from "@/context/SearchContext";
+import { AuthProvider } from "@/context/AuthContext";
+import { AuthModalProvider } from "@/context/AuthModalContext";
+import { act } from "react-dom/test-utils";
+import { useCartStore } from "@/stores/cartStore";
 
 function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -22,20 +22,20 @@ function Providers({ children }: { children: React.ReactNode }) {
   );
 }
 
-test('Header shows cart count and updates when items added', () => {
+test("Header shows cart count and updates when items added", () => {
   render(
     <Providers>
       <Header />
-    </Providers>
+    </Providers>,
   );
 
   // Initially no badge
-  expect(screen.queryByText('1')).not.toBeInTheDocument();
+  expect(screen.queryByText("1")).not.toBeInTheDocument();
 
   act(() => {
-    useCartStore.getState().addItem({ id: 'x', name: 'Test', price: 1 });
+    useCartStore.getState().addItem({ id: "x", name: "Test", price: 1 });
   });
 
   // Now badge should show 1
-  expect(screen.getByText('1')).toBeInTheDocument();
+  expect(screen.getByText("1")).toBeInTheDocument();
 });

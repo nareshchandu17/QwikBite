@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useState, KeyboardEvent } from 'react';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
-import { X } from 'lucide-react';
+import { useState, KeyboardEvent } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { X } from "lucide-react";
 
 interface TagsInputProps {
   value: string[];
@@ -13,20 +13,20 @@ interface TagsInputProps {
   label?: string;
 }
 
-export default function TagsInput({ 
-  value = [], 
-  onChange, 
+export default function TagsInput({
+  value = [],
+  onChange,
   suggestions = [],
-  label = 'Tags' 
+  label = "Tags",
 }: TagsInputProps) {
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && inputValue.trim()) {
+    if (e.key === "Enter" && inputValue.trim()) {
       e.preventDefault();
       addTag(inputValue.trim());
-    } else if (e.key === 'Backspace' && !inputValue && value.length > 0) {
+    } else if (e.key === "Backspace" && !inputValue && value.length > 0) {
       removeTag(value.length - 1);
     }
   };
@@ -34,7 +34,7 @@ export default function TagsInput({
   const addTag = (tag: string) => {
     if (tag && !value.includes(tag)) {
       onChange([...value, tag]);
-      setInputValue('');
+      setInputValue("");
       setShowSuggestions(false);
     }
   };
@@ -46,13 +46,13 @@ export default function TagsInput({
   const filteredSuggestions = suggestions.filter(
     (suggestion) =>
       !value.includes(suggestion) &&
-      suggestion.toLowerCase().includes(inputValue.toLowerCase())
+      suggestion.toLowerCase().includes(inputValue.toLowerCase()),
   );
 
   return (
     <div className="space-y-2">
       <Label className="text-amber-800 font-medium">{label}</Label>
-      
+
       {/* Tags Display */}
       <div className="flex flex-wrap gap-2 p-2 bg-white/90 border border-amber-200 rounded-md min-h-[42px]">
         {value.map((tag, index) => (
@@ -71,7 +71,7 @@ export default function TagsInput({
             </button>
           </Badge>
         ))}
-        
+
         {/* Input */}
         <Input
           type="text"
@@ -83,7 +83,9 @@ export default function TagsInput({
           onKeyDown={handleKeyDown}
           onFocus={() => setShowSuggestions(true)}
           onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-          placeholder={value.length === 0 ? 'Type and press Enter to add tags' : ''}
+          placeholder={
+            value.length === 0 ? "Type and press Enter to add tags" : ""
+          }
           className="flex-1 min-w-[120px] border-0 focus:ring-0 focus-visible:ring-0 p-0 h-auto bg-transparent text-amber-800 placeholder:text-amber-400"
         />
       </div>

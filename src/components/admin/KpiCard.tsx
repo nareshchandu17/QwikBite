@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React from "react";
 
 interface KpiCardProps {
   title: string;
@@ -10,9 +9,17 @@ interface KpiCardProps {
   onClick?: () => void;
 }
 
-const KpiCard: React.FC<KpiCardProps> = ({ title, value, change, isCurrency, icon, onClick }) => {
-  const isPositive = change.startsWith('+') || change === 'Now' || change === 'Popular';
-  const isNeutral = !isPositive && !change.startsWith('-');
+const KpiCard: React.FC<KpiCardProps> = ({
+  title,
+  value,
+  change,
+  isCurrency,
+  icon,
+  onClick,
+}) => {
+  const isPositive =
+    change.startsWith("+") || change === "Now" || change === "Popular";
+  const isNeutral = !isPositive && !change.startsWith("-");
 
   return (
     <div
@@ -27,21 +34,22 @@ const KpiCard: React.FC<KpiCardProps> = ({ title, value, change, isCurrency, ico
       onClick={onClick}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onClick?.()}
+      onKeyDown={(e) => e.key === "Enter" && onClick?.()}
     >
       <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-[#FF512F]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
       <div className="relative z-10">
         <p className="text-sm font-medium text-[#9ca3af] mb-2">{title}</p>
         <h3 className="text-2xl lg:text-3xl font-bold text-white">{value}</h3>
 
-
-
-        <div className={`text-xs font-semibold px-2 py-1 rounded-full inline-block${isPositive
-            ? 'bg-[#4CAF50]/20 text-[#4CAF50]'
-            : isNeutral
-              ? 'bg-[#9ca3af]/20 text-[#9ca3af]'
-              : 'bg-[#FF3D00]/20 text-[#FF3D00]'
-          }`}>
+        <div
+          className={`text-xs font-semibold px-2 py-1 rounded-full inline-block${
+            isPositive
+              ? "bg-[#4CAF50]/20 text-[#4CAF50]"
+              : isNeutral
+                ? "bg-[#9ca3af]/20 text-[#9ca3af]"
+                : "bg-[#FF3D00]/20 text-[#FF3D00]"
+          }`}
+        >
           {change}
         </div>
       </div>

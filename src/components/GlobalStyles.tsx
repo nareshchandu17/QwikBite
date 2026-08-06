@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 export default function GlobalStyles() {
   useEffect(() => {
@@ -10,7 +10,7 @@ export default function GlobalStyles() {
   return (
     <style jsx global>{`
       body {
-        font-family: 'Inter', sans-serif;
+        font-family: "Inter", sans-serif;
         background-color: #050505;
         color: #ffffff;
       }
@@ -58,15 +58,15 @@ export default function GlobalStyles() {
         height: 6px;
       }
       ::-webkit-scrollbar-track {
-        background: rgba(255,255,255,0.05);
+        background: rgba(255, 255, 255, 0.05);
         border-radius: 10px;
       }
       ::-webkit-scrollbar-thumb {
-        background: linear-gradient(to bottom, #FF512F, #F09819);
+        background: linear-gradient(to bottom, #ff512f, #f09819);
         border-radius: 10px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #FF512F;
+        background: #ff512f;
       }
     `}</style>
   );

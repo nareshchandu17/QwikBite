@@ -23,8 +23,8 @@ interface Order {
   feedbackGiven: boolean;
   rating?: number;
 }
-import { toast } from 'sonner';
-import { useCustomerGuard } from '@/lib/auth/roleGuard'; // Add this import
+import { toast } from "sonner";
+import { useCustomerGuard } from "@/lib/auth/roleGuard"; // Add this import
 
 // Mock order history data
 const orderHistory: Order[] = [
@@ -32,7 +32,13 @@ const orderHistory: Order[] = [
     id: "ORD-1000",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
     items: [
-      { id: "m4", name: "Saffron Biryani", qty: 1, price: 12.5, image: "/images/biryani.jpg" },
+      {
+        id: "m4",
+        name: "Saffron Biryani",
+        qty: 1,
+        price: 12.5,
+        image: "/images/biryani.jpg",
+      },
     ],
     total: 12.5,
     payment: "Card",
@@ -40,27 +46,45 @@ const orderHistory: Order[] = [
     etaMinutes: 0,
     deliveryPerson: null,
     feedbackGiven: true,
-    rating: 5
+    rating: 5,
   },
   {
     id: "ORD-0999",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 7).toISOString(),
     items: [
-      { id: "m5", name: "Green Detox Salad", qty: 2, price: 7.5, image: "/images/salad.jpg" },
+      {
+        id: "m5",
+        name: "Green Detox Salad",
+        qty: 2,
+        price: 7.5,
+        image: "/images/salad.jpg",
+      },
     ],
     total: 15.0,
     payment: "COD",
     status: "Cancelled",
     etaMinutes: 0,
     deliveryPerson: null,
-    feedbackGiven: false
+    feedbackGiven: false,
   },
   {
     id: "ORD-0998",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
     items: [
-      { id: "m6", name: "Chicken Burger", qty: 1, price: 9.99, image: "/images/burger.jpg" },
-      { id: "m7", name: "French Fries", qty: 1, price: 3.99, image: "/images/fries.jpg" },
+      {
+        id: "m6",
+        name: "Chicken Burger",
+        qty: 1,
+        price: 9.99,
+        image: "/images/burger.jpg",
+      },
+      {
+        id: "m7",
+        name: "French Fries",
+        qty: 1,
+        price: 3.99,
+        image: "/images/fries.jpg",
+      },
     ],
     total: 13.98,
     payment: "UPI",
@@ -68,27 +92,45 @@ const orderHistory: Order[] = [
     etaMinutes: 0,
     deliveryPerson: null,
     feedbackGiven: true,
-    rating: 4
+    rating: 4,
   },
   {
     id: "ORD-0997",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 21).toISOString(),
     items: [
-      { id: "m8", name: "Margherita Pizza", qty: 1, price: 12.99, image: "/images/pizza.jpg" },
+      {
+        id: "m8",
+        name: "Margherita Pizza",
+        qty: 1,
+        price: 12.99,
+        image: "/images/pizza.jpg",
+      },
     ],
     total: 12.99,
     payment: "Card",
     status: "Delivered",
     etaMinutes: 0,
     deliveryPerson: null,
-    feedbackGiven: false
+    feedbackGiven: false,
   },
   {
     id: "ORD-0996",
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30).toISOString(),
     items: [
-      { id: "m9", name: "Caesar Salad", qty: 1, price: 8.99, image: "/images/salad-2.jpg" },
-      { id: "m10", name: "Iced Coffee", qty: 1, price: 4.50, image: "/images/coffee.jpg" },
+      {
+        id: "m9",
+        name: "Caesar Salad",
+        qty: 1,
+        price: 8.99,
+        image: "/images/salad-2.jpg",
+      },
+      {
+        id: "m10",
+        name: "Iced Coffee",
+        qty: 1,
+        price: 4.5,
+        image: "/images/coffee.jpg",
+      },
     ],
     total: 13.49,
     payment: "Wallet",
@@ -96,32 +138,36 @@ const orderHistory: Order[] = [
     etaMinutes: 0,
     deliveryPerson: null,
     feedbackGiven: true,
-    rating: 5
-  }
+    rating: 5,
+  },
 ];
 
 export default function OrdersHistoryPage() {
   useCustomerGuard(); // Add this hook to protect the page
-  
+
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
 
   // Filter orders based on search and filters
-  const filteredOrders = orderHistory.filter(order => {
+  const filteredOrders = orderHistory.filter((order) => {
     // Search filter
-    const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.items.some(item => item.name.toLowerCase().includes(searchQuery.toLowerCase()));
-    
+    const matchesSearch =
+      order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.items.some((item) =>
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      );
+
     // Status filter
-    const matchesStatus = statusFilter === "all" || order.status.toLowerCase() === statusFilter;
-    
+    const matchesStatus =
+      statusFilter === "all" || order.status.toLowerCase() === statusFilter;
+
     // Date filter
     let matchesDate = true;
     if (dateFilter !== "all") {
       const orderDate = new Date(order.createdAt);
       const now = new Date();
-      
+
       switch (dateFilter) {
         case "last7":
           matchesDate = orderDate >= new Date(now.setDate(now.getDate() - 7));
@@ -134,7 +180,7 @@ export default function OrdersHistoryPage() {
           break;
       }
     }
-    
+
     return matchesSearch && matchesStatus && matchesDate;
   });
 
@@ -149,10 +195,12 @@ export default function OrdersHistoryPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-white">Order History</h1>
-          <p className="text-slate-400 mt-1">View and manage your past orders</p>
+          <p className="text-slate-400 mt-1">
+            View and manage your past orders
+          </p>
         </div>
-        
-        <button 
+
+        <button
           onClick={handleExport}
           className="flex items-center px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition mt-4 md:mt-0"
         >
@@ -177,7 +225,7 @@ export default function OrdersHistoryPage() {
               className="pl-10 pr-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent w-full"
             />
           </div>
-          
+
           {/* Date Filter */}
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -194,7 +242,7 @@ export default function OrdersHistoryPage() {
               <option value="last90">Last 90 Days</option>
             </select>
           </div>
-          
+
           {/* Status Filter */}
           <div>
             <select
@@ -213,8 +261,12 @@ export default function OrdersHistoryPage() {
       {/* Order History */}
       {filteredOrders.length === 0 ? (
         <div className="text-center py-12">
-          <h3 className="text-lg font-medium text-white mb-2">No orders found</h3>
-          <p className="text-slate-400">Try adjusting your search or filter criteria</p>
+          <h3 className="text-lg font-medium text-white mb-2">
+            No orders found
+          </h3>
+          <p className="text-slate-400">
+            Try adjusting your search or filter criteria
+          </p>
         </div>
       ) : (
         <div className="space-y-6">
@@ -228,24 +280,33 @@ export default function OrdersHistoryPage() {
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center">
-                    <h3 className="text-lg font-semibold text-white">Order {order.id}</h3>
-                    <span className={`ml-3 px-2 py-1 rounded-full text-xs font-medium ${
-                      order.status === "Delivered" 
-                        ? "bg-green-500/20 text-green-400" 
-                        : "bg-red-500/20 text-red-400"
-                    }`}>
+                    <h3 className="text-lg font-semibold text-white">
+                      Order {order.id}
+                    </h3>
+                    <span
+                      className={`ml-3 px-2 py-1 rounded-full text-xs font-medium ${
+                        order.status === "Delivered"
+                          ? "bg-green-500/20 text-green-400"
+                          : "bg-red-500/20 text-red-400"
+                      }`}
+                    >
                       {order.status}
                     </span>
                   </div>
-                  
+
                   <p className="text-slate-400 text-sm mt-1">
-                    {new Date(order.createdAt).toLocaleDateString('en-US', { 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })} at {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(order.createdAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}{" "}
+                    at{" "}
+                    {new Date(order.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </p>
-                  
+
                   <div className="mt-3">
                     <p className="text-slate-300">
                       {order.items.map((item, index) => (
@@ -257,20 +318,22 @@ export default function OrdersHistoryPage() {
                     </p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center justify-between md:justify-end gap-4">
                   <div className="text-right">
-                    <p className="text-lg font-semibold text-white">${order.total.toFixed(2)}</p>
+                    <p className="text-lg font-semibold text-white">
+                      ${order.total.toFixed(2)}
+                    </p>
                     <p className="text-slate-400 text-sm">{order.payment}</p>
                   </div>
-                  
+
                   <div className="flex flex-col items-end">
                     {order.rating && (
                       <div className="flex items-center">
                         {[...Array(5)].map((_, i) => (
                           <svg
                             key={i}
-                            className={`w-4 h-4 ${i < (order.rating || 0) ? 'text-amber-400' : 'text-slate-600'}`}
+                            className={`w-4 h-4 ${i < (order.rating || 0) ? "text-amber-400" : "text-slate-600"}`}
                             fill="currentColor"
                             viewBox="0 0 20 20"
                           >

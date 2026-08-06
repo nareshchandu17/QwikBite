@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { ChevronDownIcon, StarIcon, CalendarIcon, TagIcon } from 'lucide-react';
+import React, { useState } from "react";
+import { ChevronDownIcon, StarIcon, CalendarIcon, TagIcon } from "lucide-react";
 
 interface FeedbackFiltersProps {
   onCategoryChange: (category: string) => void;
@@ -19,21 +19,23 @@ const FeedbackFilters: React.FC<FeedbackFiltersProps> = ({
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [ratingOpen, setRatingOpen] = useState(false);
   const [dateRangeOpen, setDateRangeOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<string>('All Categories');
+  const [selectedCategory, setSelectedCategory] =
+    useState<string>("All Categories");
   const [selectedRating, setSelectedRating] = useState<number | null>(null);
-  const [selectedDateRange, setSelectedDateRange] = useState<string>('All Time');
+  const [selectedDateRange, setSelectedDateRange] =
+    useState<string>("All Time");
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
-  const [customStartDate, setCustomStartDate] = useState('');
-  const [customEndDate, setCustomEndDate] = useState('');
+  const [customStartDate, setCustomStartDate] = useState("");
+  const [customEndDate, setCustomEndDate] = useState("");
 
-  const categories = ['Food', 'Service', 'Cleanliness', 'Other'];
+  const categories = ["Food", "Service", "Cleanliness", "Other"];
   const ratings = [5, 4, 3, 2, 1];
-  const dateRanges = ['Today', 'Last 7 Days', 'Last 30 Days', 'Custom Range'];
+  const dateRanges = ["Today", "Last 7 Days", "Last 30 Days", "Custom Range"];
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category);
     setCategoryOpen(false);
-    onCategoryChange(category === 'All Categories' ? '' : category);
+    onCategoryChange(category === "All Categories" ? "" : category);
   };
 
   const handleRatingSelect = (rating: number | null) => {
@@ -45,8 +47,8 @@ const FeedbackFilters: React.FC<FeedbackFiltersProps> = ({
   const handleDateRangeSelect = (range: string) => {
     setSelectedDateRange(range);
     setDateRangeOpen(false);
-    
-    if (range === 'Custom Range') {
+
+    if (range === "Custom Range") {
       setShowCustomDatePicker(true);
     } else {
       setShowCustomDatePicker(false);
@@ -69,7 +71,7 @@ const FeedbackFilters: React.FC<FeedbackFiltersProps> = ({
           <StarIcon
             key={i}
             className={`w-4 h-4 ${
-              i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+              i < rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
             }`}
           />
         ))}
@@ -89,19 +91,21 @@ const FeedbackFilters: React.FC<FeedbackFiltersProps> = ({
           >
             <div className="flex items-center gap-3">
               <TagIcon className="w-5 h-5 text-purple-600" />
-              <span className="font-medium text-gray-700">{selectedCategory}</span>
+              <span className="font-medium text-gray-700">
+                {selectedCategory}
+              </span>
             </div>
             <ChevronDownIcon
               className={`w-5 h-5 text-purple-600 transition-transform duration-200 ${
-                categoryOpen ? 'rotate-180' : ''
+                categoryOpen ? "rotate-180" : ""
               }`}
             />
           </button>
-          
+
           {categoryOpen && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
               <button
-                onClick={() => handleCategorySelect('All Categories')}
+                onClick={() => handleCategorySelect("All Categories")}
                 className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100"
               >
                 <span className="text-gray-700">All Categories</span>
@@ -128,16 +132,16 @@ const FeedbackFilters: React.FC<FeedbackFiltersProps> = ({
             <div className="flex items-center gap-3">
               <StarIcon className="w-5 h-5 text-yellow-600" />
               <span className="font-medium text-gray-700">
-                {selectedRating ? `${selectedRating} Stars` : 'All Ratings'}
+                {selectedRating ? `${selectedRating} Stars` : "All Ratings"}
               </span>
             </div>
             <ChevronDownIcon
               className={`w-5 h-5 text-yellow-600 transition-transform duration-200 ${
-                ratingOpen ? 'rotate-180' : ''
+                ratingOpen ? "rotate-180" : ""
               }`}
             />
           </button>
-          
+
           {ratingOpen && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
               <button
@@ -167,19 +171,21 @@ const FeedbackFilters: React.FC<FeedbackFiltersProps> = ({
           >
             <div className="flex items-center gap-3">
               <CalendarIcon className="w-5 h-5 text-blue-600" />
-              <span className="font-medium text-gray-700">{selectedDateRange}</span>
+              <span className="font-medium text-gray-700">
+                {selectedDateRange}
+              </span>
             </div>
             <ChevronDownIcon
               className={`w-5 h-5 text-blue-600 transition-transform duration-200 ${
-                dateRangeOpen ? 'rotate-180' : ''
+                dateRangeOpen ? "rotate-180" : ""
               }`}
             />
           </button>
-          
+
           {dateRangeOpen && (
             <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden">
               <button
-                onClick={() => handleDateRangeSelect('All Time')}
+                onClick={() => handleDateRangeSelect("All Time")}
                 className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100"
               >
                 <span className="text-gray-700">All Time</span>
@@ -201,7 +207,9 @@ const FeedbackFilters: React.FC<FeedbackFiltersProps> = ({
             <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-xl z-50 p-4">
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Start Date
+                  </label>
                   <input
                     type="date"
                     value={customStartDate}
@@ -210,7 +218,9 @@ const FeedbackFilters: React.FC<FeedbackFiltersProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    End Date
+                  </label>
                   <input
                     type="date"
                     value={customEndDate}
@@ -241,12 +251,12 @@ const FeedbackFilters: React.FC<FeedbackFiltersProps> = ({
 
       {/* Active Filters Display */}
       <div className="mt-4 flex flex-wrap gap-2">
-        {selectedCategory !== 'All Categories' && (
+        {selectedCategory !== "All Categories" && (
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
             <TagIcon className="w-4 h-4" />
             {selectedCategory}
             <button
-              onClick={() => handleCategorySelect('All Categories')}
+              onClick={() => handleCategorySelect("All Categories")}
               className="ml-1 hover:text-purple-900"
             >
               ×
@@ -265,12 +275,12 @@ const FeedbackFilters: React.FC<FeedbackFiltersProps> = ({
             </button>
           </div>
         )}
-        {selectedDateRange !== 'All Time' && (
+        {selectedDateRange !== "All Time" && (
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
             <CalendarIcon className="w-4 h-4" />
             {selectedDateRange}
             <button
-              onClick={() => handleDateRangeSelect('All Time')}
+              onClick={() => handleDateRangeSelect("All Time")}
               className="ml-1 hover:text-blue-900"
             >
               ×

@@ -1,15 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons+Outlined');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/icon?family=Material+Icons+Outlined");
 
 :root {
-  --primary: #F97316;
-  --background-light: #F9FAFB;
-  --background-dark: #0A0A0C;
+  --primary: #f97316;
+  --background-light: #f9fafb;
+  --background-dark: #0a0a0c;
   --card-dark: #121216;
 }
 
-body { 
-  font-family: 'Inter', sans-serif; 
+body {
+  font-family: "Inter", sans-serif;
 }
 
 .glow-orange {
@@ -17,7 +17,12 @@ body {
 }
 
 .orange-line-gradient {
-  background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.5), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(249, 115, 22, 0.5),
+    transparent
+  );
   height: 1px;
   width: 100%;
 }
@@ -26,7 +31,7 @@ body {
   position: absolute;
   width: 2px;
   height: 2px;
-  background: #F97316;
+  background: #f97316;
   border-radius: 50%;
   pointer-events: none;
 }
@@ -38,11 +43,11 @@ body {
 }
 
 .text-primary {
-  color: #F97316;
+  color: #f97316;
 }
 
 .bg-primary {
-  background-color: #F97316;
+  background-color: #f97316;
 }
 
 .bg-primary\/10 {
@@ -115,7 +120,7 @@ body {
 
 /* Material Icons */
 .material-icons-outlined {
-  font-family: 'Material Icons Outlined';
+  font-family: "Material Icons Outlined";
   font-weight: normal;
   font-style: normal;
   font-size: 24px;
@@ -126,7 +131,7 @@ body {
   white-space: nowrap;
   word-wrap: normal;
   direction: ltr;
-  -webkit-font-feature-settings: 'liga';
+  -webkit-font-feature-settings: "liga";
   -webkit-font-smoothing: antialiased;
 }
 
@@ -150,8 +155,14 @@ body {
 
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in {

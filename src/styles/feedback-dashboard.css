@@ -7,7 +7,12 @@
 }
 
 .orange-line-gradient {
-  background: linear-gradient(90deg, transparent, rgba(249, 115, 22, 0.5), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(249, 115, 22, 0.5),
+    transparent
+  );
   height: 1px;
   width: 100%;
 }
@@ -20,14 +25,14 @@
   position: absolute;
   width: 2px;
   height: 2px;
-  background: #F97316;
+  background: #f97316;
   border-radius: 50%;
   pointer-events: none;
 }
 
 /* Material Symbols Fallback */
 .material-icons-outlined {
-  font-family: 'Material Symbols Outlined';
+  font-family: "Material Symbols Outlined";
   font-weight: normal;
   font-style: normal;
   font-size: 24px;
@@ -38,7 +43,7 @@
   white-space: nowrap;
   word-wrap: normal;
   direction: ltr;
-  -webkit-font-feature-settings: 'liga';
+  -webkit-font-feature-settings: "liga";
   -webkit-font-smoothing: antialiased;
 }
 

@@ -1,44 +1,51 @@
-import mongoose from 'mongoose';
-import { connectDB } from '../lib/db';
-import { MenuItem } from '../lib/models/MenuItem';
-import { menuItems } from '../data/menu';
-import { Favorite } from '../lib/models/Favorite';
-import { Order } from '../lib/models/Order';
-import { User } from '../lib/models/User';
+import logger from "@/lib/logger";
+import mongoose from "mongoose";
+import { connectDB } from "../lib/db";
+import { MenuItem } from "../models/menuItem.model";
+import { menuItems } from "../data/menu";
+import { Favorite } from "../models/favorite.model";
+import { Order } from "../lib/models/Order";
+import { User } from "../models/user.model";
 
 async function initDatabase() {
   try {
     await connectDB();
-    
-    console.log('Initializing database collections...');
-    
+
+    logger.info("Initializing database collections...");
+
     // Initialize MenuItems collection
     const menuItemCount = await MenuItem.countDocuments();
     if (menuItemCount === 0) {
-      console.log('Seeding menu items...');
+      logger.info("Seeding menu items...");
       await MenuItem.insertMany(
-        menuItems.map(item => ({
+        menuItems.map((item) => ({
           ...item,
-          _id: undefined
-        }))
+          _id: undefined,
+        })),
       );
-      console.log(`Seeded ${menuItems.length} menu items`);
+      logger.info(`Seeded ${menuItems.length} menu items`);
     } else {
-      console.log(`Menu items collection already has ${menuItemCount} items`);
+      logger.info(`Menu items collection already has ${menuItemCount} items`);
     }
-    
+
     // Initialize other collections (they'll be created automatically when first used)
-    await Favorite.createCollection().catch(() => console.log('Favorites collection already exists'));
-    await Order.createCollection().catch(() => console.log('Orders collection already exists'));
-    await User.createCollection().catch(() => console.log('Users collection already exists'));
-    
-    console.log('Database initialization complete!');
-    
+    await Favorite.createCollection().catch(() =>
+      logger.info("Favorites collection already exists"),
+    );
+    await Order.createCollection().catch(() =>
+      logger.info("Orders collection already exists"),
+    );
+    await User.createCollection().catch(() =>
+      logger.info("Users collection already exists"),
+    );
+
+    logger.info("Database initialization complete!");
+
     // Close the connection
     await mongoose.connection.close();
-    console.log('Database connection closed');
+    logger.info("Database connection closed");
   } catch (error) {
-    console.error('Error initializing database:', error);
+    logger.error("Error initializing database:", error);
     await mongoose.connection.close();
     process.exit(1);
   }

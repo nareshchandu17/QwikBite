@@ -1,32 +1,38 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import { Bell, Send, X, AlertCircle } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { toast } from 'sonner';
+import { useState, useCallback } from "react";
+import { Bell, Send, X, AlertCircle } from "lucide-react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { toast } from "sonner";
 
 const notificationTypes = [
-  { value: 'order', label: 'Order Update' },
-  { value: 'offer', label: 'Special Offer' },
-  { value: 'feedback', label: 'Feedback Request' },
-  { value: 'system', label: 'System Message' }
+  { value: "order", label: "Order Update" },
+  { value: "offer", label: "Special Offer" },
+  { value: "feedback", label: "Feedback Request" },
+  { value: "system", label: "System Message" },
 ];
 
 const priorities = [
-  { value: 'low', label: 'Low' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'high', label: 'High' }
+  { value: "low", label: "Low" },
+  { value: "normal", label: "Normal" },
+  { value: "high", label: "High" },
 ];
 
 const icons = [
-  { value: 'bell', label: '🔔 Bell' },
-  { value: 'star', label: '⭐ Star' },
-  { value: 'gift', label: '🎁 Gift' },
-  { value: 'warning', label: '⚠️ Warning' },
-  { value: 'info', label: 'ℹ️ Info' },
-  { value: 'success', label: '✅ Success' }
+  { value: "bell", label: "🔔 Bell" },
+  { value: "star", label: "⭐ Star" },
+  { value: "gift", label: "🎁 Gift" },
+  { value: "warning", label: "⚠️ Warning" },
+  { value: "info", label: "ℹ️ Info" },
+  { value: "success", label: "✅ Success" },
 ];
 
 interface RecentNotification {
@@ -44,45 +50,51 @@ interface RecentNotification {
 
 const AdminNotificationsPage = () => {
   const [notificationData, setNotificationData] = useState({
-    title: '',
-    message: '',
-    type: 'system',
-    priority: 'normal',
-    icon: 'bell',
-    userId: '',
-    ctaLink: ''
+    title: "",
+    message: "",
+    type: "system",
+    priority: "normal",
+    icon: "bell",
+    userId: "",
+    ctaLink: "",
   });
   const [isBroadcast, setIsBroadcast] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [recentNotifications, setRecentNotifications] = useState<RecentNotification[]>([]);
+  const [recentNotifications, setRecentNotifications] = useState<
+    RecentNotification[]
+  >([]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >,
+  ) => {
     const { name, value } = e.target;
-    setNotificationData(prev => ({
+    setNotificationData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleSendNotification = useCallback(async () => {
     if (!notificationData.title || !notificationData.message) {
-      toast.error('Title and message are required');
+      toast.error("Title and message are required");
       return;
     }
 
     if (!isBroadcast && !notificationData.userId) {
-      toast.error('Please enter a customer ID or select broadcast');
+      toast.error("Please enter a customer ID or select broadcast");
       return;
     }
 
     try {
       setIsLoading(true);
 
-      const endpoint = isBroadcast 
-        ? '/api/admin/notifications/send'
-        : '/api/admin/notifications/send';
+      const endpoint = isBroadcast
+        ? "/api/admin/notifications/send"
+        : "/api/admin/notifications/send";
 
-      const method = isBroadcast ? 'PUT' : 'POST';
+      const method = isBroadcast ? "PUT" : "POST";
 
       const payload = isBroadcast
         ? {
@@ -91,7 +103,7 @@ const AdminNotificationsPage = () => {
             type: notificationData.type,
             priority: notificationData.priority,
             icon: notificationData.icon,
-            ctaLink: notificationData.ctaLink || undefined
+            ctaLink: notificationData.ctaLink || undefined,
           }
         : {
             userId: notificationData.userId,
@@ -100,48 +112,51 @@ const AdminNotificationsPage = () => {
             type: notificationData.type,
             priority: notificationData.priority,
             icon: notificationData.icon,
-            ctaLink: notificationData.ctaLink || undefined
+            ctaLink: notificationData.ctaLink || undefined,
           };
 
       const response = await fetch(endpoint, {
         method,
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to send notification');
+        throw new Error(error.error || "Failed to send notification");
       }
 
       const result = await response.json();
-      toast.success(result.message || 'Notification sent successfully!');
+      toast.success(result.message || "Notification sent successfully!");
 
       // Add to recent notifications list
-      setRecentNotifications(prev => [
-        {
-          id: Date.now(),
-          ...notificationData,
-          isBroadcast,
-          timestamp: new Date().toLocaleTimeString()
-        },
-        ...prev
-      ].slice(0, 5));
+      setRecentNotifications((prev) =>
+        [
+          {
+            id: Date.now(),
+            ...notificationData,
+            isBroadcast,
+            timestamp: new Date().toLocaleTimeString(),
+          },
+          ...prev,
+        ].slice(0, 5),
+      );
 
       // Reset form
       setNotificationData({
-        title: '',
-        message: '',
-        type: 'system',
-        priority: 'normal',
-        icon: 'bell',
-        userId: '',
-        ctaLink: ''
+        title: "",
+        message: "",
+        type: "system",
+        priority: "normal",
+        icon: "bell",
+        userId: "",
+        ctaLink: "",
       });
     } catch (error: unknown) {
-      console.error('Failed to send notification:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to send notification');
+      toast.error(
+        error instanceof Error ? error.message : "Failed to send notification",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -149,13 +164,13 @@ const AdminNotificationsPage = () => {
 
   const handleClear = () => {
     setNotificationData({
-      title: '',
-      message: '',
-      type: 'system',
-      priority: 'normal',
-      icon: 'bell',
-      userId: '',
-      ctaLink: ''
+      title: "",
+      message: "",
+      type: "system",
+      priority: "normal",
+      icon: "bell",
+      userId: "",
+      ctaLink: "",
     });
   };
 
@@ -170,9 +185,13 @@ const AdminNotificationsPage = () => {
         >
           <div className="flex items-center gap-3 mb-4">
             <Bell className="w-8 h-8 text-orange-500" />
-            <h1 className="text-3xl font-bold text-white">Send Notifications</h1>
+            <h1 className="text-3xl font-bold text-white">
+              Send Notifications
+            </h1>
           </div>
-          <p className="text-slate-400">Send real-time notifications to customers</p>
+          <p className="text-slate-400">
+            Send real-time notifications to customers
+          </p>
         </motion.div>
 
         {/* Main Content */}
@@ -200,7 +219,9 @@ const AdminNotificationsPage = () => {
                       onChange={() => setIsBroadcast(false)}
                       className="w-4 h-4 text-orange-500"
                     />
-                    <span className="text-slate-300">Send to Specific Customer</span>
+                    <span className="text-slate-300">
+                      Send to Specific Customer
+                    </span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -209,7 +230,9 @@ const AdminNotificationsPage = () => {
                       onChange={() => setIsBroadcast(true)}
                       className="w-4 h-4 text-orange-500"
                     />
-                    <span className="text-slate-300">Broadcast to All Customers</span>
+                    <span className="text-slate-300">
+                      Broadcast to All Customers
+                    </span>
                   </label>
                 </div>
 
@@ -272,7 +295,7 @@ const AdminNotificationsPage = () => {
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                     >
-                      {notificationTypes.map(type => (
+                      {notificationTypes.map((type) => (
                         <option key={type.value} value={type.value}>
                           {type.label}
                         </option>
@@ -290,7 +313,7 @@ const AdminNotificationsPage = () => {
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                     >
-                      {priorities.map(priority => (
+                      {priorities.map((priority) => (
                         <option key={priority.value} value={priority.value}>
                           {priority.label}
                         </option>
@@ -308,7 +331,7 @@ const AdminNotificationsPage = () => {
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 bg-slate-700 border border-slate-600 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500"
                     >
-                      {icons.map(icon => (
+                      {icons.map((icon) => (
                         <option key={icon.value} value={icon.value}>
                           {icon.label}
                         </option>
@@ -370,16 +393,20 @@ const AdminNotificationsPage = () => {
           >
             <Card className="bg-slate-800 border-slate-700 shadow-xl">
               <CardHeader className="border-b border-slate-700">
-                <CardTitle className="text-white text-lg">Recent Sent</CardTitle>
+                <CardTitle className="text-white text-lg">
+                  Recent Sent
+                </CardTitle>
               </CardHeader>
               <CardContent className="pt-6 space-y-3">
                 {recentNotifications.length === 0 ? (
                   <div className="text-center py-8">
                     <AlertCircle className="w-8 h-8 text-slate-500 mx-auto mb-2" />
-                    <p className="text-slate-400 text-sm">No notifications sent yet</p>
+                    <p className="text-slate-400 text-sm">
+                      No notifications sent yet
+                    </p>
                   </div>
                 ) : (
-                  recentNotifications.map(notification => (
+                  recentNotifications.map((notification) => (
                     <motion.div
                       key={notification.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -392,7 +419,9 @@ const AdminNotificationsPage = () => {
                             {notification.title}
                           </p>
                           <p className="text-slate-400 text-xs">
-                            {notification.isBroadcast ? 'Broadcast' : `ID: ${notification.userId.slice(0, 8)}...`}
+                            {notification.isBroadcast
+                              ? "Broadcast"
+                              : `ID: ${notification.userId.slice(0, 8)}...`}
                           </p>
                         </div>
                         <span className="text-slate-500 text-xs whitespace-nowrap">
@@ -403,11 +432,15 @@ const AdminNotificationsPage = () => {
                         <span className="inline-block px-2 py-1 bg-slate-600 text-slate-200 text-xs rounded">
                           {notification.type}
                         </span>
-                        <span className={`inline-block px-2 py-1 text-xs rounded font-semibold ${
-                          notification.priority === 'high' ? 'bg-red-900 text-red-200' :
-                          notification.priority === 'normal' ? 'bg-blue-900 text-blue-200' :
-                          'bg-green-900 text-green-200'
-                        }`}>
+                        <span
+                          className={`inline-block px-2 py-1 text-xs rounded font-semibold ${
+                            notification.priority === "high"
+                              ? "bg-red-900 text-red-200"
+                              : notification.priority === "normal"
+                                ? "bg-blue-900 text-blue-200"
+                                : "bg-green-900 text-green-200"
+                          }`}
+                        >
                           {notification.priority}
                         </span>
                       </div>

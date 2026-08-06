@@ -1,8 +1,8 @@
-import { NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { getToken } from 'next-auth/jwt';
-import { authConfig } from '@/auth';
-import { getAuthCookie, verifyToken } from '@/lib/auth';
+import { NextRequest } from "next/server";
+import { getServerSession } from "next-auth";
+import { getToken } from "next-auth/jwt";
+import { authConfig } from "@/auth";
+import { getAuthCookie, verifyToken } from "@/lib/auth";
 
 /**
  * Robust helper to get the authenticated user's ID and Email from multiple potential sources:
@@ -14,7 +14,10 @@ import { getAuthCookie, verifyToken } from '@/lib/auth';
 export async function getAuthenticatedUser(req: Request | NextRequest) {
   try {
     // Convert to NextRequest if needed for getToken
-    const nextReq = req instanceof Request ? new NextRequest(req.url, { headers: req.headers }) : req;
+    const nextReq =
+      req instanceof Request
+        ? new NextRequest(req.url, { headers: req.headers })
+        : req;
 
     // 1. Try NextAuth Session
     const session = await getServerSession(authConfig);
@@ -23,7 +26,7 @@ export async function getAuthenticatedUser(req: Request | NextRequest) {
         id: session.user.id,
         email: session.user.email,
         role: session.user.role,
-        source: 'next-auth-session'
+        source: "next-auth-session",
       };
     }
 
@@ -36,14 +39,14 @@ export async function getAuthenticatedUser(req: Request | NextRequest) {
           id: decoded.id,
           email: decoded.email,
           role: decoded.role,
-          source: 'custom-jwt-cookie'
+          source: "custom-jwt-cookie",
         };
       }
     }
 
     // 3. Try Authorization Header
-    const authHeader = nextReq.headers.get('authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    const authHeader = nextReq.headers.get("authorization");
+    if (authHeader && authHeader.startsWith("Bearer ")) {
       const headerToken = authHeader.substring(7);
       const decoded = verifyToken(headerToken);
       if (decoded?.id || decoded?.email) {
@@ -51,7 +54,7 @@ export async function getAuthenticatedUser(req: Request | NextRequest) {
           id: decoded.id,
           email: decoded.email,
           role: decoded.role,
-          source: 'auth-header'
+          source: "auth-header",
         };
       }
     }
@@ -59,7 +62,9 @@ export async function getAuthenticatedUser(req: Request | NextRequest) {
     // 4. Try getToken (NextAuth JWT fallback)
     const token = await getToken({
       req: nextReq,
-      secret: process.env.NEXTAUTH_SECRET || 'development-fallback-key-only-for-local',
+      secret:
+        process.env.NEXTAUTH_SECRET ||
+        "development-fallback-key-only-for-local",
     });
 
     if (token) {
@@ -67,13 +72,12 @@ export async function getAuthenticatedUser(req: Request | NextRequest) {
         id: (token.id || token.sub) as string,
         email: token.email as string,
         role: token.role as string,
-        source: 'next-auth-token'
+        source: "next-auth-token",
       };
     }
 
     return null;
   } catch (error) {
-    console.error('[AuthHelper] Error getting authenticated user:', error);
     return null;
   }
 }

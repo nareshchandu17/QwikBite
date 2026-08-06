@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React from 'react';
+import React from "react";
 
 interface PlaceholderImageProps {
   width?: number;
@@ -9,14 +9,14 @@ interface PlaceholderImageProps {
   className?: string;
 }
 
-const PlaceholderImage: React.FC<PlaceholderImageProps> = ({ 
-  width = 200, 
-  height = 200, 
-  text = 'Food Item',
-  className = ''
+const PlaceholderImage: React.FC<PlaceholderImageProps> = ({
+  width = 200,
+  height = 200,
+  text = "Food Item",
+  className = "",
 }) => {
   return (
-    <div 
+    <div
       className={`bg-gray-200 dark:bg-gray-700 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl flex items-center justify-center ${className}`}
       style={{ width, height }}
     >

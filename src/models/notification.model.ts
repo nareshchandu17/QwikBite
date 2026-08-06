@@ -1,23 +1,23 @@
-import mongoose, { Schema, Document, Types, Model } from 'mongoose';
+import mongoose, { Schema, Document, Types, Model } from "mongoose";
 
 /**
  * Notification Types
  */
 export enum NotificationType {
-  ORDER_UPDATE = 'order_update',
-  PAYMENT = 'payment',
-  PROMOTION = 'promotion',
-  SYSTEM = 'system',
-  ADMIN = 'admin',
+  ORDER_UPDATE = "order_update",
+  PAYMENT = "payment",
+  PROMOTION = "promotion",
+  SYSTEM = "system",
+  ADMIN = "admin",
 }
 
 /**
  * Notification Priority
  */
 export enum NotificationPriority {
-  LOW = 'low',
-  NORMAL = 'normal',
-  HIGH = 'high',
+  LOW = "low",
+  NORMAL = "normal",
+  HIGH = "high",
 }
 
 /**
@@ -50,7 +50,7 @@ const notificationSchema = new Schema<INotification>(
   {
     user: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
       index: true,
     },
@@ -101,7 +101,7 @@ const notificationSchema = new Schema<INotification>(
   {
     timestamps: true,
     versionKey: false,
-  }
+  },
 );
 
 /**
@@ -131,4 +131,4 @@ notificationSchema.methods.markAsRead = function () {
  */
 export const Notification: Model<INotification> =
   mongoose.models.Notification ||
-  mongoose.model<INotification>('Notification', notificationSchema);
+  mongoose.model<INotification>("Notification", notificationSchema);

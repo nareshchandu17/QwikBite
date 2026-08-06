@@ -1,13 +1,13 @@
-import { MenuItem } from '@/data/menu';
+import { MenuItem } from "@/data/menu";
 
-const API_BASE_URL = '/api/menu';
+const API_BASE_URL = "/api/menu";
 
 export const menuService = {
   // Get all menu items
   async getMenuItems(): Promise<MenuItem[]> {
     const response = await fetch(API_BASE_URL);
     if (!response.ok) {
-      throw new Error('Failed to fetch menu items');
+      throw new Error("Failed to fetch menu items");
     }
     return response.json();
   },
@@ -16,37 +16,40 @@ export const menuService = {
   async getMenuItem(id: string): Promise<MenuItem> {
     const response = await fetch(`${API_BASE_URL}/${id}`);
     if (!response.ok) {
-      throw new Error('Failed to fetch menu item');
+      throw new Error("Failed to fetch menu item");
     }
     return response.json();
   },
 
   // Create new menu item
-  async createMenuItem(item: Omit<MenuItem, 'id'>): Promise<MenuItem> {
+  async createMenuItem(item: Omit<MenuItem, "id">): Promise<MenuItem> {
     const response = await fetch(API_BASE_URL, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(item),
     });
     if (!response.ok) {
-      throw new Error('Failed to create menu item');
+      throw new Error("Failed to create menu item");
     }
     return response.json();
   },
 
   // Update menu item
-  async updateMenuItem(id: string, updates: Partial<MenuItem>): Promise<MenuItem> {
+  async updateMenuItem(
+    id: string,
+    updates: Partial<MenuItem>,
+  ): Promise<MenuItem> {
     const response = await fetch(`${API_BASE_URL}/${id}`, {
-      method: 'PATCH',
+      method: "PATCH",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(updates),
     });
     if (!response.ok) {
-      throw new Error('Failed to update menu item');
+      throw new Error("Failed to update menu item");
     }
     return response.json();
   },
@@ -54,10 +57,10 @@ export const menuService = {
   // Delete menu item
   async deleteMenuItem(id: string): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
     if (!response.ok) {
-      throw new Error('Failed to delete menu item');
+      throw new Error("Failed to delete menu item");
     }
   },
 

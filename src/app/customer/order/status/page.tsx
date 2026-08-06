@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import OrderStatus from '@/components/orders/OrderStatus';
-import NoActiveOrders from '@/components/orders/NoActiveOrders';
-import { useActiveOrder, type Order } from '@/hooks/useActiveOrder';
-import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from "react";
+import OrderStatus from "@/components/orders/OrderStatus";
+import NoActiveOrders from "@/components/orders/NoActiveOrders";
+import { useActiveOrder, type Order } from "@/hooks/useActiveOrder";
+import { Loader2 } from "lucide-react";
 
 export default function OrderStatusPage() {
   const { activeOrder, isLoading } = useActiveOrder();

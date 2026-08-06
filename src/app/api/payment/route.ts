@@ -1,3 +1,4 @@
+import logger from "@/lib/logger";
 import { NextResponse, NextRequest } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 import { connectDB } from "@/lib/db";
@@ -13,7 +14,10 @@ await connectDB();
 const rateLimiter = RateLimiter.getInstance(100, 15 * 60 * 1000);
 
 // Security middleware wrapper
-async function withSecurity(request: NextRequest, handler: (req: NextRequest) => Promise<NextResponse>) {
+async function withSecurity(
+  request: NextRequest,
+  handler: (req: NextRequest) => Promise<NextResponse>,
+) {
   // Apply rate limiting
   const rateLimitResult = rateLimiter.isAllowed(request);
   const headers = rateLimiter.createRateLimitHeaders(rateLimitResult);
@@ -22,24 +26,26 @@ async function withSecurity(request: NextRequest, handler: (req: NextRequest) =>
     return NextResponse.json(
       {
         success: false,
-        error: 'Too many requests',
-        code: 'RATE_LIMIT_EXCEEDED',
+        error: "Too many requests",
+        code: "RATE_LIMIT_EXCEEDED",
         message: `Rate limit exceeded. Try again in ${Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)} seconds.`,
-        retryAfter: Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)
+        retryAfter: Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000),
       },
       {
         status: 429,
         headers: {
           ...headers,
-          'Retry-After': Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000).toString()
-        }
-      }
+          "Retry-After": Math.ceil(
+            (rateLimitResult.resetTime - Date.now()) / 1000,
+          ).toString(),
+        },
+      },
     );
   }
 
   // Apply authentication
   const authResult = await verifyAuth(request);
-  
+
   if (!authResult.success) {
     return createSecureResponse(authResult, 401);
   }
@@ -58,31 +64,43 @@ export async function POST(request: NextRequest) {
       } catch (parseError) {
         return NextResponse.json(
           { error: "Invalid JSON in request body" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
-      const { amount, items, upiId, customerName, customerEmail, customerPhone, orderId } = body;
+      const {
+        amount,
+        items,
+        upiId,
+        customerName,
+        customerEmail,
+        customerPhone,
+        orderId,
+      } = body;
 
       // Validate required fields
       if (amount === undefined || amount === null) {
         return NextResponse.json(
           { error: "Amount is required" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
       if (!items || !Array.isArray(items)) {
         return NextResponse.json(
           { error: "Items must be an array" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
-      if (!customerName || typeof customerName !== 'string' || customerName.trim().length === 0) {
+      if (
+        !customerName ||
+        typeof customerName !== "string" ||
+        customerName.trim().length === 0
+      ) {
         return NextResponse.json(
           { error: "Customer name is required" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -91,7 +109,7 @@ export async function POST(request: NextRequest) {
       if (isNaN(numAmount) || numAmount <= 0) {
         return NextResponse.json(
           { error: "Amount must be a positive number" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -99,7 +117,7 @@ export async function POST(request: NextRequest) {
       if (items.length === 0) {
         return NextResponse.json(
           { error: "Items must be a non-empty array" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -108,30 +126,34 @@ export async function POST(request: NextRequest) {
       if (upiId) {
         sanitizedUpiId = upiId.trim();
         const upiIdRegex = /^[a-zA-Z0-9.\-_@]+$/;
-        if (!upiIdRegex.test(sanitizedUpiId || '')) {
+        if (!upiIdRegex.test(sanitizedUpiId || "")) {
           return NextResponse.json(
             { error: "Invalid UPI ID format" },
-            { status: 400 }
+            { status: 400 },
           );
         }
       }
 
       // Validate and sanitize items
       const validatedItems = items.map((item: unknown, index: number) => {
-        if (!item || typeof item !== 'object') {
+        if (!item || typeof item !== "object") {
           throw new Error(`Invalid item at index ${index}`);
         }
         return {
           id: String((item as any).id || `item-${index}`),
-          name: String((item as any).name || 'Unknown Item').trim(),
-          quantity: Math.max(1, Math.floor(Number((item as any).quantity) || 1)),
+          name: String((item as any).name || "Unknown Item").trim(),
+          quantity: Math.max(
+            1,
+            Math.floor(Number((item as any).quantity) || 1),
+          ),
           price: Math.max(0, Number((item as any).price) || 0),
         };
       });
 
       // Generate transaction ID
       const transactionId = `TXN-${uuidv4().substring(0, 8).toUpperCase()}`;
-      const finalOrderId = orderId || `ORD-${uuidv4().substring(0, 8).toUpperCase()}`;
+      const finalOrderId =
+        orderId || `ORD-${uuidv4().substring(0, 8).toUpperCase()}`;
 
       // Determine payment method
       const method = sanitizedUpiId ? PaymentMethod.UPI : PaymentMethod.CASH;
@@ -144,7 +166,7 @@ export async function POST(request: NextRequest) {
         customerEmail: customerEmail?.trim(),
         customerPhone: customerPhone?.trim(),
         amount: numAmount,
-        currency: 'INR',
+        currency: "INR",
         method,
         status: PaymentStatus.PENDING,
         upiId: sanitizedUpiId,
@@ -153,13 +175,13 @@ export async function POST(request: NextRequest) {
 
       // Emit real-time notification
       try {
-        await pusherServer.trigger('admin', 'payment_update', {
-          type: 'payment_created',
+        await pusherServer.trigger("admin", "payment_update", {
+          type: "payment_created",
           payment: payment.toObject(),
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       } catch (pusherError) {
-        console.error('Failed to send Pusher notification:', pusherError);
+        logger.error("Failed to send Pusher notification:", pusherError);
       }
 
       return NextResponse.json(
@@ -170,16 +192,16 @@ export async function POST(request: NextRequest) {
           amount: payment.amount,
           status: payment.status,
         },
-        { status: 201 }
+        { status: 201 },
       );
     } catch (error: unknown) {
-      console.error("Error creating payment order:", error);
+      logger.error("Error creating payment order:", error);
       return NextResponse.json(
-        { 
+        {
           error: "Failed to create payment order",
-          message: error instanceof Error ? error.message : 'Unknown error'
+          message: error instanceof Error ? error.message : "Unknown error",
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
   });
@@ -196,13 +218,15 @@ export async function GET(request: NextRequest) {
       if (!transactionId && !orderId) {
         return NextResponse.json(
           { error: "Transaction ID or Order ID is required" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
       let payment;
       if (transactionId) {
-        payment = await Payment.findOne({ transactionId: transactionId.trim() });
+        payment = await Payment.findOne({
+          transactionId: transactionId.trim(),
+        });
       } else if (orderId) {
         payment = await Payment.findOne({ orderId: orderId.trim() });
       }
@@ -210,7 +234,7 @@ export async function GET(request: NextRequest) {
       if (!payment) {
         return NextResponse.json(
           { error: "Payment not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
@@ -219,13 +243,13 @@ export async function GET(request: NextRequest) {
         payment: payment.toObject(),
       });
     } catch (error: unknown) {
-      console.error("Error fetching payment:", error);
+      logger.error("Error fetching payment:", error);
       return NextResponse.json(
-        { 
+        {
           error: "Failed to fetch payment",
-          message: error instanceof Error ? error.message : 'Unknown error'
+          message: error instanceof Error ? error.message : "Unknown error",
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
   });
@@ -242,7 +266,7 @@ export async function PUT(request: NextRequest) {
       } catch (parseError) {
         return NextResponse.json(
           { error: "Invalid JSON in request body" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -251,22 +275,26 @@ export async function PUT(request: NextRequest) {
       if (!transactionId) {
         return NextResponse.json(
           { error: "Transaction ID is required" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
       if (!status || !Object.values(PaymentStatus).includes(status)) {
         return NextResponse.json(
-          { error: `Valid status is required (${Object.values(PaymentStatus).join(', ')})` },
-          { status: 400 }
+          {
+            error: `Valid status is required (${Object.values(PaymentStatus).join(", ")})`,
+          },
+          { status: 400 },
         );
       }
 
-      const payment = await Payment.findOne({ transactionId: transactionId.trim() });
+      const payment = await Payment.findOne({
+        transactionId: transactionId.trim(),
+      });
       if (!payment) {
         return NextResponse.json(
           { error: "Payment not found" },
-          { status: 404 }
+          { status: 404 },
         );
       }
 
@@ -275,13 +303,13 @@ export async function PUT(request: NextRequest) {
 
       // Emit real-time notification
       try {
-        await pusherServer.trigger('admin', 'payment_update', {
-          type: 'payment_updated',
+        await pusherServer.trigger("admin", "payment_update", {
+          type: "payment_updated",
           payment: payment.toObject(),
-          timestamp: new Date()
+          timestamp: new Date(),
         });
       } catch (pusherError) {
-        console.error('Failed to send Pusher notification:', pusherError);
+        logger.error("Failed to send Pusher notification:", pusherError);
       }
 
       return NextResponse.json({
@@ -289,15 +317,14 @@ export async function PUT(request: NextRequest) {
         payment: payment.toObject(),
       });
     } catch (error: unknown) {
-      console.error("Error updating payment:", error);
+      logger.error("Error updating payment:", error);
       return NextResponse.json(
-        { 
+        {
           error: "Failed to update payment",
-          message: error instanceof Error ? error.message : 'Unknown error'
+          message: error instanceof Error ? error.message : "Unknown error",
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
   });
 }
-

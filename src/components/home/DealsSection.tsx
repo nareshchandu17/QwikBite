@@ -121,7 +121,8 @@ export const DealsSection: React.FC = () => {
               ].map((item, idx) => (
                 <React.Fragment key={item.label}>
                   <div className="flex flex-col items-center">
-                    <div className="
+                    <div
+                      className="
                       flex h-20 w-20 sm:h-28 sm:w-28
                       items-center justify-center
                       rounded-2xl
@@ -129,7 +130,8 @@ export const DealsSection: React.FC = () => {
                       text-4xl sm:text-5xl
                       font-black
                       text-[#1A1A1A]
-                    ">
+                    "
+                    >
                       {formatNumber(item.value)}
                     </div>
                     <span className="mt-3 text-xs font-bold uppercase tracking-widest text-white/40">
@@ -156,7 +158,7 @@ export const DealsSection: React.FC = () => {
                 shadow-xl
                 shadow-[hsl(24_85%_55%)]/20 cursor-pointer 
               "
-              onClick={() => openModal('signin')}
+              onClick={() => openModal("signin")}
             >
               Claim Offer
             </button>

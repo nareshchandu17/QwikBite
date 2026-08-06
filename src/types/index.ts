@@ -1,6 +1,11 @@
 // Re-export Order and related types from order.ts
-export type { Order, OrderStatus } from './order';
-export type { OrderItem, OrderStatusUpdate, DeliveryPerson, PaymentInfo } from './order';
+export type { Order, OrderStatus } from "./order";
+export type {
+  OrderItem,
+  OrderStatusUpdate,
+  DeliveryPerson,
+  PaymentInfo,
+} from "./order";
 
 export interface MenuItem {
   id: string;
@@ -23,7 +28,7 @@ export interface MenuItem {
   rating?: number;
 }
 
-export type Sentiment = 'Positive' | 'Neutral' | 'Negative';
+export type Sentiment = "Positive" | "Neutral" | "Negative";
 
 export interface Feedback {
   id: number;
@@ -40,7 +45,7 @@ export interface InventoryItem {
   name: string;
   category: string;
   quantity: string;
-  status: 'In Stock' | 'Low Stock' | 'Out of Stock';
+  status: "In Stock" | "Low Stock" | "Out of Stock";
   lastUpdated: string;
 }
 
@@ -49,17 +54,17 @@ export interface Transaction {
   orderId: string;
   customer: string;
   amount: number;
-  method: 'UPI' | 'Cash' | 'Card';
-  status: 'Success' | 'Pending' | 'Failed';
+  method: "UPI" | "Cash" | "Card";
+  status: "Success" | "Pending" | "Failed";
   date: string;
 }
 
 export interface BaseStaff {
   name: string;
   email: string;
-  role: 'Manager' | 'Chef' | 'Server' | 'Cashier' | 'Cleaner';
+  role: "Manager" | "Chef" | "Server" | "Cashier" | "Cleaner";
   avatar: string;
-  status: 'Active' | 'Inactive' | 'On Leave' | 'Off Shift';
+  status: "Active" | "Inactive" | "On Leave" | "Off Shift";
   shift: string;
   contact: string;
   performance: number;

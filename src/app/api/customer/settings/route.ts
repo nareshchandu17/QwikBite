@@ -1,10 +1,11 @@
+import logger from "@/lib/logger";
 export const dynamic = "force-dynamic";
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authConfig } from '@/auth';
-import connectToDatabase from '@/lib/db';
-import { User } from '@/lib/models/User';
-import { Types } from 'mongoose';
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authConfig } from "@/auth";
+import connectToDatabase from "@/lib/db";
+import { User } from "@/models/user.model";
+import { Types } from "mongoose";
 
 interface UserSettings {
   notifications: {
@@ -26,7 +27,6 @@ interface UserResponse {
   settings?: UserSettings;
 }
 
-
 type SettingsData = {
   notifications: {
     email: boolean;
@@ -47,17 +47,16 @@ export async function GET() {
     const session = await getServerSession(authConfig);
     if (!session?.user?.email) {
       return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
+        { success: false, error: "Not authenticated" },
+        { status: 401 },
       );
     }
 
     await connectToDatabase();
-    
-    const user = await User.findOne(
-      { email: session.user.email },
-      'settings'
-    ).lean<UserResponse>().exec();
+
+    const user = await User.findOne({ email: session.user.email }, "settings")
+      .lean<UserResponse>()
+      .exec();
 
     const defaultSettings: SettingsData = {
       notifications: {
@@ -67,8 +66,8 @@ export async function GET() {
         promotions: false,
       },
       preferences: {
-        defaultPayment: 'Pay on Pickup',
-        language: 'English',
+        defaultPayment: "Pay on Pickup",
+        language: "English",
         remindBeforeLunch: true,
         autoRefreshOrderStatus: false,
       },
@@ -79,10 +78,10 @@ export async function GET() {
       settings: user?.settings || defaultSettings,
     });
   } catch (error) {
-    console.error('Error fetching settings:', error);
+    logger.error("Error fetching settings:", error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
+      { success: false, error: "Internal server error" },
+      { status: 500 },
     );
   }
 }
@@ -92,15 +91,15 @@ export async function PUT(request: Request) {
     const session = await getServerSession(authConfig);
     if (!session?.user?.email) {
       return NextResponse.json(
-        { success: false, error: 'Not authenticated' },
-        { status: 401 }
+        { success: false, error: "Not authenticated" },
+        { status: 401 },
       );
     }
 
     const settingsData: UserSettings = await request.json();
 
     await connectToDatabase();
-    
+
     await User.findOneAndUpdate(
       { email: session.user.email },
       {
@@ -111,15 +110,15 @@ export async function PUT(request: Request) {
       {
         new: true,
         upsert: true,
-      }
+      },
     ).exec();
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error updating settings:', error);
+    logger.error("Error updating settings:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to update settings' },
-      { status: 500 }
+      { success: false, error: "Failed to update settings" },
+      { status: 500 },
     );
   }
 }

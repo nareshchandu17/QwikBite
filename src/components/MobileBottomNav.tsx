@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import Link from 'next/link';
-import { useActivePage } from '@/hooks/useActivePage';
-import { useEffect, useState } from 'react';
-import { Utensils, ShoppingBag, Heart, MessageCircle } from 'lucide-react';
+import { motion } from "framer-motion";
+import Link from "next/link";
+import { useActivePage } from "@/hooks/useActivePage";
+import { useEffect, useState } from "react";
+import { Utensils, ShoppingBag, Heart, MessageCircle } from "lucide-react";
 
 interface NavItem {
   label: string;
@@ -13,10 +13,10 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Menu', href: '/menu', icon: Utensils },
-  { label: 'Orders', href: '/customer/orders', icon: ShoppingBag },
-  { label: 'Favorites', href: '/favorites', icon: Heart },
-  { label: 'Feedback', href: '/feedback', icon: MessageCircle },
+  { label: "Menu", href: "/menu", icon: Utensils },
+  { label: "Orders", href: "/customer/orders", icon: ShoppingBag },
+  { label: "Favorites", href: "/favorites", icon: Heart },
+  { label: "Feedback", href: "/feedback", icon: MessageCircle },
 ];
 
 /**
@@ -49,12 +49,12 @@ export function MobileBottomNav() {
     };
 
     // Listen for focus/blur on all input elements
-    document.addEventListener('focusin', handleFocus);
-    document.addEventListener('focusout', handleBlur);
+    document.addEventListener("focusin", handleFocus);
+    document.addEventListener("focusout", handleBlur);
 
     return () => {
-      document.removeEventListener('focusin', handleFocus);
-      document.removeEventListener('focusout', handleBlur);
+      document.removeEventListener("focusin", handleFocus);
+      document.removeEventListener("focusout", handleBlur);
     };
   }, []);
 
@@ -71,24 +71,24 @@ export function MobileBottomNav() {
       {/* Mobile Bottom Navigation */}
       <motion.nav
         initial={{ y: 0 }}
-        animate={{ 
+        animate={{
           y: isVisible ? 0 : 100,
-          opacity: isVisible ? 1 : 0 
+          opacity: isVisible ? 1 : 0,
         }}
-        transition={{ 
+        transition={{
           duration: 0.3,
-          ease: [0.4, 0, 0.2, 1]
+          ease: [0.4, 0, 0.2, 1],
         }}
         className="fixed bottom-0 left-0 right-0 z-50 md:hidden"
         style={{
-          willChange: 'transform, opacity',
+          willChange: "transform, opacity",
         }}
       >
         {/* Glassmorphic Background */}
         <div className="relative">
           {/* Blur backdrop */}
           <div className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-t border-gray-200/50 dark:border-gray-700/50" />
-          
+
           {/* Shadow overlay for depth */}
           <div className="absolute inset-0 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_12px_rgba(0,0,0,0.3)]" />
 
@@ -110,7 +110,7 @@ export function MobileBottomNav() {
                       layoutId="mobile-nav-indicator"
                       className="absolute -top-3 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500"
                       transition={{
-                        type: 'spring',
+                        type: "spring",
                         stiffness: 380,
                         damping: 30,
                       }}
@@ -126,8 +126,8 @@ export function MobileBottomNav() {
                       transition-all duration-200
                       ${
                         active
-                          ? 'bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30'
-                          : 'bg-gray-100 dark:bg-gray-800 group-hover:bg-gray-200 dark:group-hover:bg-gray-700'
+                          ? "bg-gradient-to-br from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30"
+                          : "bg-gray-100 dark:bg-gray-800 group-hover:bg-gray-200 dark:group-hover:bg-gray-700"
                       }
                     `}
                   >
@@ -136,8 +136,8 @@ export function MobileBottomNav() {
                         w-5 h-5 transition-colors duration-200
                         ${
                           active
-                            ? 'text-white'
-                            : 'text-gray-600 dark:text-gray-400 group-hover:text-amber-600 dark:group-hover:text-amber-400'
+                            ? "text-white"
+                            : "text-gray-600 dark:text-gray-400 group-hover:text-amber-600 dark:group-hover:text-amber-400"
                         }
                       `}
                     />
@@ -159,8 +159,8 @@ export function MobileBottomNav() {
                       mt-1 text-xs font-medium transition-colors duration-200 truncate max-w-full
                       ${
                         active
-                          ? 'text-amber-600 dark:text-amber-400'
-                          : 'text-gray-600 dark:text-gray-400 group-hover:text-amber-600 dark:group-hover:text-amber-400'
+                          ? "text-amber-600 dark:text-amber-400"
+                          : "text-gray-600 dark:text-gray-400 group-hover:text-amber-600 dark:group-hover:text-amber-400"
                       }
                     `}
                   >

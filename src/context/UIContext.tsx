@@ -1,7 +1,13 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
-import { Toast, ToastType } from '@/types/ui';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useCallback,
+} from "react";
+import { Toast, ToastType } from "@/types/ui";
 
 type UIContextType = {
   showToast: (message: string, type?: ToastType, duration?: number) => void;
@@ -22,18 +28,21 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 
-  const showToast = useCallback((message: string, type: ToastType = 'info', duration = 4000) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    const newToast: Toast = { id, message, type };
-    
-    setToasts((prev) => [...prev, newToast]);
+  const showToast = useCallback(
+    (message: string, type: ToastType = "info", duration = 4000) => {
+      const id = Math.random().toString(36).substring(2, 9);
+      const newToast: Toast = { id, message, type };
 
-    if (type !== 'error') {
-      setTimeout(() => {
-        dismissToast(id);
-      }, duration);
-    }
-  }, [dismissToast]);
+      setToasts((prev) => [...prev, newToast]);
+
+      if (type !== "error") {
+        setTimeout(() => {
+          dismissToast(id);
+        }, duration);
+      }
+    },
+    [dismissToast],
+  );
 
   const showThankYouModal = useCallback((details: unknown) => {
     setOrderDetails(details);
@@ -60,9 +69,13 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
           <div
             key={toast.id}
             className={`px-4 py-2 rounded-md shadow-lg ${
-              toast.type === 'success' ? 'bg-green-500' :
-              toast.type === 'error' ? 'bg-red-500' :
-              toast.type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+              toast.type === "success"
+                ? "bg-green-500"
+                : toast.type === "error"
+                  ? "bg-red-500"
+                  : toast.type === "warning"
+                    ? "bg-yellow-500"
+                    : "bg-blue-500"
             } text-white`}
             onClick={() => dismissToast(toast.id)}
           >
@@ -70,14 +83,14 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
           </div>
         ))}
       </div>
-      
+
       {/* Loading overlay */}
       {isLoading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       )}
-      
+
       {/* Thank you modal - simplified version */}
       {isThankYouModalOpen && orderDetails && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -111,7 +124,7 @@ export const UIProvider = ({ children }: { children: ReactNode }) => {
 export const useUI = () => {
   const context = useContext(UIContext);
   if (context === undefined) {
-    throw new Error('useUI must be used within a UIProvider');
+    throw new Error("useUI must be used within a UIProvider");
   }
   return context;
 };

@@ -1,4 +1,5 @@
-import { MongoClient, Db } from 'mongodb';
+import logger from "../../lib/logger";
+import { MongoClient, Db } from "mongodb";
 
 class MongoDBService {
   private client: MongoClient | null = null;
@@ -13,22 +14,24 @@ class MongoDBService {
     try {
       const uri = process.env.MONGODB_URI;
       if (!uri) {
-        throw new Error('Please define the MONGODB_URI environment variable inside .env');
+        throw new Error(
+          "Please define the MONGODB_URI environment variable inside .env",
+        );
       }
-      const dbName = process.env.MONGODB_DB || 'qwikbite';
+      const dbName = process.env.MONGODB_DB || "qwikbite";
 
       this.client = new MongoClient(uri, {
         serverSelectionTimeoutMS: 10000,
-        family: 4
+        family: 4,
       });
       await this.client.connect();
       this.db = this.client.db(dbName);
       this.isConnected = true;
 
-      console.log('Connected to MongoDB');
+      logger.info("Connected to MongoDB");
       return this.db;
     } catch (error) {
-      console.error('MongoDB connection error:', error);
+      logger.error("MongoDB connection error:", error);
       throw error;
     }
   }
@@ -38,13 +41,13 @@ class MongoDBService {
       await this.client.close();
       this.isConnected = false;
       this.db = null;
-      console.log('Disconnected from MongoDB');
+      logger.info("Disconnected from MongoDB");
     }
   }
 
   getDb() {
     if (!this.db) {
-      throw new Error('Database not connected. Call connect() first.');
+      throw new Error("Database not connected. Call connect() first.");
     }
     return this.db;
   }

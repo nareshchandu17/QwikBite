@@ -40,10 +40,8 @@ export const Footer: React.FC = () => {
       ></div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 backdrop-blur-lg">
-        
         {/* Top Grid */}
         <div className="grid gap-16 md:grid-cols-2 lg:grid-cols-5">
-          
           {/* Brand */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -53,8 +51,10 @@ export const Footer: React.FC = () => {
             className="lg:col-span-2"
           >
             <div className="mb-8 flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl 
-                bg-gradient-to-br from-[#FF512F] via-[#F09819] to-[#FFD700] text-2xl font-black text-white shadow-lg shadow-[#FF512F]/30">
+              <div
+                className="flex h-12 w-12 items-center justify-center rounded-2xl 
+                bg-gradient-to-br from-[#FF512F] via-[#F09819] to-[#FFD700] text-2xl font-black text-white shadow-lg shadow-[#FF512F]/30"
+              >
                 Q
               </div>
               <span className="font-serif text-3xl font-black tracking-tighter">
@@ -64,8 +64,8 @@ export const Footer: React.FC = () => {
             </div>
 
             <p className="mb-10 max-w-sm text-lg font-medium leading-relaxed text-gray-800">
-              The smartest way to eat on campus. Pre-order, pay online, and pick up
-              fresh food in minutes.
+              The smartest way to eat on campus. Pre-order, pay online, and pick
+              up fresh food in minutes.
             </p>
 
             <div className="space-y-4 text-base font-semibold text-gray-800">

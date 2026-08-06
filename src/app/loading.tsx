@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 export default function GlobalLoading() {
   return (
@@ -7,7 +7,7 @@ export default function GlobalLoading() {
       <div className="fixed top-0 left-0 right-0 h-1 z-[10000]">
         <div className="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 w-full origin-left animate-loading-bar shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
       </div>
-      
+
       {/* Minimal Spinner */}
       <div className="relative w-12 h-12">
         <div className="absolute inset-0 rounded-full border-2 border-amber-500/20" />

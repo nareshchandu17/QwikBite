@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Order } from '@/types';
-import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
-import { menuItems } from '@/data/menu';
+import React, { useState } from "react";
+import { Order } from "@/types";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import { menuItems } from "@/data/menu";
 
 interface OrderDetailsModalProps {
   order: Order | null;
@@ -10,8 +10,12 @@ interface OrderDetailsModalProps {
   onUpdateNote?: (orderId: string, note: string) => void;
 }
 
-const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, onClose, onUpdateNote }) => {
-  const [note, setNote] = useState('');
+const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({
+  order,
+  onClose,
+  onUpdateNote,
+}) => {
+  const [note, setNote] = useState("");
 
   if (!order) return null;
 
@@ -20,13 +24,16 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, onClose, o
     if (!normalized) return null;
 
     // Try exact match first
-    let menuItem = menuItems.find((item) => item.name.toLowerCase() === normalized);
-    
+    let menuItem = menuItems.find(
+      (item) => item.name.toLowerCase() === normalized,
+    );
+
     // If no exact match, try partial match
     if (!menuItem) {
-      menuItem = menuItems.find((item) =>
-        normalized.includes(item.name.toLowerCase()) ||
-        item.name.toLowerCase().includes(normalized)
+      menuItem = menuItems.find(
+        (item) =>
+          normalized.includes(item.name.toLowerCase()) ||
+          item.name.toLowerCase().includes(normalized),
       );
     }
 
@@ -42,12 +49,12 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, onClose, o
         return menuImage;
       }
     }
-    
-    if (!image) return '/images/order.jpg';
-    if (image.startsWith('http://') || image.startsWith('https://')) {
+
+    if (!image) return "/images/order.jpg";
+    if (image.startsWith("http://") || image.startsWith("https://")) {
       return image;
     }
-    if (image.startsWith('/')) {
+    if (image.startsWith("/")) {
       return image;
     }
     return `/${image}`;
@@ -55,15 +62,15 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, onClose, o
 
   const handleAddNote = async () => {
     if (!note.trim()) return;
-    
+
     try {
       if (onUpdateNote) {
         await onUpdateNote(order.id, note);
-        toast.success('Note added successfully');
-        setNote('');
+        toast.success("Note added successfully");
+        setNote("");
       }
     } catch (error) {
-      toast.error('Failed to add note');
+      toast.error("Failed to add note");
     }
   };
 
@@ -103,11 +110,15 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, onClose, o
                 </div>
                 <div>
                   <span className="text-gray-400 text-sm">Status</span>
-                  <p className="text-white font-bold capitalize">{order.status}</p>
+                  <p className="text-white font-bold capitalize">
+                    {order.status}
+                  </p>
                 </div>
                 <div>
                   <span className="text-gray-400 text-sm">Customer</span>
-                  <p className="text-white font-bold">{order.customerName || order.username || 'Guest'}</p>
+                  <p className="text-white font-bold">
+                    {order.customerName || order.username || "Guest"}
+                  </p>
                 </div>
                 <div>
                   <span className="text-gray-400 text-sm">Total</span>
@@ -118,24 +129,37 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, onClose, o
               {/* Contact Info */}
               {(order as any).customerEmail || (order as any).customerPhone ? (
                 <div className="p-4 bg-white/5 rounded-xl">
-                  <h3 className="text-sm font-bold text-white mb-2">Contact Information</h3>
+                  <h3 className="text-sm font-bold text-white mb-2">
+                    Contact Information
+                  </h3>
                   {(order as any).customerEmail && (
-                    <p className="text-gray-300 text-sm mb-1">Email: {(order as any).customerEmail}</p>
+                    <p className="text-gray-300 text-sm mb-1">
+                      Email: {(order as any).customerEmail}
+                    </p>
                   )}
                   {(order as any).customerPhone && (
-                    <p className="text-gray-300 text-sm">Phone: {(order as any).customerPhone}</p>
+                    <p className="text-gray-300 text-sm">
+                      Phone: {(order as any).customerPhone}
+                    </p>
                   )}
                 </div>
               ) : null}
 
               {/* Time Slot */}
-              {(order as any).timeSlot || (order as any).pickupTime || (order as any).pickupDate ? (
+              {(order as any).timeSlot ||
+              (order as any).pickupTime ||
+              (order as any).pickupDate ? (
                 <div className="p-4 bg-white/5 rounded-xl">
-                  <h3 className="text-sm font-bold text-white mb-2">Pickup Information</h3>
+                  <h3 className="text-sm font-bold text-white mb-2">
+                    Pickup Information
+                  </h3>
                   <p className="text-gray-300 text-sm">
-                    {(order as any).pickupDate && `Date: ${(order as any).pickupDate}`}
-                    {(order as any).timeSlot && ` | Time: ${(order as any).timeSlot}`}
-                    {(order as any).pickupTime && ` | ${new Date((order as any).pickupTime).toLocaleString()}`}
+                    {(order as any).pickupDate &&
+                      `Date: ${(order as any).pickupDate}`}
+                    {(order as any).timeSlot &&
+                      ` | Time: ${(order as any).timeSlot}`}
+                    {(order as any).pickupTime &&
+                      ` | ${new Date((order as any).pickupTime).toLocaleString()}`}
                   </p>
                 </div>
               ) : null}
@@ -145,24 +169,37 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, onClose, o
                 <h3 className="text-sm font-bold text-white mb-3">Items</h3>
                 <div className="space-y-2">
                   {order.items.map((item, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                    <div
+                      key={idx}
+                      className="flex items-center justify-between p-3 bg-white/5 rounded-xl"
+                    >
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-lg bg-gray-700 overflow-hidden">
                           <img
-                            src={getImageUrl(item.image || item.imageUrl || (item.menuItem as any)?.image, item.name)}
+                            src={getImageUrl(
+                              item.image ||
+                                item.imageUrl ||
+                                (item.menuItem as any)?.image,
+                              item.name,
+                            )}
                             alt={item.name}
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/images/order.jpg';
+                              (e.target as HTMLImageElement).src =
+                                "/images/order.jpg";
                             }}
                           />
                         </div>
                         <div>
                           <p className="text-white font-bold">{item.name}</p>
-                          <p className="text-gray-400 text-sm">₹{item.price} x {item.quantity}</p>
+                          <p className="text-gray-400 text-sm">
+                            ₹{item.price} x {item.quantity}
+                          </p>
                         </div>
                       </div>
-                      <p className="text-white font-bold">₹{item.price * item.quantity}</p>
+                      <p className="text-white font-bold">
+                        ₹{item.price * item.quantity}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -171,9 +208,12 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, onClose, o
               {/* Payment Info */}
               {order.payment || (order as any).paymentStatus ? (
                 <div className="p-4 bg-white/5 rounded-xl">
-                  <h3 className="text-sm font-bold text-white mb-2">Payment Information</h3>
+                  <h3 className="text-sm font-bold text-white mb-2">
+                    Payment Information
+                  </h3>
                   <p className="text-gray-300 text-sm">
-                    Status: {(order as any).paymentStatus || order.payment?.status}
+                    Status:{" "}
+                    {(order as any).paymentStatus || order.payment?.status}
                   </p>
                   {order.payment?.transactionId && (
                     <p className="text-gray-300 text-sm">
@@ -191,18 +231,24 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, onClose, o
               {/* Status History */}
               {order.statusHistory && order.statusHistory.length > 0 ? (
                 <div>
-                  <h3 className="text-sm font-bold text-white mb-3">Status History</h3>
+                  <h3 className="text-sm font-bold text-white mb-3">
+                    Status History
+                  </h3>
                   <div className="space-y-2">
                     {order.statusHistory.map((history, idx) => (
                       <div key={idx} className="p-3 bg-white/5 rounded-xl">
                         <div className="flex items-center justify-between">
-                          <p className="text-white font-bold capitalize">{history.status}</p>
+                          <p className="text-white font-bold capitalize">
+                            {history.status}
+                          </p>
                           <p className="text-gray-400 text-xs">
                             {new Date(history.timestamp).toLocaleString()}
                           </p>
                         </div>
                         {history.message && (
-                          <p className="text-gray-400 text-sm mt-1">{history.message}</p>
+                          <p className="text-gray-400 text-sm mt-1">
+                            {history.message}
+                          </p>
                         )}
                       </div>
                     ))}
@@ -213,7 +259,9 @@ const OrderDetailsModal: React.FC<OrderDetailsModalProps> = ({ order, onClose, o
               {/* Add Note */}
               {onUpdateNote && (
                 <div className="p-4 bg-white/5 rounded-xl">
-                  <h3 className="text-sm font-bold text-white mb-2">Add Note</h3>
+                  <h3 className="text-sm font-bold text-white mb-2">
+                    Add Note
+                  </h3>
                   <textarea
                     value={note}
                     onChange={(e) => setNote(e.target.value)}

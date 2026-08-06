@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import mongoose, { Schema, Document, Model } from "mongoose";
 
 /**
  * Nutrition Info Interface
@@ -58,7 +58,7 @@ const nutritionSchema = new Schema<INutritionInfo>(
     fat: { type: Number },
     fiber: { type: Number },
   },
-  { _id: false }
+  { _id: false },
 );
 
 /**
@@ -71,7 +71,8 @@ const menuItemSchema = new Schema<IMenuItem>(
       required: true,
       unique: true,
       index: true,
-      default: () => `MENU-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+      default: () =>
+        `MENU-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
     },
 
     name: {
@@ -168,13 +169,13 @@ const menuItemSchema = new Schema<IMenuItem>(
   {
     timestamps: true,
     versionKey: false,
-  }
+  },
 );
 
 /**
  * INDEXES (important for performance)
  */
-menuItemSchema.index({ name: 'text', description: 'text' });
+menuItemSchema.index({ name: "text", description: "text" });
 menuItemSchema.index({ category: 1, isAvailable: 1 });
 menuItemSchema.index({ price: 1 });
 menuItemSchema.index({ rating: -1 });
@@ -192,4 +193,4 @@ menuItemSchema.statics.getAvailableItems = function () {
  */
 export const MenuItem: Model<IMenuItem> =
   mongoose.models.MenuItem ||
-  mongoose.model<IMenuItem>('MenuItem', menuItemSchema);
+  mongoose.model<IMenuItem>("MenuItem", menuItemSchema);

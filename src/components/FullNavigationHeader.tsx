@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Utensils as MenuIcon,
   Heart,
@@ -17,19 +17,19 @@ import {
   Menu as MenuIconMobile,
   Search,
   Bell,
-} from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { useAuth } from '@/context/AuthContext';
-import { useAuthModal } from '@/context/AuthModalContext';
-import { isCustomer, isAdmin } from '@/lib/auth/roleGuard';
-import { cn } from '@/lib/utils';
+} from "lucide-react";
+import { useTheme } from "next-themes";
+import { useAuth } from "@/context/AuthContext";
+import { useAuthModal } from "@/context/AuthModalContext";
+import { isCustomer, isAdmin } from "@/lib/auth/roleGuard";
+import { cn } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
-import UserDropdown from '@/components/UserDropdown';
+} from "@/components/ui/tooltip";
+import UserDropdown from "@/components/UserDropdown";
 
 type IconComponent = React.ComponentType<{ className?: string }>;
 
@@ -40,10 +40,10 @@ type NavLink = {
 };
 
 const NAV_LINKS: NavLink[] = [
-  { name: 'Menu', href: '/customer/menu', Icon: MenuIcon },
-  { name: 'Orders', href: '/customer/orders', Icon: ListOrdered },
-  { name: 'Favorites', href: '/customer/favorites', Icon: Heart },
-  { name: 'Feedback', href: '/customer/feedback', Icon: MessageCircle },
+  { name: "Menu", href: "/customer/menu", Icon: MenuIcon },
+  { name: "Orders", href: "/customer/orders", Icon: ListOrdered },
+  { name: "Favorites", href: "/customer/favorites", Icon: Heart },
+  { name: "Feedback", href: "/customer/feedback", Icon: MessageCircle },
 ];
 
 const FullNavigationHeader: React.FC = () => {
@@ -63,16 +63,16 @@ const FullNavigationHeader: React.FC = () => {
       setIsScrolled(window.scrollY > 10);
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, []);
 
-  const toggleTheme = () => setTheme(theme === 'dark' ? 'light' : 'dark');
+  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
-  const handleOpenAuthModal = (mode: 'signin' | 'signup') => {
+  const handleOpenAuthModal = (mode: "signin" | "signup") => {
     openAuthModal(mode);
     setIsMobileMenuOpen(false);
   };
@@ -83,28 +83,28 @@ const FullNavigationHeader: React.FC = () => {
   };
 
   if (!hasMounted) {
-    return <div className="fixed w-full h-16 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200/30 dark:border-gray-700/30 z-50" />;
+    return (
+      <div className="fixed w-full h-16 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200/30 dark:border-gray-700/30 z-50" />
+    );
   }
 
   const renderDesktopLinks = () => (
     <div className="hidden md:flex items-center justify-center flex-1 mx-4 lg:mx-8">
       <div className="flex items-center space-x-1 lg:space-x-2">
         {NAV_LINKS.map(({ name, href, Icon }) => {
-          const active = pathname === href || (href !== '/' && pathname && pathname.startsWith(href));
+          const active =
+            pathname === href ||
+            (href !== "/" && pathname && pathname.startsWith(href));
           const linkClasses = cn(
-            'px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap',
+            "px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap",
             active
-              ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800'
-              : 'text-gray-700 hover:text-amber-600 dark:text-gray-300 dark:hover:text-amber-400 hover:bg-gray-50 dark:hover:bg-gray-800/50',
-            'flex items-center gap-2'
+              ? "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800"
+              : "text-gray-700 hover:text-amber-600 dark:text-gray-300 dark:hover:text-amber-400 hover:bg-gray-50 dark:hover:bg-gray-800/50",
+            "flex items-center gap-2",
           );
 
           return (
-            <Link
-              key={href}
-              href={href}
-              className={linkClasses}
-            >
+            <Link key={href} href={href} className={linkClasses}>
               <Icon className="h-4 w-4" />
               <span className="hidden sm:inline">{name}</span>
             </Link>
@@ -121,11 +121,16 @@ const FullNavigationHeader: React.FC = () => {
         <Tooltip>
           <TooltipTrigger asChild>
             <Link
-              href={(pathname && pathname.startsWith('/customer')) ? '/customer/notifications' : '/notifications'}
-              className={`relative flex items-center rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-colors ${isScrolled
-                ? 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800'
-                : 'text-gray-700 hover:bg-white/20 dark:text-white dark:hover:bg-white/10'
-                }`}
+              href={
+                pathname && pathname.startsWith("/customer")
+                  ? "/customer/notifications"
+                  : "/notifications"
+              }
+              className={`relative flex items-center rounded-full p-2 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-colors ${
+                isScrolled
+                  ? "text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
+                  : "text-gray-700 hover:bg-white/20 dark:text-white dark:hover:bg-white/10"
+              }`}
             >
               <Bell className="h-5 w-5" />
               <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-xs text-white">
@@ -133,13 +138,14 @@ const FullNavigationHeader: React.FC = () => {
               </span>
             </Link>
           </TooltipTrigger>
-          <TooltipContent side="bottom" className="bg-gray-800 text-white text-xs px-2 py-1 rounded">
+          <TooltipContent
+            side="bottom"
+            className="bg-gray-800 text-white text-xs px-2 py-1 rounded"
+          >
             <p>Notifications</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
-
-
 
       {loading ? (
         <div className="h-8 w-8 animate-pulse rounded-full bg-gray-200 dark:bg-gray-800" />
@@ -151,16 +157,20 @@ const FullNavigationHeader: React.FC = () => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={() => handleOpenAuthModal('signin')}
-                  className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isScrolled
-                    ? 'text-gray-700 hover:text-amber-600 dark:text-gray-200 dark:hover:text-amber-400'
-                    : 'text-gray-700 hover:text-amber-600 dark:text-white dark:hover:text-amber-400'
-                    }`}
+                  onClick={() => handleOpenAuthModal("signin")}
+                  className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isScrolled
+                      ? "text-gray-700 hover:text-amber-600 dark:text-gray-200 dark:hover:text-amber-400"
+                      : "text-gray-700 hover:text-amber-600 dark:text-white dark:hover:text-amber-400"
+                  }`}
                 >
                   Sign in
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-gray-800 text-white text-xs px-2 py-1 rounded">
+              <TooltipContent
+                side="bottom"
+                className="bg-gray-800 text-white text-xs px-2 py-1 rounded"
+              >
                 <p>Sign in to your account</p>
               </TooltipContent>
             </Tooltip>
@@ -169,16 +179,20 @@ const FullNavigationHeader: React.FC = () => {
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
-                  onClick={() => handleOpenAuthModal('signup')}
-                  className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isScrolled
-                    ? 'bg-amber-600 text-white hover:bg-amber-700'
-                    : 'bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-600'
-                    }`}
+                  onClick={() => handleOpenAuthModal("signup")}
+                  className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isScrolled
+                      ? "bg-amber-600 text-white hover:bg-amber-700"
+                      : "bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-600"
+                  }`}
                 >
                   Sign up
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="bottom" className="bg-gray-800 text-white text-xs px-2 py-1 rounded">
+              <TooltipContent
+                side="bottom"
+                className="bg-gray-800 text-white text-xs px-2 py-1 rounded"
+              >
                 <p>Create a new account</p>
               </TooltipContent>
             </Tooltip>
@@ -194,17 +208,19 @@ const FullNavigationHeader: React.FC = () => {
         <Link
           key={link.href}
           href={link.href}
-          className={`flex items-center space-x-3 rounded-xl px-4 py-3 text-base font-medium transition-colors ${pathname === link.href
-            ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-            : 'text-gray-700 hover:bg-amber-50 dark:text-gray-300 dark:hover:bg-amber-900/20'
-            }`}
+          className={`flex items-center space-x-3 rounded-xl px-4 py-3 text-base font-medium transition-colors ${
+            pathname === link.href
+              ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+              : "text-gray-700 hover:bg-amber-50 dark:text-gray-300 dark:hover:bg-amber-900/20"
+          }`}
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <link.Icon
-            className={`h-5 w-5 ${pathname === link.href
-              ? 'text-amber-600 dark:text-amber-400'
-              : 'text-amber-600/80 dark:text-amber-400/80'
-              }`}
+            className={`h-5 w-5 ${
+              pathname === link.href
+                ? "text-amber-600 dark:text-amber-400"
+                : "text-amber-600/80 dark:text-amber-400/80"
+            }`}
           />
           <span>{link.name}</span>
         </Link>
@@ -234,7 +250,11 @@ const FullNavigationHeader: React.FC = () => {
         </Link>
         {user && (
           <Link
-            href={(pathname && pathname.startsWith('/customer')) ? '/customer/notifications' : '/notifications'}
+            href={
+              pathname && pathname.startsWith("/customer")
+                ? "/customer/notifications"
+                : "/notifications"
+            }
             className="flex items-center rounded-md px-3 py-2 text-base font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-amber-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-amber-400"
             onClick={() => setIsMobileMenuOpen(false)}
           >
@@ -247,14 +267,22 @@ const FullNavigationHeader: React.FC = () => {
         ) : isAuthenticated && user ? (
           <div className="mt-2 border-t border-gray-800 pt-2">
             <div className="border-b border-gray-200 dark:border-gray-700 px-3 py-2">
-              <p className="text-sm font-medium text-gray-900 dark:text-white">{user.email}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Role: {user.role}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                {user.email}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Role: {user.role}
+              </p>
             </div>
 
             {isCustomer(user) && (
               <>
                 <Link
-                  href={pathname?.startsWith('/customer') ? '/customer/profile' : '/profile'}
+                  href={
+                    pathname?.startsWith("/customer")
+                      ? "/customer/profile"
+                      : "/profile"
+                  }
                   className="block w-full px-3 py-2 text-base font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -262,7 +290,11 @@ const FullNavigationHeader: React.FC = () => {
                   View Profile
                 </Link>
                 <Link
-                  href={pathname?.startsWith('/customer') ? '/customer/settings' : '/settings'}
+                  href={
+                    pathname?.startsWith("/customer")
+                      ? "/customer/settings"
+                      : "/settings"
+                  }
                   className="block w-full px-3 py-2 text-base font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
@@ -304,13 +336,13 @@ const FullNavigationHeader: React.FC = () => {
         ) : (
           <div className="mt-2 space-y-2 border-t border-gray-800 pt-2">
             <button
-              onClick={() => handleOpenAuthModal('signin')}
+              onClick={() => handleOpenAuthModal("signin")}
               className="w-full rounded-md bg-amber-600 px-4 py-2 text-sm font-medium text-white hover:bg-amber-700 transition-colors"
             >
               Sign In
             </button>
             <button
-              onClick={() => handleOpenAuthModal('signup')}
+              onClick={() => handleOpenAuthModal("signup")}
               className="w-full rounded-md border border-amber-600 bg-transparent px-4 py-2 text-sm font-medium text-amber-400 hover:bg-amber-900/30 transition-colors"
             >
               Create Account
@@ -323,17 +355,18 @@ const FullNavigationHeader: React.FC = () => {
 
   return (
     <header
-      className={`fixed w-full z-50 transition-all duration-300 ${isScrolled
-        ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200/30 dark:border-gray-700/30'
-        : 'bg-transparent dark:bg-transparent'
-        }`}
+      className={`fixed w-full z-50 transition-all duration-300 ${
+        isScrolled
+          ? "bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200/30 dark:border-gray-700/30"
+          : "bg-transparent dark:bg-transparent"
+      }`}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo - Left side */}
           <div className="flex-shrink-0">
             <Link
-              href={pathname?.startsWith('/customer') ? '/customer' : '/'}
+              href={pathname?.startsWith("/customer") ? "/customer" : "/"}
               className="flex items-center"
             >
               <span className="font-serif text-2xl font-black tracking-tighter">
@@ -350,10 +383,12 @@ const FullNavigationHeader: React.FC = () => {
                 <Link
                   key={href}
                   href={href}
-                  className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-colors ${pathname === href || (href !== '/' && pathname?.startsWith(href))
-                    ? 'text-amber-600 dark:text-amber-400 font-medium'
-                    : 'text-gray-800 hover:text-amber-600 dark:text-gray-200 dark:hover:text-amber-400'
-                    }`}
+                  className={`px-4 py-2 rounded-full text-sm font-medium flex items-center gap-2 transition-colors ${
+                    pathname === href ||
+                    (href !== "/" && pathname?.startsWith(href))
+                      ? "text-amber-600 dark:text-amber-400 font-medium"
+                      : "text-gray-800 hover:text-amber-600 dark:text-gray-200 dark:hover:text-amber-400"
+                  }`}
                 >
                   <Icon className="h-4 w-4 flex-shrink-0" />
                   <span className="whitespace-nowrap">{name}</span>

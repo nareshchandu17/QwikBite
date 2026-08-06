@@ -7,6 +7,7 @@ This folder contains all database models for the Canteen Management System. Each
 ### USER SECTION
 
 #### 1. **users** - User Accounts
+
 - `userId` - Unique user identifier (auto-generated)
 - `name` - Full name
 - `email` - Email address (unique, indexed)
@@ -23,6 +24,7 @@ This folder contains all database models for the Canteen Management System. Each
 ---
 
 #### 2. **menuitems** - Food Catalog
+
 - `itemId` - Unique item identifier
 - `name` - Item name
 - `description` - Item description
@@ -42,6 +44,7 @@ This folder contains all database models for the Canteen Management System. Each
 ---
 
 #### 3. **favorites** - User Favorites
+
 - `favoriteId` - Unique identifier
 - `userId` - Reference to user
 - `favoriteItems` - Array of itemIds
@@ -53,6 +56,7 @@ This folder contains all database models for the Canteen Management System. Each
 ---
 
 #### 4. **transactions** - Payment Records
+
 - `transactionId` - Unique transaction ID (auto-generated)
 - `userId` - Reference to user
 - `orderId` - Reference to order
@@ -70,6 +74,7 @@ This folder contains all database models for the Canteen Management System. Each
 ---
 
 #### 5. **notifications** - User Notifications
+
 - `notificationId` - Unique identifier
 - `userId` - Reference to user
 - `message` - Notification message
@@ -87,6 +92,7 @@ This folder contains all database models for the Canteen Management System. Each
 ---
 
 #### 6. **orders** - Order History
+
 - `orderId` - Unique order ID
 - `userId` - Reference to user
 - `items` - Array of order items
@@ -105,6 +111,7 @@ This folder contains all database models for the Canteen Management System. Each
 ---
 
 #### 7. **feedbacks** - User Reviews
+
 - `feedbackId` - Unique identifier
 - `userId` - Reference to user
 - `orderId` - Reference to order (optional)
@@ -128,6 +135,7 @@ This folder contains all database models for the Canteen Management System. Each
 ### ADMIN SECTION
 
 #### 1. **admins** - Admin Accounts
+
 - `adminId` - Unique admin identifier (auto-generated)
 - `name` - Admin name
 - `email` - Email (unique)
@@ -156,6 +164,7 @@ This folder contains all database models for the Canteen Management System. Each
 ---
 
 #### 2. **analytics** - Daily Analytics
+
 - `analyticsId` - Unique identifier (date-based)
 - `date` - Analytics date (unique, one per day)
 - `totalSales` - Total sales count
@@ -179,6 +188,7 @@ This folder contains all database models for the Canteen Management System. Each
 ---
 
 #### 3. **adminnotifications** - Broadcast Notifications
+
 - `notificationId` - Unique identifier
 - `message` - Notification message
 - `title` - Notification title
@@ -203,6 +213,7 @@ This folder contains all database models for the Canteen Management System. Each
 ## 🚀 Features
 
 ### Production-Ready
+
 ✅ Auto-generated IDs for all models  
 ✅ Comprehensive indexing for fast queries  
 ✅ Input validation and constraints  
@@ -210,27 +221,30 @@ This folder contains all database models for the Canteen Management System. Each
 ✅ Proper relationships (refs)  
 ✅ TTL indexes for expiring data  
 ✅ Text search support  
-✅ Compound indexes for complex queries  
+✅ Compound indexes for complex queries
 
 ### Real-Time Support
+
 ✅ WebSocket-friendly structure  
 ✅ Status tracking for live updates  
 ✅ Notification system  
-✅ Order status tracking  
+✅ Order status tracking
 
 ### Security
+
 ✅ Password select: false (not returned by default)  
 ✅ Role-based access control  
 ✅ Login attempt tracking  
 ✅ Account locking mechanism  
-✅ Permission system for admins  
+✅ Permission system for admins
 
 ### Analytics & Reporting
+
 ✅ Daily analytics with auto-calculation  
 ✅ Peak hours tracking  
 ✅ Top items/users analysis  
 ✅ Payment method breakdown  
-✅ Category-wise sales  
+✅ Category-wise sales
 
 ---
 
@@ -248,11 +262,11 @@ import {
   Feedback,
   Admin,
   Analytics,
-  AdminNotification
-} from '@/lib/models';
+  AdminNotification,
+} from "@/lib/models";
 
 // Or import specific models
-import { User, type IUser } from '@/lib/models/User';
+import { User, type IUser } from "@/lib/models/User";
 ```
 
 ---
@@ -291,18 +305,17 @@ import { User, type IUser } from '@/lib/models/User';
 
 ## 📚 Collections Summary
 
-| Collection | Purpose | Key Features |
-|------------|---------|--------------|
-| users | User accounts | Wallet, profile, roles |
-| menuitems | Food catalog | Rating, nutrition, stock |
-| favorites | User favorites | Quick reorder |
-| transactions | Payments | Refunds, receipts |
-| notifications | User alerts | TTL, deep links |
-| orders | Order tracking | Real-time status |
-| feedbacks | Reviews | Public/private, admin replies |
-| admins | Staff accounts | Permissions, security |
-| analytics | Business insights | Daily aggregation |
-| adminnotifications | Broadcasts | Scheduled, targeted |
+| Collection         | Purpose           | Key Features                  |
+| ------------------ | ----------------- | ----------------------------- |
+| users              | User accounts     | Wallet, profile, roles        |
+| menuitems          | Food catalog      | Rating, nutrition, stock      |
+| favorites          | User favorites    | Quick reorder                 |
+| transactions       | Payments          | Refunds, receipts             |
+| notifications      | User alerts       | TTL, deep links               |
+| orders             | Order tracking    | Real-time status              |
+| feedbacks          | Reviews           | Public/private, admin replies |
+| admins             | Staff accounts    | Permissions, security         |
+| analytics          | Business insights | Daily aggregation             |
+| adminnotifications | Broadcasts        | Scheduled, targeted           |
 
 **Total: 10 Collections** - All production-ready! 🎉
-

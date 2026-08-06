@@ -1,7 +1,7 @@
-import { TimeSlot as TimeSlotModel, ITimeSlot } from '@/models/slot.model';
-import { MenuItem } from '@/lib/models/MenuItem';
-import { connectDB } from '@/lib/db';
-import mongoose from 'mongoose';
+import { TimeSlot as TimeSlotModel, ITimeSlot } from "@/models/slot.model";
+import { MenuItem } from "@/models/menuItem.model";
+import { connectDB } from "@/lib/db";
+import mongoose from "mongoose";
 
 interface RawOrderItem {
   id: string;
@@ -14,17 +14,17 @@ export class SlotService {
    * Helper to parse slot string and date into a normalized Start Time Date object
    */
   static getSlotStartTime(timeSlot: string, dateStr: string): Date {
-    const [year, month, day] = dateStr.split('-').map(Number);
+    const [year, month, day] = dateStr.split("-").map(Number);
     const date = new Date(year, month - 1, day);
-    
-    if (timeSlot === 'ASAP') {
+
+    if (timeSlot === "ASAP") {
       const now = new Date();
       date.setHours(now.getHours(), now.getMinutes(), 0, 0);
       return date;
     }
 
-    const startTimeStr = timeSlot.split('-')[0];
-    const [hoursStr, minutesStr] = startTimeStr.split(':');
+    const startTimeStr = timeSlot.split("-")[0];
+    const [hoursStr, minutesStr] = startTimeStr.split(":");
     let hours = parseInt(hoursStr);
     const minutes = parseInt(minutesStr);
 
@@ -42,10 +42,17 @@ export class SlotService {
 
     for (const item of items) {
       // Find menu item to get prep time
-      const menuItem = await MenuItem.findOne({ 
-        $or: [{ id: item.id }, { _id: mongoose.isValidObjectId(item.id) ? item.id : new mongoose.Types.ObjectId() }]
+      const menuItem = await MenuItem.findOne({
+        $or: [
+          { id: item.id },
+          {
+            _id: mongoose.isValidObjectId(item.id)
+              ? item.id
+              : new mongoose.Types.ObjectId(),
+          },
+        ],
       });
-      
+
       const prepTime = menuItem?.preparationTime || 5;
       totalLoad += prepTime * item.quantity;
     }
@@ -56,7 +63,11 @@ export class SlotService {
   /**
    * Atomically reserves capacity in a slot
    */
-  static async reserveSlot(time: string, date: string, requestedLoad: number): Promise<ITimeSlot | null> {
+  static async reserveSlot(
+    time: string,
+    date: string,
+    requestedLoad: number,
+  ): Promise<ITimeSlot | null> {
     await connectDB();
     const startTime = this.getSlotStartTime(time, date);
 
@@ -68,18 +79,18 @@ export class SlotService {
         isActive: true,
         $expr: {
           $lte: [
-            { $add: ['$currentLoad', requestedLoad] },
-            { $multiply: ['$maxLoad', '$kitchenCapacityFactor'] }
-          ]
-        }
+            { $add: ["$currentLoad", requestedLoad] },
+            { $multiply: ["$maxLoad", "$kitchenCapacityFactor"] },
+          ],
+        },
       },
       {
-        $inc: { currentLoad: requestedLoad }
+        $inc: { currentLoad: requestedLoad },
       },
-      { 
+      {
         new: true,
-        upsert: false 
-      }
+        upsert: false,
+      },
     );
 
     if (updatedSlot) {
@@ -87,7 +98,7 @@ export class SlotService {
       // However, findOneAndUpdate doesn't trigger pre-save hooks automatically for all fields
       // So we manually trigger a save if we want the hook logic to run, or we rely on the next sync.
       // For performance, we'll let the next sync or a manual update handle status.
-      await updatedSlot.save(); 
+      await updatedSlot.save();
     }
 
     return updatedSlot;
@@ -96,16 +107,20 @@ export class SlotService {
   /**
    * Releases capacity from a slot (used for rollbacks)
    */
-  static async releaseSlot(time: string, date: string, loadToRelease: number): Promise<void> {
+  static async releaseSlot(
+    time: string,
+    date: string,
+    loadToRelease: number,
+  ): Promise<void> {
     await connectDB();
     const startTime = this.getSlotStartTime(time, date);
 
     const slot = await TimeSlotModel.findOneAndUpdate(
       { dateOnly: date, startTime: startTime },
       {
-        $inc: { currentLoad: -loadToRelease }
+        $inc: { currentLoad: -loadToRelease },
       },
-      { new: true }
+      { new: true },
     );
 
     if (slot) {
@@ -116,16 +131,19 @@ export class SlotService {
   /**
    * Validates if the slot is still in the future and accounts for prep time
    */
-  static validateSlotTiming(timeSlot: string, prepTime: number): { valid: boolean; error?: string } {
-    if (timeSlot === 'ASAP') return { valid: true };
+  static validateSlotTiming(
+    timeSlot: string,
+    prepTime: number,
+  ): { valid: boolean; error?: string } {
+    if (timeSlot === "ASAP") return { valid: true };
 
     const istOffset = 330;
     const now = new Date();
-    const istNow = new Date(now.getTime() + (istOffset * 60000));
-    
+    const istNow = new Date(now.getTime() + istOffset * 60000);
+
     // Parse slot start time
-    const startTimeStr = timeSlot.split('-')[0];
-    const [hoursStr, minutesStr] = startTimeStr.split(':');
+    const startTimeStr = timeSlot.split("-")[0];
+    const [hoursStr, minutesStr] = startTimeStr.split(":");
     let hours = parseInt(hoursStr);
     const minutes = parseInt(minutesStr);
 
@@ -135,12 +153,19 @@ export class SlotService {
     slotStartTime.setHours(hours, minutes, 0, 0);
 
     if (slotStartTime < istNow) {
-      return { valid: false, error: 'Cannot book a slot that has already passed.' };
+      return {
+        valid: false,
+        error: "Cannot book a slot that has already passed.",
+      };
     }
 
-    const minutesUntilSlot = (slotStartTime.getTime() - istNow.getTime()) / 60000;
+    const minutesUntilSlot =
+      (slotStartTime.getTime() - istNow.getTime()) / 60000;
     if (minutesUntilSlot < prepTime) {
-      return { valid: false, error: `Insufficient time to prepare your order for this slot (Needs ${prepTime} mins).` };
+      return {
+        valid: false,
+        error: `Insufficient time to prepare your order for this slot (Needs ${prepTime} mins).`,
+      };
     }
 
     return { valid: true };

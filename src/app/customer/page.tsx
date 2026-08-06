@@ -1,63 +1,66 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import Image from 'next/image';
-import Link from 'next/link';
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import Image from "next/image";
+import Link from "next/link";
 // Import all the components you mentioned
-import TiffinsCarousel from '@/components/TiffinsCarousel';
-import LunchSpecialsCarousel from '@/components/LunchSpecialsCarousel';
-import CampusFavoritesCarousel from '@/components/CampusFavoritesCarousel';
-import ShareWithFriends from '@/components/ShareWithFriends';
-import FAQ from '@/components/FAQ';
-import Footer from '@/components/Footer';
-import HowItWorksPremium from '@/components/HowItWorksPremium';
-import { MenuItem } from '@/data/menu';
-import { CampusFavoriteItem } from '@/data/campusFavorites';
-import { Utensils, Clock, Star, ChevronRight } from 'lucide-react';
-import dynamic from 'next/dynamic';
-import TimeSlotModal from '@/components/TimeSlotModal';
+import TiffinsCarousel from "@/components/TiffinsCarousel";
+import LunchSpecialsCarousel from "@/components/LunchSpecialsCarousel";
+import CampusFavoritesCarousel from "@/components/CampusFavoritesCarousel";
+import ShareWithFriends from "@/components/ShareWithFriends";
+import FAQ from "@/components/FAQ";
+import Footer from "@/components/Footer";
+import HowItWorksPremium from "@/components/HowItWorksPremium";
+import { MenuItem } from "@/data/menu";
+import { CampusFavoriteItem } from "@/data/campusFavorites";
+import { Utensils, Clock, Star, ChevronRight } from "lucide-react";
+import dynamic from "next/dynamic";
+import TimeSlotModal from "@/components/TimeSlotModal";
 
 // Dynamically import components that might have SSR issues
 const ConditionalFAQAndFooter = dynamic(
-  () => import('@/components/ConditionalFAQAndFooter'),
-  { ssr: false }
+  () => import("@/components/ConditionalFAQAndFooter"),
+  { ssr: false },
 );
 
 export default function CustomerHomePage() {
   const { user, isAuthenticated, loading } = useAuth();
   const router = useRouter();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [campusFavorites, setCampusFavorites] = useState<CampusFavoriteItem[]>([]);
+  const [campusFavorites, setCampusFavorites] = useState<CampusFavoriteItem[]>(
+    [],
+  );
   const [mounted, setMounted] = useState(false);
   const [isTimeSlotModalOpen, setIsTimeSlotModalOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<MenuItem | CampusFavoriteItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<
+    MenuItem | CampusFavoriteItem | null
+  >(null);
 
   useEffect(() => {
     setMounted(true);
 
     // Role-based redirection if user is not a customer
     if (!loading && isAuthenticated && user) {
-      if (user.role === 'admin' || user.role === 'canteen_staff') {
-        console.log('[CustomerPage] User is not a customer, redirecting to admin dashboard');
-        router.replace('/admin/dashboard');
+      if (user.role === "admin" || user.role === "canteen_staff") {
+        router.replace("/admin/dashboard");
       }
     }
 
     // Only redirect if we're sure the user is not authenticated
     if (!loading && !isAuthenticated) {
-      router.push('/signin');
+      router.push("/signin");
     }
   }, [isAuthenticated, loading, user, router]);
 
   useEffect(() => {
     // Import menu data
-    import('@/data/menu').then((module) => {
+    import("@/data/menu").then((module) => {
       setMenuItems(module.menuItems);
     });
 
-    import('@/data/campusFavorites').then((module) => {
+    import("@/data/campusFavorites").then((module) => {
       setCampusFavorites(module.default);
     });
   }, []);
@@ -68,16 +71,18 @@ export default function CustomerHomePage() {
     setIsTimeSlotModalOpen(true);
   }, []);
 
-
   if (!isAuthenticated && !loading) {
     return null; // Let AuthRedirector handle the redirect
   }
 
-
   // Filter menu items by category
-  const tiffinsItems = menuItems.filter(item => item.category === 'Tiffins' && item.available);
-  const lunchSpecialsItems = menuItems.filter(item =>
-    (item.category === 'Curries' || item.category === 'Fast Food') && item.available
+  const tiffinsItems = menuItems.filter(
+    (item) => item.category === "Tiffins" && item.available,
+  );
+  const lunchSpecialsItems = menuItems.filter(
+    (item) =>
+      (item.category === "Curries" || item.category === "Fast Food") &&
+      item.available,
   );
   const campusFavoritesItems = campusFavorites;
 
@@ -109,22 +114,26 @@ export default function CustomerHomePage() {
           <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
             {loading ? (
               <div className="h-8 w-48 bg-white/20 rounded-full animate-pulse mx-auto mb-4 backdrop-blur-md border border-white/30" />
-            ) : user?.name && (
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 text-white text-sm font-medium backdrop-blur-md border border-white/30 shadow-sm mb-4">
-                👋 Welcome back, <span className="font-semibold">{user.name}!</span>
-              </div>
+            ) : (
+              user?.name && (
+                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 text-white text-sm font-medium backdrop-blur-md border border-white/30 shadow-sm mb-4">
+                  👋 Welcome back,{" "}
+                  <span className="font-semibold">{user.name}!</span>
+                </div>
+              )
             )}
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-300 to-orange-500 drop-shadow-lg">
                 Skip the Queue,
-              </span>{' '}
+              </span>{" "}
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-300 to-orange-500 drop-shadow-lg">
                 Save Your Time
               </span>
             </h1>
 
             <p className="text-lg sm:text-xl mb-10 text-white max-w-2xl mx-auto leading-relaxed font-medium">
-              Your favorite canteen dishes—just a few taps away. Order now and collect without the wait.
+              Your favorite canteen dishes—just a few taps away. Order now and
+              collect without the wait.
             </p>
 
             <div className="flex justify-center">
@@ -140,11 +149,12 @@ export default function CustomerHomePage() {
                   <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </span>
 
-                <span className="absolute inset-0 rounded-full bg-gradient-to-r 
-                from-amber-600 to-orange-700 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <span
+                  className="absolute inset-0 rounded-full bg-gradient-to-r 
+                from-amber-600 to-orange-700 opacity-0 group-hover:opacity-100 transition-opacity"
+                />
               </Link>
             </div>
-
           </div>
         </div>
       </section>
@@ -156,7 +166,9 @@ export default function CustomerHomePage() {
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">Fresh Tiffin&apos;s Today</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
+              Fresh Tiffin&apos;s Today
+            </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
               Start your day right with our delicious and healthy tiffin options
             </p>
@@ -172,14 +184,19 @@ export default function CustomerHomePage() {
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">Lunch Specials</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
+              Lunch Specials
+            </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
               Delicious curries and fast food options for your perfect lunch
             </p>
           </div>
 
           <div className="px-4">
-            <LunchSpecialsCarousel items={lunchSpecialsItems} onBuyNow={handleBuyNow} />
+            <LunchSpecialsCarousel
+              items={lunchSpecialsItems}
+              onBuyNow={handleBuyNow}
+            />
           </div>
         </div>
       </section>
@@ -188,12 +205,19 @@ export default function CustomerHomePage() {
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">Campus Favorites</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">Most Loved Dishes by Students</p>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
+              Campus Favorites
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Most Loved Dishes by Students
+            </p>
           </div>
 
           <div className="px-4">
-            <CampusFavoritesCarousel items={campusFavoritesItems} onBuyNow={handleBuyNow} />
+            <CampusFavoritesCarousel
+              items={campusFavoritesItems}
+              onBuyNow={handleBuyNow}
+            />
           </div>
         </div>
       </section>

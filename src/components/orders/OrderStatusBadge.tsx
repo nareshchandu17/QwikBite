@@ -23,7 +23,9 @@ const colorFor = (s: string) => {
 
 export default function OrderStatusBadge({ status }: Props) {
   return (
-    <span className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-full ${colorFor(status)}`}>
+    <span
+      className={`inline-flex items-center px-3 py-1 text-xs font-medium rounded-full ${colorFor(status)}`}
+    >
       {status}
     </span>
   );

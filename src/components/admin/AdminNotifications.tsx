@@ -3,20 +3,29 @@
  * Displays real-time notifications for orders, payments, and feedback
  */
 
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Bell, X, CheckCircle, AlertCircle, Package, CreditCard, MessageSquare, Menu } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
-import { usePusher } from '@/context/PusherContext';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Bell,
+  X,
+  CheckCircle,
+  AlertCircle,
+  Package,
+  CreditCard,
+  MessageSquare,
+  Menu,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import { usePusher } from "@/context/PusherContext";
 
 interface AdminNotification {
   id: string;
   title: string;
   message: string;
-  type: 'order' | 'payment' | 'feedback' | 'system' | 'alert';
-  priority: 'low' | 'normal' | 'high';
+  type: "order" | "payment" | "feedback" | "system" | "alert";
+  priority: "low" | "normal" | "high";
   icon: string;
   data?: any;
   ctaLink?: string;
@@ -31,13 +40,13 @@ export default function AdminNotifications() {
 
   const getIconComponent = (type: string, icon: string) => {
     switch (type) {
-      case 'order':
+      case "order":
         return <Package className="w-5 h-5 text-blue-500" />;
-      case 'payment':
+      case "payment":
         return <CreditCard className="w-5 h-5 text-green-500" />;
-      case 'feedback':
+      case "feedback":
         return <MessageSquare className="w-5 h-5 text-purple-500" />;
-      case 'alert':
+      case "alert":
         return <AlertCircle className="w-5 h-5 text-red-500" />;
       default:
         return <Bell className="w-5 h-5 text-gray-500" />;
@@ -47,33 +56,28 @@ export default function AdminNotifications() {
   // Listen for Pusher notifications
   useEffect(() => {
     if (!pusherClient || !isConnected) {
-      console.log('[AdminNotifications] ⚠️ Pusher not ready');
       return;
     }
 
-    console.log('[AdminNotifications] 🔌 Setting up Pusher listeners');
-
     const handleAdminNotification = (data: any) => {
-      console.log('[AdminNotifications] 📡 Received notification:', data);
-      
       const newNotification: AdminNotification = {
         id: Date.now().toString(),
-        title: data.title || 'Notification',
-        message: data.message || '',
-        type: data.type || 'system',
-        priority: data.priority || 'normal',
-        icon: data.icon || '🔔',
+        title: data.title || "Notification",
+        message: data.message || "",
+        type: data.type || "system",
+        priority: data.priority || "normal",
+        icon: data.icon || "🔔",
         data: data.data,
         ctaLink: data.ctaLink,
-        timestamp: new Date(data.timestamp || Date.now())
+        timestamp: new Date(data.timestamp || Date.now()),
       };
 
-      setNotifications(prev => [newNotification, ...prev]);
-      setUnreadCount(prev => prev + 1);
+      setNotifications((prev) => [newNotification, ...prev]);
+      setUnreadCount((prev) => prev + 1);
 
       // Show toast notification
       const toastMessage = `${data.title}: ${data.message}`;
-      if (data.priority === 'high') {
+      if (data.priority === "high") {
         toast.error(toastMessage);
       } else {
         toast.info(toastMessage);
@@ -81,22 +85,22 @@ export default function AdminNotifications() {
     };
 
     // Subscribe to admin channel
-    const adminChannel = pusherClient.subscribe('admin');
+    const adminChannel = pusherClient.subscribe("admin");
 
     // Listen for admin notifications
-    adminChannel.bind('admin_notification', handleAdminNotification);
+    adminChannel.bind("admin_notification", handleAdminNotification);
 
     // Also listen for other notification types
-    adminChannel.bind('order_notification', handleAdminNotification);
-    adminChannel.bind('payment_notification', handleAdminNotification);
-    adminChannel.bind('feedback_notification', handleAdminNotification);
+    adminChannel.bind("order_notification", handleAdminNotification);
+    adminChannel.bind("payment_notification", handleAdminNotification);
+    adminChannel.bind("feedback_notification", handleAdminNotification);
 
     return () => {
-      adminChannel.unbind('admin_notification', handleAdminNotification);
-      adminChannel.unbind('order_notification', handleAdminNotification);
-      adminChannel.unbind('payment_notification', handleAdminNotification);
-      adminChannel.unbind('feedback_notification', handleAdminNotification);
-      pusherClient.unsubscribe('admin');
+      adminChannel.unbind("admin_notification", handleAdminNotification);
+      adminChannel.unbind("order_notification", handleAdminNotification);
+      adminChannel.unbind("payment_notification", handleAdminNotification);
+      adminChannel.unbind("feedback_notification", handleAdminNotification);
+      pusherClient.unsubscribe("admin");
     };
   }, [pusherClient, isConnected]);
 
@@ -107,7 +111,7 @@ export default function AdminNotifications() {
   };
 
   const handleDismiss = useCallback((id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
   const handleMarkAllRead = useCallback(() => {
@@ -126,7 +130,7 @@ export default function AdminNotifications() {
         <Bell className="w-6 h-6 text-gray-700" />
         {unreadCount > 0 && (
           <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
-            {unreadCount > 9 ? '9+' : unreadCount}
+            {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </motion.button>
@@ -179,7 +183,10 @@ export default function AdminNotifications() {
                     >
                       <div className="flex gap-3">
                         <div className="flex-shrink-0">
-                          {getIconComponent(notification.type, notification.icon)}
+                          {getIconComponent(
+                            notification.type,
+                            notification.icon,
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm text-gray-900">
@@ -210,8 +217,10 @@ export default function AdminNotifications() {
 
             {/* Connection Status */}
             <div className="bg-gray-100 px-4 py-2 text-xs text-gray-600 flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-              {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
+              <div
+                className={`w-2 h-2 rounded-full ${isConnected ? "bg-green-500" : "bg-red-500"}`}
+              />
+              {isConnected ? "🟢 Connected" : "🔴 Disconnected"}
             </div>
           </motion.div>
         )}

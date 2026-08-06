@@ -53,8 +53,7 @@ const TRENDING_ITEMS: MenuItem[] = [
     price: 70,
     rating: 4.7,
     category: "Mocktail",
-    image:
-      "https://images.pexels.com/photos/2795026/pexels-photo-2795026.jpeg",
+    image: "https://images.pexels.com/photos/2795026/pexels-photo-2795026.jpeg",
   },
   {
     id: "4",
@@ -75,21 +74,21 @@ const TRENDING_ITEMS: MenuItem[] = [
       "https://media.istockphoto.com/id/157472912/photo/ice-cream-composition-on-a-bowl.webp?a=1&b=1&s=612x612&w=0&k=20&c=e1yPCusQJl2scx955yuv9LUcbx5e7OcARC_VgEDdz5Y=",
   },
   {
-    id: '6',
-    name: 'Watermelon Juice',
+    id: "6",
+    name: "Watermelon Juice",
     price: 40,
-    rating : 4.7,
-    image: 'https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg',
-    category: 'Juices',
-
+    rating: 4.7,
+    image: "https://images.pexels.com/photos/1337825/pexels-photo-1337825.jpeg",
+    category: "Juices",
   },
   {
     id: "7",
     name: "Dal Tadka",
     price: 20,
     rating: 4.5,
-    image: 'https://images.unsplash.com/photo-1626500155537-93690c24099e?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8ZGFsJTIwdGFka2F8ZW58MHx8MHx8fDA%3D',
-    category: 'Curries',
+    image:
+      "https://images.unsplash.com/photo-1626500155537-93690c24099e?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8ZGFsJTIwdGFka2F8ZW58MHx8MHx8fDA%3D",
+    category: "Curries",
   },
   {
     id: "8",
@@ -106,30 +105,34 @@ const TRENDING_ITEMS: MenuItem[] = [
    Component
 ======================= */
 export const TrendingSection: React.FC = () => {
-   const { openModal } = useAuthModal();
-   const router = useRouter();
+  const { openModal } = useAuthModal();
+  const router = useRouter();
 
-   const handleOrderNow = (itemName: string) => {
-     // Show toast immediately
-     toast(
-       <div className="flex items-center gap-3">
-         <span className="text-2xl">🔐</span>
-         <div>
-           <div className="font-semibold text-white">Please sign in to place your order</div>
-           <div className="text-sm text-gray-200">You need to be logged in to continue</div>
-         </div>
-       </div>,
-       {
-         duration: 3000, // Auto-dismiss in 3s
-         style: {
-           background: '#1f2937',
-           color: '#ffffff',
-           border: 'none',
-           borderRadius: '0.75rem',
-         },
-       }
-     );
-   };
+  const handleOrderNow = (itemName: string) => {
+    // Show toast immediately
+    toast(
+      <div className="flex items-center gap-3">
+        <span className="text-2xl">🔐</span>
+        <div>
+          <div className="font-semibold text-white">
+            Please sign in to place your order
+          </div>
+          <div className="text-sm text-gray-200">
+            You need to be logged in to continue
+          </div>
+        </div>
+      </div>,
+      {
+        duration: 3000, // Auto-dismiss in 3s
+        style: {
+          background: "#1f2937",
+          color: "#ffffff",
+          border: "none",
+          borderRadius: "0.75rem",
+        },
+      },
+    );
+  };
 
   return (
     <section className="py-16 bg-white overflow-hidden">
@@ -166,7 +169,8 @@ export const TrendingSection: React.FC = () => {
                 className="object-cover transition-transform duration-500 group-hover:scale-110"
               />
 
-              <div className="
+              <div
+                className="
   absolute top-3 right-3 z-10
   flex items-center gap-1.5
   bg-black/85 backdrop-blur
@@ -174,14 +178,11 @@ export const TrendingSection: React.FC = () => {
   rounded-full
   text-white text-sm font-bold
   shadow-lg shadow-black/30
-">
-  <Star
-    size={14}
-    className="text-[#FFC700] fill-[#FFC700]"
-  />
-  <span className="leading-none">{item.rating}</span>
-</div>
-
+"
+              >
+                <Star size={14} className="text-[#FFC700] fill-[#FFC700]" />
+                <span className="leading-none">{item.rating}</span>
+              </div>
 
               <div className="absolute bottom-3 left-3 bg-[#121212]/80 backdrop-blur-md text-white px-3 py-1 rounded-full text-xs font-bold uppercase">
                 {item.category}
@@ -190,18 +191,21 @@ export const TrendingSection: React.FC = () => {
 
             <div className="p-4">
               <div className="flex justify-between items-center mt-2">
-              <h3 className="font-bold text-xl text-[#121212] group-hover:text-[#FF5E1E] transition-colors font-['Syne']">
-                {item.name}
-              </h3>
+                <h3 className="font-bold text-xl text-[#121212] group-hover:text-[#FF5E1E] transition-colors font-['Syne']">
+                  {item.name}
+                </h3>
 
-              <p className="text-[#6B7280] font-bold text-lg">₹{item.price}</p>
-            </div>
+                <p className="text-[#6B7280] font-bold text-lg">
+                  ₹{item.price}
+                </p>
+              </div>
 
-            <button className="w-full mt-3 py-3 rounded-xl bg-white border-2 border-[#FF5E1E] text-[#FF5E1E] font-bold flex items-center justify-center gap-2 group-hover:bg-[#FF5E1E] group-hover:text-white transition-all cursor-pointer"
-              onClick={() => handleOrderNow(item.name)}
-            >
-              <Plus size={18} /> Order Now
-            </button>
+              <button
+                className="w-full mt-3 py-3 rounded-xl bg-white border-2 border-[#FF5E1E] text-[#FF5E1E] font-bold flex items-center justify-center gap-2 group-hover:bg-[#FF5E1E] group-hover:text-white transition-all cursor-pointer"
+                onClick={() => handleOrderNow(item.name)}
+              >
+                <Plus size={18} /> Order Now
+              </button>
             </div>
           </div>
         ))}

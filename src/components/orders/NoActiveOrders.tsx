@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { ForkKnife, ClipboardList } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { ForkKnife, ClipboardList } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 const floatingItems = [
-  { emoji: '🍕', top: '10%', left: '15%' },
-  { emoji: '🍔', top: '20%', right: '10%' },
-  { emoji: '🍦', bottom: '15%', left: '10%' },
-  { emoji: '🍜', bottom: '10%', right: '15%' },
-  { emoji: '🥐', top: '50%', right: '5%' }
+  { emoji: "🍕", top: "10%", left: "15%" },
+  { emoji: "🍔", top: "20%", right: "10%" },
+  { emoji: "🍦", bottom: "15%", left: "10%" },
+  { emoji: "🍜", bottom: "10%", right: "15%" },
+  { emoji: "🥐", top: "50%", right: "5%" },
 ];
 
 export default function NoActiveOrders() {
@@ -25,43 +25,48 @@ export default function NoActiveOrders() {
           className="absolute text-4xl opacity-40 select-none"
           style={{ ...item }}
           animate={{ y: [0, -15, 0] }}
-          transition={{ duration: 3 + index, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{
+            duration: 3 + index,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
         >
           {item.emoji}
         </motion.div>
-      ))}    
+      ))}
 
       {/* Central Content */}
       <motion.div
         className="z-10 flex flex-col items-center justify-center"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
       >
         <motion.div
           className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-white/10 backdrop-blur-md border border-white/20"
           animate={{ rotate: [0, 15, -15, 0] }}
-          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
         >
           <ForkKnife className="w-8 h-8 text-white/80" />
         </motion.div>
 
         <h1 className="text-3xl font-bold mb-2">No Active Orders Right Now!</h1>
         <p className="text-gray-400 mb-8">
-          There&apos;s currently no order being prepared. You can explore the menu or view your past orders.
+          There&apos;s currently no order being prepared. You can explore the
+          menu or view your past orders.
         </p>
 
         <div className="flex gap-4">
-          <Button 
+          <Button
             className="bg-green-500 hover:bg-green-600 text-white font-medium px-6 py-2 rounded-lg shadow-md cursor-pointer"
-            onClick={() => router.push('/menu')}
+            onClick={() => router.push("/menu")}
           >
             <ForkKnife className="w-4 h-4 mr-2" /> Go to Menu
           </Button>
 
-          <Button 
+          <Button
             className="bg-[#1c1c1e] hover:bg-[#2a2a2c] text-white font-medium px-6 py-2 rounded-lg border border-white/10 cursor-pointer"
-            onClick={() => router.push('/orders')}
+            onClick={() => router.push("/orders")}
           >
             <ClipboardList className="w-4 h-4 mr-2" /> View Orders
           </Button>

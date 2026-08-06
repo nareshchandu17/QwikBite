@@ -1,12 +1,18 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, X } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Search, Filter, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface EnhancedSearchProps {
   searchQuery: string;
@@ -57,7 +63,7 @@ export function EnhancedSearch({
             </div>
           </div>
         </div>
-        
+
         {/* Category Select Skeleton */}
         <div className="flex gap-2">
           <div className="h-11 w-24 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
@@ -86,7 +92,7 @@ export function EnhancedSearch({
               />
               {searchQuery && (
                 <button
-                  onClick={() => onSearchChange('')}
+                  onClick={() => onSearchChange("")}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   <X className="h-5 w-5 text-gray-400 hover:text-gray-600" />
@@ -95,7 +101,7 @@ export function EnhancedSearch({
             </div>
           </div>
         </div>
-        
+
         {/* Filter and Category Buttons */}
         <div className="flex gap-2">
           <Button
@@ -109,7 +115,7 @@ export function EnhancedSearch({
               <span>Filters</span>
             </span>
           </Button>
-          
+
           <div className="relative group">
             <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 p-0.5 animate-gradient-xy">
               <div className="relative h-full w-full bg-white dark:bg-gray-800 rounded-[calc(0.5rem-1px)]">
@@ -140,7 +146,7 @@ export function EnhancedSearch({
         {isFilterOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="mt-4 overflow-hidden"
           >
@@ -156,7 +162,7 @@ export function EnhancedSearch({
                   Clear all
                 </Button>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div>
                   <h4 className="font-medium mb-3">Dietary Preferences</h4>
@@ -169,7 +175,10 @@ export function EnhancedSearch({
                           onCheckedChange={() => onDietaryChange(option.id)}
                           className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
                         />
-                        <label htmlFor={`diet-${option.id}`} className="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                        <label
+                          htmlFor={`diet-${option.id}`}
+                          className="ml-2 text-sm text-gray-700 dark:text-gray-300"
+                        >
                           {option.name}
                         </label>
                       </div>

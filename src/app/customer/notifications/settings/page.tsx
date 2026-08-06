@@ -1,10 +1,25 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { ArrowLeft, Bell, BellOff, Clock, ShoppingBag, Tag, MessageSquare, AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useState } from "react";
+import {
+  ArrowLeft,
+  Bell,
+  BellOff,
+  Clock,
+  ShoppingBag,
+  Tag,
+  MessageSquare,
+  AlertCircle,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 
 type NotificationPreference = {
   id: string;
@@ -12,96 +27,116 @@ type NotificationPreference = {
   description: string;
   icon: React.ReactNode;
   enabled: boolean;
-  category: 'orders' | 'offers' | 'feedback' | 'system';
+  category: "orders" | "offers" | "feedback" | "system";
 };
 
 export default function NotificationSettings() {
   const [preferences, setPreferences] = useState<NotificationPreference[]>([
     {
-      id: 'order-updates',
-      label: 'Order Updates',
-      description: 'Get notified when your order status changes',
+      id: "order-updates",
+      label: "Order Updates",
+      description: "Get notified when your order status changes",
       icon: <ShoppingBag className="h-5 w-5 text-amber-500" />,
       enabled: true,
-      category: 'orders'
+      category: "orders",
     },
     {
-      id: 'ready-for-pickup',
-      label: 'Ready for Pickup',
-      description: 'Get notified when your order is ready',
+      id: "ready-for-pickup",
+      label: "Ready for Pickup",
+      description: "Get notified when your order is ready",
       icon: <Bell className="h-5 w-5 text-green-500" />,
       enabled: true,
-      category: 'orders'
+      category: "orders",
     },
     {
-      id: 'exclusive-offers',
-      label: 'Exclusive Offers',
-      description: 'Receive special offers and discounts',
+      id: "exclusive-offers",
+      label: "Exclusive Offers",
+      description: "Receive special offers and discounts",
       icon: <Tag className="h-5 w-5 text-blue-500" />,
       enabled: true,
-      category: 'offers'
+      category: "offers",
     },
     {
-      id: 'feedback-requests',
-      label: 'Feedback Requests',
-      description: 'Get notified to provide feedback on your orders',
+      id: "feedback-requests",
+      label: "Feedback Requests",
+      description: "Get notified to provide feedback on your orders",
       icon: <MessageSquare className="h-5 w-5 text-purple-500" />,
       enabled: true,
-      category: 'feedback'
+      category: "feedback",
     },
     {
-      id: 'system-updates',
-      label: 'System Updates',
-      description: 'Important updates about the canteen service',
+      id: "system-updates",
+      label: "System Updates",
+      description: "Important updates about the canteen service",
       icon: <AlertCircle className="h-5 w-5 text-gray-500" />,
       enabled: true,
-      category: 'system'
+      category: "system",
     },
     {
-      id: 'promotional',
-      label: 'Promotional Content',
-      description: 'Special deals and promotions from the canteen',
+      id: "promotional",
+      label: "Promotional Content",
+      description: "Special deals and promotions from the canteen",
       icon: <Tag className="h-5 w-5 text-pink-500" />,
       enabled: true,
-      category: 'offers'
+      category: "offers",
     },
   ]);
 
   const [doNotDisturb, setDoNotDisturb] = useState({
     enabled: false,
-    startTime: '22:00',
-    endTime: '07:00'
+    startTime: "22:00",
+    endTime: "07:00",
   });
 
   const togglePreference = (id: string) => {
-    setPreferences(preferences.map(pref => 
-      pref.id === id ? { ...pref, enabled: !pref.enabled } : pref
-    ));
+    setPreferences(
+      preferences.map((pref) =>
+        pref.id === id ? { ...pref, enabled: !pref.enabled } : pref,
+      ),
+    );
   };
 
-  const toggleAll = (category: 'all' | 'orders' | 'offers' | 'feedback' | 'system', enabled: boolean) => {
-    if (category === 'all') {
-      setPreferences(preferences.map(pref => ({ ...pref, enabled })));
+  const toggleAll = (
+    category: "all" | "orders" | "offers" | "feedback" | "system",
+    enabled: boolean,
+  ) => {
+    if (category === "all") {
+      setPreferences(preferences.map((pref) => ({ ...pref, enabled })));
     } else {
-      setPreferences(preferences.map(pref => 
-        pref.category === category ? { ...pref, enabled } : pref
-      ));
+      setPreferences(
+        preferences.map((pref) =>
+          pref.category === category ? { ...pref, enabled } : pref,
+        ),
+      );
     }
   };
 
   const getCategoryCount = (category: string) => {
-    return preferences.filter(p => p.category === category).length;
+    return preferences.filter((p) => p.category === category).length;
   };
 
   const getEnabledCount = (category: string) => {
-    return preferences.filter(p => p.category === category && p.enabled).length;
+    return preferences.filter((p) => p.category === category && p.enabled)
+      .length;
   };
 
   const categories = [
-    { id: 'orders', label: 'Orders', icon: <ShoppingBag className="h-4 w-4" /> },
-    { id: 'offers', label: 'Offers', icon: <Tag className="h-4 w-4" /> },
-    { id: 'feedback', label: 'Feedback', icon: <MessageSquare className="h-4 w-4" /> },
-    { id: 'system', label: 'System', icon: <AlertCircle className="h-4 w-4" /> },
+    {
+      id: "orders",
+      label: "Orders",
+      icon: <ShoppingBag className="h-4 w-4" />,
+    },
+    { id: "offers", label: "Offers", icon: <Tag className="h-4 w-4" /> },
+    {
+      id: "feedback",
+      label: "Feedback",
+      icon: <MessageSquare className="h-4 w-4" />,
+    },
+    {
+      id: "system",
+      label: "System",
+      icon: <AlertCircle className="h-4 w-4" />,
+    },
   ];
 
   return (
@@ -110,11 +145,18 @@ export default function NotificationSettings() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" className="rounded-full" onClick={() => window.history.back()}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full"
+              onClick={() => window.history.back()}
+            >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Notification Settings</h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Notification Settings
+              </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400">
                 Customize how you receive notifications
               </p>
@@ -131,15 +173,19 @@ export default function NotificationSettings() {
                   <BellOff className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg font-medium">Do Not Disturb</CardTitle>
+                  <CardTitle className="text-lg font-medium">
+                    Do Not Disturb
+                  </CardTitle>
                   <CardDescription className="text-sm">
                     Silence notifications during specific hours
                   </CardDescription>
                 </div>
               </div>
-              <Switch 
+              <Switch
                 checked={doNotDisturb.enabled}
-                onCheckedChange={(checked) => setDoNotDisturb({ ...doNotDisturb, enabled: checked })}
+                onCheckedChange={(checked) =>
+                  setDoNotDisturb({ ...doNotDisturb, enabled: checked })
+                }
                 className="data-[state=checked]:bg-amber-500"
               />
             </div>
@@ -148,7 +194,10 @@ export default function NotificationSettings() {
             <CardContent className="pt-0">
               <div className="mt-2 grid grid-cols-2 gap-4 sm:grid-cols-2">
                 <div>
-                  <label htmlFor="start-time" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label
+                    htmlFor="start-time"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
                     Start Time
                   </label>
                   <div className="relative rounded-md shadow-sm">
@@ -156,13 +205,21 @@ export default function NotificationSettings() {
                       type="time"
                       id="start-time"
                       value={doNotDisturb.startTime}
-                      onChange={(e) => setDoNotDisturb({ ...doNotDisturb, startTime: e.target.value })}
+                      onChange={(e) =>
+                        setDoNotDisturb({
+                          ...doNotDisturb,
+                          startTime: e.target.value,
+                        })
+                      }
                       className="block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white p-2"
                     />
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="end-time" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  <label
+                    htmlFor="end-time"
+                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  >
                     End Time
                   </label>
                   <div className="relative rounded-md shadow-sm">
@@ -170,7 +227,12 @@ export default function NotificationSettings() {
                       type="time"
                       id="end-time"
                       value={doNotDisturb.endTime}
-                      onChange={(e) => setDoNotDisturb({ ...doNotDisturb, endTime: e.target.value })}
+                      onChange={(e) =>
+                        setDoNotDisturb({
+                          ...doNotDisturb,
+                          endTime: e.target.value,
+                        })
+                      }
                       className="block w-full rounded-md border-gray-300 shadow-sm focus:border-amber-500 focus:ring-amber-500 sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-white p-2"
                     />
                   </div>
@@ -186,20 +248,22 @@ export default function NotificationSettings() {
         {/* Notification Categories */}
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-white">Notification Preferences</h2>
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+              Notification Preferences
+            </h2>
             <div className="flex space-x-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => toggleAll('all', true)}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => toggleAll("all", true)}
                 className="text-xs"
               >
                 Enable All
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => toggleAll('all', false)}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => toggleAll("all", false)}
                 className="text-xs"
               >
                 Disable All
@@ -211,7 +275,7 @@ export default function NotificationSettings() {
             const count = getCategoryCount(category.id);
             const enabledCount = getEnabledCount(category.id);
             const allEnabled = enabledCount === count;
-            
+
             return (
               <Card key={category.id} className="overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
@@ -220,27 +284,32 @@ export default function NotificationSettings() {
                       {category.icon}
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900 dark:text-white">{category.label}</h3>
+                      <h3 className="font-medium text-gray-900 dark:text-white">
+                        {category.label}
+                      </h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
                         {enabledCount} of {count} enabled
                       </p>
                     </div>
                   </div>
-                  <Switch 
+                  <Switch
                     checked={allEnabled}
-                    onCheckedChange={(checked) => toggleAll(category.id as any, checked)}
+                    onCheckedChange={(checked) =>
+                      toggleAll(category.id as any, checked)
+                    }
                     className="data-[state=checked]:bg-amber-500"
                   />
                 </div>
                 <div className="divide-y divide-gray-100 dark:divide-gray-800">
                   {preferences
-                    .filter(pref => pref.category === category.id)
+                    .filter((pref) => pref.category === category.id)
                     .map((preference) => (
-                      <div key={preference.id} className="px-6 py-4 flex items-center justify-between">
+                      <div
+                        key={preference.id}
+                        className="px-6 py-4 flex items-center justify-between"
+                      >
                         <div className="flex items-start space-x-4">
-                          <div className="mt-0.5">
-                            {preference.icon}
-                          </div>
+                          <div className="mt-0.5">{preference.icon}</div>
                           <div>
                             <h4 className="text-sm font-medium text-gray-900 dark:text-white">
                               {preference.label}
@@ -250,9 +319,11 @@ export default function NotificationSettings() {
                             </p>
                           </div>
                         </div>
-                        <Switch 
+                        <Switch
                           checked={preference.enabled}
-                          onCheckedChange={() => togglePreference(preference.id)}
+                          onCheckedChange={() =>
+                            togglePreference(preference.id)
+                          }
                           className="data-[state=checked]:bg-amber-500"
                         />
                       </div>

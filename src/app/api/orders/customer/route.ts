@@ -1,13 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '@/lib/db';
-import { Order, OrderStatus, PaymentStatus } from '@/models/order.model';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import logger from "@/lib/logger";
+import { NextRequest, NextResponse } from "next/server";
+import { connectDB } from "@/lib/db";
+import { Order, OrderStatus, PaymentStatus } from "@/models/order.model";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 const jsonResponse = (data: unknown, status = 200) => {
   return new NextResponse(JSON.stringify(data), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { "Content-Type": "application/json" },
   });
 };
 
@@ -18,26 +19,24 @@ export async function GET(request: NextRequest) {
 
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return jsonResponse({ error: 'Unauthorized' }, 401);
+      return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
     const userId = session.user.id;
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
+    const status = searchParams.get("status");
 
     const query: any = { user: userId };
     if (status) {
       query.status = status;
     }
 
-    const orders = await Order.find(query)
-      .sort({ createdAt: -1 })
-      .lean();
+    const orders = await Order.find(query).sort({ createdAt: -1 }).lean();
 
     return jsonResponse(orders);
   } catch (error) {
-    console.error('[Customer Orders GET] Error:', error);
-    return jsonResponse({ error: 'Failed to fetch orders' }, 500);
+    logger.error("[Customer Orders GET] Error:", error);
+    return jsonResponse({ error: "Failed to fetch orders" }, 500);
   }
 }
 
@@ -48,69 +47,84 @@ export async function POST(request: NextRequest) {
 
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return jsonResponse({ error: 'Unauthorized' }, 401);
+      return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
     const body = await request.json();
-    const { orderId, items, price, total, timeSlot, paymentMethod, username } = body;
+    const { orderId, items, price, total, timeSlot, paymentMethod, username } =
+      body;
 
     const generatedOrderId = orderId || `ORD-${Date.now()}`;
 
     const numericTotal =
-      typeof total === 'number'
+      typeof total === "number"
         ? total
-        : typeof price === 'number'
+        : typeof price === "number"
           ? price
-          : parseFloat(String(total ?? price ?? 0).replace(/[^0-9.]/g, '')) || 0;
-    
+          : parseFloat(String(total ?? price ?? 0).replace(/[^0-9.]/g, "")) ||
+            0;
+
     // Map fields to consolidated model
     const newOrder = await Order.create({
       orderId: generatedOrderId,
       user: session.user.id,
-      items: Array.isArray(items) ? items.map((item: any) => ({
-        menuItem: item.menuItem || item.id,
-        name: item.name,
-        quantity: item.quantity,
-        price: item.price,
-        prepTime: item.prepTime || 5
-      })) : [],
+      items: Array.isArray(items)
+        ? items.map((item: any) => ({
+            menuItem: item.menuItem || item.id,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            prepTime: item.prepTime || 5,
+          }))
+        : [],
       totalAmount: numericTotal,
       total: numericTotal,
       price: numericTotal,
       status: OrderStatus.PENDING,
-      paymentStatus: (paymentMethod === 'cod' || paymentMethod === 'cash') ? PaymentStatus.PENDING : PaymentStatus.PAID,
-      paymentMethod: paymentMethod || 'online',
+      paymentStatus:
+        paymentMethod === "cod" || paymentMethod === "cash"
+          ? PaymentStatus.PENDING
+          : PaymentStatus.PAID,
+      paymentMethod: paymentMethod || "online",
       pickupTime: timeSlot ? new Date() : undefined, // Placeholder for now, should be parsed correctly
       timeSlot: timeSlot || undefined,
-      username: username || session.user.name || session.user.email || 'Customer',
+      username:
+        username || session.user.name || session.user.email || "Customer",
     });
 
-    console.log(`✅ Customer Order Created: ${newOrder.orderId}`);
+    logger.info(`✅ Customer Order Created: ${newOrder.orderId}`);
 
     // Notify Admins in Real-time and Store in DB
     try {
-      const { NotificationService } = await import('@/lib/services/notificationService');
-      await NotificationService.notifyAdminsNewOrder(newOrder);
+      const { NotificationService } =
+        await import("@/lib/services/notification.service");
+      await NotificationService.notifyAdmin({
+        title: 'New Order',
+        message: `New order ${newOrder.orderId} received`,
+        type: 'order'
+      });
     } catch (notifErr) {
-      console.error('[Customer Orders POST] Notification error:', notifErr);
+      logger.error("[Customer Orders POST] Notification error:", notifErr);
     }
 
     return jsonResponse(newOrder, 201);
-
   } catch (error) {
-    console.error('❌ [Customer Orders POST] Detailed Error:', {
+    logger.error("❌ [Customer Orders POST] Detailed Error:", {
       message: error instanceof Error ? error.message : String(error),
-      name: error instanceof Error ? error.name : 'UnknownError',
+      name: error instanceof Error ? error.name : "UnknownError",
       code: (error as any).code,
       keyPattern: (error as any).keyPattern,
       keyValue: (error as any).keyValue,
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
-    
-    return jsonResponse({ 
-      error: 'Failed to create order', 
-      details: error instanceof Error ? error.message : String(error),
-      code: (error as any).code
-    }, 500);
+
+    return jsonResponse(
+      {
+        error: "Failed to create order",
+        details: error instanceof Error ? error.message : String(error),
+        code: (error as any).code,
+      },
+      500,
+    );
   }
 }

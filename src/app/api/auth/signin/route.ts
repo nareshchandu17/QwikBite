@@ -1,3 +1,4 @@
+import logger from "@/lib/logger";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { connectDB } from "@/lib/db";
@@ -6,10 +7,10 @@ import { generateToken, setAuthCookie } from "@/lib/auth";
 
 /**
  * POST /api/auth/signin
- * 
+ *
  * Authenticate user with email and password.
  * Returns user data with role for NextAuth to create session.
- * 
+ *
  * ✅ Returns JSON only (no HTML, no redirects)
  * ✅ Includes role in response
  */
@@ -23,9 +24,9 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: "Email and password are required"
+          error: "Email and password are required",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -33,15 +34,17 @@ export async function POST(req: Request) {
     await connectDB();
 
     // Find user by email
-    const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
+    const user = await User.findOne({ email: email.toLowerCase() }).select(
+      "+password",
+    );
 
     if (!user || !user.password) {
       return NextResponse.json(
         {
           success: false,
-          error: "Invalid email or password"
+          error: "Invalid email or password",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -52,18 +55,18 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           success: false,
-          error: "Invalid email or password"
+          error: "Invalid email or password",
         },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     // ✅ Success: Return user with role (normalized to lowercase) and JWT token
     const userRole = (user.role || "customer").toLowerCase();
-    console.log('[signin] ✅ User authenticated:', {
+    logger.info("[signin] ✅ User authenticated:", {
       id: user._id.toString(),
       email: user.email,
-      role: userRole
+      role: userRole,
     });
 
     // Generate JWT token for API authentication
@@ -72,11 +75,14 @@ export async function POST(req: Request) {
       email: user.email,
       name: user.name,
       role: userRole,
-      regNo: user.regNo
+      regNo: user.regNo,
     };
-    
+
     const token = generateToken(tokenPayload);
-    console.log('[signin] ✅ JWT token generated for user:', user._id.toString());
+    logger.info(
+      "[signin] ✅ JWT token generated for user:",
+      user._id.toString(),
+    );
 
     // Create response and set auth cookie
     const response = NextResponse.json(
@@ -92,7 +98,7 @@ export async function POST(req: Request) {
         },
         token: token, // Include token in response for client-side storage
       },
-      { status: 200 }
+      { status: 200 },
     );
 
     // Set auth cookie for API authentication
@@ -100,13 +106,13 @@ export async function POST(req: Request) {
 
     return response;
   } catch (error) {
-    console.error('[signin] ❌ Signin error:', error);
+    logger.error("[signin] ❌ Signin error:", error);
     return NextResponse.json(
       {
         success: false,
-        error: "Server error. Try again later."
+        error: "Server error. Try again later.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

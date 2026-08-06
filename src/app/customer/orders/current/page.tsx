@@ -1,26 +1,24 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import NoActiveOrders from '@/components/orders/NoActiveOrders';
-import OrderStatus from '@/components/orders/OrderStatus';
+import { useEffect, useState } from "react";
+import NoActiveOrders from "@/components/orders/NoActiveOrders";
+import OrderStatus from "@/components/orders/OrderStatus";
 
 export default function CurrentOrderPage() {
   const [activeOrder, setActiveOrder] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Replace with actual API call to fetch active order
     const fetchActiveOrder = async () => {
       try {
         // Example API call - replace with your actual API endpoint
         // const response = await fetch('/api/orders/active');
         // const data = await response.json();
         // setActiveOrder(data);
-        
+
         // For now, we'll simulate no active orders
         setActiveOrder(null);
       } catch (error) {
-        console.error('Error fetching active order:', error);
       } finally {
         setLoading(false);
       }

@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { ArrowLeft, Send, Mail, Key, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuthModal } from '@/context/AuthModalContext';
+import { useAuthModal } from "@/context/AuthModalContext";
 
 type ForgotPasswordCardProps = {
   onSuccess?: () => void;
@@ -27,42 +27,43 @@ export function ForgotPasswordCard({
     e.preventDefault();
 
     if (!email) {
-      toast.error('Please enter your college email address');
+      toast.error("Please enter your college email address");
       return;
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      toast.error('Please enter a valid email address');
+      toast.error("Please enter a valid email address");
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await fetch('/api/auth/reset-password', {
-        method: 'POST',
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ email }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to send reset link');
+        throw new Error(error.message || "Failed to send reset link");
       }
 
-      toast.success('Reset link sent! Please check your email.');
+      toast.success("Reset link sent! Please check your email.");
       // Navigate to email confirmation modal
       closeModal();
       setTimeout(() => {
-        openModal('emailconfirmation', undefined, { email });
+        openModal("emailconfirmation", undefined, { email });
       }, 100);
     } catch (error) {
-      console.error('Password reset error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to send reset link');
+      toast.error(
+        error instanceof Error ? error.message : "Failed to send reset link",
+      );
     } finally {
       setLoading(false);
     }
@@ -72,7 +73,7 @@ export function ForgotPasswordCard({
     <motion.div
       className={cn(
         "relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden",
-        className
+        className,
       )}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -84,8 +85,19 @@ export function ForgotPasswordCard({
         className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors z-20"
         aria-label="Go back to sign in"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
         </svg>
       </button>
 
@@ -102,17 +114,20 @@ export function ForgotPasswordCard({
           Reset your password
         </h2>
         <p className="text-gray-500 dark:text-gray-400 text-sm max-w-xs mx-auto">
-          No worries! It happens to the best of us. Let&apos;s get you back to your food.
+          No worries! It happens to the best of us. Let&apos;s get you back to
+          your food.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="px-8 py-4 space-y-6">
         <div className="relative group">
-          <div className={cn(
-            "flex flex-col transition-all rounded-2xl bg-orange-50/30",
-            "group-focus-within:bg-white group-focus-within:shadow-sm",
-            isFocused && "bg-white shadow-sm"
-          )}>
+          <div
+            className={cn(
+              "flex flex-col transition-all rounded-2xl bg-orange-50/30",
+              "group-focus-within:bg-white group-focus-within:shadow-sm",
+              isFocused && "bg-white shadow-sm",
+            )}
+          >
             <div className="relative flex items-center px-4 h-16">
               <input
                 type="email"
@@ -145,7 +160,7 @@ export function ForgotPasswordCard({
             "hover:brightness-105 active:scale-[0.98] transition-all rounded-full",
             "text-white text-base font-bold flex items-center justify-center gap-2",
             "shadow-xl shadow-orange-200",
-            loading ? "opacity-70 cursor-not-allowed" : ""
+            loading ? "opacity-70 cursor-not-allowed" : "",
           )}
           whileHover={{ scale: loading ? 1 : 1.02 }}
           whileTap={{ scale: loading ? 1 : 0.98 }}
@@ -176,7 +191,9 @@ export function ForgotPasswordCard({
 
       <div className="my-6 flex items-center gap-4 px-8">
         <div className="h-[1px] flex-1 bg-orange-100"></div>
-        <span className="text-orange-300 text-[10px] font-bold uppercase tracking-[0.2em]">Or</span>
+        <span className="text-orange-300 text-[10px] font-bold uppercase tracking-[0.2em]">
+          Or
+        </span>
         <div className="h-[1px] flex-1 bg-orange-100"></div>
       </div>
 

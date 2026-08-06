@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
-type ScrollDirection = 'up' | 'down' | null;
+type ScrollDirection = "up" | "down" | null;
 
 interface UseScrollDirectionOptions {
   threshold?: number;
@@ -13,12 +13,13 @@ export function useScrollDirection({
   threshold = 10,
   initialDirection = null,
 }: UseScrollDirectionOptions = {}): ScrollDirection {
-  const [scrollDirection, setScrollDirection] = useState<ScrollDirection>(initialDirection);
+  const [scrollDirection, setScrollDirection] =
+    useState<ScrollDirection>(initialDirection);
   const [lastScrollY, setLastScrollY] = useState(0);
 
   useEffect(() => {
     // Only run on client side
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     let ticking = false;
 
@@ -30,10 +31,13 @@ export function useScrollDirection({
         return;
       }
 
-      const direction = scrollY > lastScrollY ? 'down' : 'up';
-      
+      const direction = scrollY > lastScrollY ? "down" : "up";
+
       // Only update if direction changes or if we're past the threshold
-      if (scrollDirection !== direction && (scrollY > threshold || scrollY === 0)) {
+      if (
+        scrollDirection !== direction &&
+        (scrollY > threshold || scrollY === 0)
+      ) {
         setScrollDirection(direction);
       }
 
@@ -48,10 +52,10 @@ export function useScrollDirection({
       }
     };
 
-    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
 
     return () => {
-      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener("scroll", onScroll);
     };
   }, [lastScrollY, scrollDirection, threshold]);
 

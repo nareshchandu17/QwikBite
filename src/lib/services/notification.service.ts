@@ -1,19 +1,20 @@
+import logger from "@/lib/logger";
 /**
  * Notification Service
  * Handles creating and sending notifications to admin and customers
  */
 
-import { pusherServer } from '@/lib/pusher';
-import { connectDB } from '@/lib/db';
-import { Notification } from '@/lib/models/Notification';
-import mongoose from 'mongoose';
+import { pusherServer } from "@/lib/pusher";
+import { connectDB } from "@/lib/db";
+import { Notification } from "@/models/notification.model";
+import mongoose from "mongoose";
 
 export interface NotificationPayload {
   userId: string;
   title: string;
   message: string;
-  type: 'order' | 'payment' | 'menu' | 'feedback' | 'system' | 'alert';
-  priority?: 'low' | 'normal' | 'high';
+  type: "order" | "payment" | "menu" | "feedback" | "system" | "alert";
+  priority?: "low" | "normal" | "high";
   icon?: string;
   ctaLink?: string;
   data?: unknown;
@@ -28,10 +29,10 @@ export class NotificationService {
   static async notifyCustomer(payload: NotificationPayload) {
     try {
       await connectDB();
-      
+
       // Validate userId
       if (!mongoose.Types.ObjectId.isValid(payload.userId)) {
-        console.error('[NotificationService] Invalid userId:', payload.userId);
+        logger.error("[NotificationService] Invalid userId:", payload.userId);
         return null;
       }
 
@@ -41,45 +42,48 @@ export class NotificationService {
         title: payload.title,
         message: payload.message,
         type: payload.type,
-        priority: payload.priority || 'normal',
+        priority: payload.priority || "normal",
         icon: payload.icon,
         ctaLink: payload.ctaLink,
         data: payload.data,
         isRead: false,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       });
 
-      console.log(`[NotificationService] ✅ Notification created for customer ${payload.userId}`);
+      logger.info(
+        `[NotificationService] ✅ Notification created for customer ${payload.userId}`,
+      );
 
       // Emit WebSocket event for real-time delivery
       try {
         const channel = `user-${payload.userId}`;
-        await pusherServer.trigger(
-          channel,
-          'new_notification',
-          {
-            id: notification._id?.toString(),
-            userId: notification.userId?.toString(),
-            title: notification.title,
-            message: notification.message,
-            type: notification.type,
-            priority: notification.priority,
-            icon: notification.icon,
-            data: notification.data,
-            ctaLink: notification.ctaLink,
-            isRead: false,
-            timestamp: notification.createdAt
-          }
+        await pusherServer.trigger(channel, "new_notification", {
+          id: notification._id?.toString(),
+          userId: notification.user?.toString() || payload.userId,
+          title: notification.title,
+          message: notification.message,
+          type: notification.type,
+          priority: notification.priority,
+          icon: notification.icon,
+          data: notification.metadata || payload.data,
+          ctaLink: notification.deepLink || payload.ctaLink,
+          isRead: false,
+          timestamp: notification.createdAt,
+        });
+        logger.info(
+          `[NotificationService] 📡 WebSocket event sent to customer ${payload.userId}`,
         );
-        console.log(`[NotificationService] 📡 WebSocket event sent to customer ${payload.userId}`);
       } catch (wsError) {
-        console.warn('[NotificationService] ⚠️ WebSocket event failed, notification still saved:', wsError);
+        logger.warn(
+          "[NotificationService] ⚠️ WebSocket event failed, notification still saved:",
+          wsError,
+        );
       }
 
       return notification;
     } catch (error) {
-      console.error('[NotificationService] ❌ Error notifying customer:', error);
+      logger.error("[NotificationService] ❌ Error notifying customer:", error);
       return null;
     }
   }
@@ -87,26 +91,33 @@ export class NotificationService {
   /**
    * Send notification to all customers (broadcast)
    */
-  static async notifyAllCustomers(payload: Omit<NotificationPayload, 'userId'>) {
+  static async notifyAllCustomers(
+    payload: Omit<NotificationPayload, "userId">,
+  ) {
     try {
       await connectDB();
 
       // Broadcast via WebSocket
-      await pusherServer.trigger('broadcast', 'new_notification', {
+      await pusherServer.trigger("broadcast", "new_notification", {
         title: payload.title,
         message: payload.message,
         type: payload.type,
-        priority: payload.priority || 'normal',
+        priority: payload.priority || "normal",
         icon: payload.icon,
         ctaLink: payload.ctaLink,
         data: payload.data,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
 
-      console.log('[NotificationService] 📡 Broadcast notification sent to all customers');
+      logger.info(
+        "[NotificationService] 📡 Broadcast notification sent to all customers",
+      );
       return true;
     } catch (error) {
-      console.error('[NotificationService] ❌ Error broadcasting notification:', error);
+      logger.error(
+        "[NotificationService] ❌ Error broadcasting notification:",
+        error,
+      );
       return false;
     }
   }
@@ -114,7 +125,9 @@ export class NotificationService {
   /**
    * Send notification to admin
    */
-  static async notifyAdmin(payload: Omit<NotificationPayload, 'userId'> & { adminIds?: string[] }) {
+  static async notifyAdmin(
+    payload: Omit<NotificationPayload, "userId"> & { adminIds?: string[] },
+  ) {
     try {
       const { adminIds, ...notificationData } = payload;
 
@@ -122,38 +135,36 @@ export class NotificationService {
         // Send to specific admins
         for (const adminId of adminIds) {
           const channel = `user-${adminId}`;
-          await pusherServer.trigger(
-            channel,
-            'admin_notification',
-            {
-              title: notificationData.title,
-              message: notificationData.message,
-              type: notificationData.type,
-              priority: notificationData.priority || 'high',
-              icon: notificationData.icon,
-              data: notificationData.data,
-              timestamp: new Date()
-            }
-          );
+          await pusherServer.trigger(channel, "admin_notification", {
+            title: notificationData.title,
+            message: notificationData.message,
+            type: notificationData.type,
+            priority: notificationData.priority || "high",
+            icon: notificationData.icon,
+            data: notificationData.data,
+            timestamp: new Date(),
+          });
         }
-        console.log(`[NotificationService] 📡 Admin notification sent to ${adminIds.length} admins`);
+        logger.info(
+          `[NotificationService] 📡 Admin notification sent to ${adminIds.length} admins`,
+        );
       } else {
         // Broadcast to all connected admins
-        await pusherServer.trigger('admin', 'admin_notification', {
+        await pusherServer.trigger("admin", "admin_notification", {
           title: notificationData.title,
           message: notificationData.message,
           type: notificationData.type,
-          priority: notificationData.priority || 'high',
+          priority: notificationData.priority || "high",
           icon: notificationData.icon,
           data: notificationData.data,
-          timestamp: new Date()
+          timestamp: new Date(),
         });
-        console.log('[NotificationService] 📡 Admin notification broadcast');
+        logger.info("[NotificationService] 📡 Admin notification broadcast");
       }
 
       return true;
     } catch (error) {
-      console.error('[NotificationService] ❌ Error notifying admin:', error);
+      logger.error("[NotificationService] ❌ Error notifying admin:", error);
       return false;
     }
   }
@@ -166,29 +177,32 @@ export class NotificationService {
       await connectDB();
 
       if (!mongoose.Types.ObjectId.isValid(notificationId)) {
-        throw new Error('Invalid notification ID');
+        throw new Error("Invalid notification ID");
       }
 
       const notification = await Notification.findByIdAndUpdate(
         notificationId,
         { isRead: true, updatedAt: new Date() },
-        { new: true }
+        { new: true },
       );
 
       if (!notification) {
-        throw new Error('Notification not found');
+        throw new Error("Notification not found");
       }
 
       // Emit update event
       const channel = `user-${userId}`;
-      await pusherServer.trigger(channel, 'notification_updated', {
+      await pusherServer.trigger(channel, "notification_updated", {
         notificationId,
-        isRead: true
+        isRead: true,
       });
 
       return notification;
     } catch (error) {
-      console.error('[NotificationService] ❌ Error marking notification as read:', error);
+      logger.error(
+        "[NotificationService] ❌ Error marking notification as read:",
+        error,
+      );
       return null;
     }
   }
@@ -201,20 +215,23 @@ export class NotificationService {
       await connectDB();
 
       if (!mongoose.Types.ObjectId.isValid(notificationId)) {
-        throw new Error('Invalid notification ID');
+        throw new Error("Invalid notification ID");
       }
 
       await Notification.findByIdAndDelete(notificationId);
 
       // Emit delete event
       const channel = `user-${userId}`;
-      await pusherServer.trigger(channel, 'notification_deleted', {
-        notificationId
+      await pusherServer.trigger(channel, "notification_deleted", {
+        notificationId,
       });
 
       return true;
     } catch (error) {
-      console.error('[NotificationService] ❌ Error deleting notification:', error);
+      logger.error(
+        "[NotificationService] ❌ Error deleting notification:",
+        error,
+      );
       return false;
     }
   }

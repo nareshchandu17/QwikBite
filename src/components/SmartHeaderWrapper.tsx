@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { motion, AnimatePresence } from 'framer-motion';
-import { ReactNode, useEffect, useState } from 'react';
-import { useScrollDirection } from '@/hooks/useScrollDirection';
+import { motion, AnimatePresence } from "framer-motion";
+import { ReactNode, useEffect, useState } from "react";
+import { useScrollDirection } from "@/hooks/useScrollDirection";
 
 interface SmartHeaderWrapperProps {
   children: ReactNode;
@@ -30,7 +30,7 @@ export function SmartHeaderWrapper({
 
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
+
       // Always show header at the top of the page
       if (currentScrollY < threshold) {
         setIsVisible(true);
@@ -38,15 +38,15 @@ export function SmartHeaderWrapper({
       }
 
       // Show/hide based on scroll direction
-      if (scrollDirection === 'down') {
+      if (scrollDirection === "down") {
         setIsVisible(false);
-      } else if (scrollDirection === 'up') {
+      } else if (scrollDirection === "up") {
         setIsVisible(true);
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, [scrollDirection, threshold, hideOnScrollDown]);
 
   return (
@@ -61,10 +61,10 @@ export function SmartHeaderWrapper({
         ease: [0.4, 0, 0.2, 1], // Custom easing for smooth motion
       }}
       style={{
-        position: 'sticky',
+        position: "sticky",
         top: 0,
         zIndex: 100,
-        willChange: 'transform, opacity',
+        willChange: "transform, opacity",
       }}
     >
       {children}

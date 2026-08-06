@@ -24,7 +24,6 @@ interface Message {
    Main Assistant Component
 --------------------------------------------- */
 
-
 const SUGGESTIONS = [
   "Track my current order",
   "What can I order right now?",
@@ -36,7 +35,7 @@ export default function QwikBiteAssistant() {
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([
-    { sender: "ai", text: "Ready to assist. What do you need?" }
+    { sender: "ai", text: "Ready to assist. What do you need?" },
   ]);
   const [loading, setLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -82,16 +81,19 @@ export default function QwikBiteAssistant() {
           pageContext,
           userState: {
             cartItems: [],
-            activeOrderId: undefined
-          }
-        })
+            activeOrderId: undefined,
+          },
+        }),
       });
 
       if (!response.ok) {
         setLoading(false);
         const errorText = await response.text();
-        let friendly = "I couldn't reach the assistant service right now. Please try again in a moment.";
-        if (response.status === 401) friendly = "Please sign in to your account to use qwikBite Assistant.";
+        let friendly =
+          "I couldn't reach the assistant service right now. Please try again in a moment.";
+        if (response.status === 401)
+          friendly =
+            "Please sign in to your account to use qwikBite Assistant.";
 
         await streamMessage(friendly);
         return;
@@ -109,7 +111,7 @@ export default function QwikBiteAssistant() {
       }
     } catch (error) {
       setLoading(false);
-      console.error("Assistant error:", error);
+
       await streamMessage("Service temporarily unavailable. Please try again.");
     } finally {
       setLoading(false);
@@ -122,24 +124,26 @@ export default function QwikBiteAssistant() {
   const streamMessage = async (fullText: string, buttons?: any[]) => {
     setIsTyping(true);
     let currentText = "";
-    
+
     // Create new AI message slot
-    setMessages(prev => [...prev, { sender: "ai", text: "" }]);
-    
-    const words = fullText.split(' ');
+    setMessages((prev) => [...prev, { sender: "ai", text: "" }]);
+
+    const words = fullText.split(" ");
     for (let i = 0; i < words.length; i++) {
       currentText += (i === 0 ? "" : " ") + words[i];
-      setMessages(prev => {
+      setMessages((prev) => {
         const last = [...prev];
         last[last.length - 1] = { ...last[last.length - 1], text: currentText };
         return last;
       });
       // Small delay per word for realistic feel
-      await new Promise(resolve => setTimeout(resolve, 30 + Math.random() * 40));
+      await new Promise((resolve) =>
+        setTimeout(resolve, 30 + Math.random() * 40),
+      );
     }
-    
+
     if (buttons) {
-      setMessages(prev => {
+      setMessages((prev) => {
         const last = [...prev];
         last[last.length - 1] = { ...last[last.length - 1], buttons };
         return last;
@@ -170,7 +174,10 @@ export default function QwikBiteAssistant() {
     }
   }
 
-  async function handleButtonClick(action: string, params?: Record<string, any>) {
+  async function handleButtonClick(
+    action: string,
+    params?: Record<string, any>,
+  ) {
     if (action === "navigate" && params?.page) {
       router.push(`/customer/${params.page}`);
       return;
@@ -182,7 +189,9 @@ export default function QwikBiteAssistant() {
       // Auto-submit
       const form = document.querySelector("form");
       if (form) {
-        form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+        form.dispatchEvent(
+          new Event("submit", { cancelable: true, bubbles: true }),
+        );
       }
       return;
     }
@@ -196,7 +205,7 @@ export default function QwikBiteAssistant() {
     if (chatRef.current) {
       const scrollOptions: ScrollToOptions = {
         top: chatRef.current.scrollHeight,
-        behavior: messages.length <= 2 ? 'auto' : 'smooth'
+        behavior: messages.length <= 2 ? "auto" : "smooth",
       };
       chatRef.current.scrollTo(scrollOptions);
     }
@@ -216,9 +225,9 @@ export default function QwikBiteAssistant() {
               >
                 {/* Glossy Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-700"></div>
-                
+
                 <Sparkles className="w-6 h-6 relative z-10 animate-[pulse_3s_infinite]" />
-                
+
                 {/* Status Dot with Ping */}
                 <span className="absolute top-2 right-2 flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
@@ -249,146 +258,160 @@ export default function QwikBiteAssistant() {
                 borderBottomLeftRadius: window.innerWidth < 768 ? 0 : 24,
                 borderBottomRightRadius: window.innerWidth < 768 ? 0 : 0,
                 transition: "transform 0.3s cubic-bezier(.4,0,.2,1)",
-                boxShadow: "0 0 24px 0 rgba(0,0,0,0.06)"
+                boxShadow: "0 0 24px 0 rgba(0,0,0,0.06)",
               }}
             >
-          {/* Header */}
-          <div className="flex items-center px-6 pt-6 pb-3 border-b border-gray-100 gap-2">
-            <h2 className="font-serif font-black text-lg tracking-tighter text-[hsl(222.2_84%_4.9%)] flex-grow min-w-0 truncate">
-              <span className="bg-gradient-to-r from-[hsl(24_85%_55%)] to-[hsl(35_100%_50%)] bg-clip-text text-transparent">
-                Canteen
-              </span>
-              <span className="text-[hsl(222.2_84%_4.9%)] ml-1">Buddy Assistant</span>
-            </h2>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="p-2 rounded-full hover:bg-gray-100 text-gray-500 flex-shrink-0 ml-2 cursor-pointer"
-              aria-label="Close Assistant"
-              style={{ pointerEvents: 'auto' }}
-            >
-              <span className="text-xl">×</span>
-            </button>
-          </div>
-
-          {/* Intro Section */}
-          <div className="px-6 pt-4 pb-2 text-gray-700 text-sm border-b border-gray-50">
-            I can help you understand orders, availability, and next steps.
-          </div>
-
-          {/* Chat Messages */}
-          <div 
-            ref={chatRef}
-            className="flex-1 overflow-y-auto px-6 py-4 space-y-4 min-h-[200px] max-h-[300px]"
-          >
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] px-4 py-2 rounded-2xl ${
-                    message.sender === 'user'
-                      ? 'bg-amber-400 text-white rounded-br-sm'
-                      : 'bg-gray-100 text-gray-900 rounded-bl-sm'
-                  }`}
+              {/* Header */}
+              <div className="flex items-center px-6 pt-6 pb-3 border-b border-gray-100 gap-2">
+                <h2 className="font-serif font-black text-lg tracking-tighter text-[hsl(222.2_84%_4.9%)] flex-grow min-w-0 truncate">
+                  <span className="bg-gradient-to-r from-[hsl(24_85%_55%)] to-[hsl(35_100%_50%)] bg-clip-text text-transparent">
+                    Canteen
+                  </span>
+                  <span className="text-[hsl(222.2_84%_4.9%)] ml-1">
+                    Buddy Assistant
+                  </span>
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setOpen(false)}
+                  className="p-2 rounded-full hover:bg-gray-100 text-gray-500 flex-shrink-0 ml-2 cursor-pointer"
+                  aria-label="Close Assistant"
+                  style={{ pointerEvents: "auto" }}
                 >
-                  <p className="text-sm break-words">{message.text}</p>
-                  {message.buttons && (
-                    <div className="mt-2 space-y-2">
-                      {message.buttons.map((button, btnIndex) => (
-                        <button
-                          key={btnIndex}
-                          onClick={() => handleButtonClick(button.action, button.params)}
-                          className={`w-full px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                            button.variant === 'primary'
-                              ? 'bg-amber-500 text-white hover:bg-amber-600'
-                              : button.variant === 'danger'
-                              ? 'bg-red-500 text-white hover:bg-red-600'
-                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                          }`}
-                        >
-                          {button.label}
-                        </button>
-                      ))}
+                  <span className="text-xl">×</span>
+                </button>
+              </div>
+
+              {/* Intro Section */}
+              <div className="px-6 pt-4 pb-2 text-gray-700 text-sm border-b border-gray-50">
+                I can help you understand orders, availability, and next steps.
+              </div>
+
+              {/* Chat Messages */}
+              <div
+                ref={chatRef}
+                className="flex-1 overflow-y-auto px-6 py-4 space-y-4 min-h-[200px] max-h-[300px]"
+              >
+                {messages.map((message, index) => (
+                  <div
+                    key={index}
+                    className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[80%] px-4 py-2 rounded-2xl ${
+                        message.sender === "user"
+                          ? "bg-amber-400 text-white rounded-br-sm"
+                          : "bg-gray-100 text-gray-900 rounded-bl-sm"
+                      }`}
+                    >
+                      <p className="text-sm break-words">{message.text}</p>
+                      {message.buttons && (
+                        <div className="mt-2 space-y-2">
+                          {message.buttons.map((button, btnIndex) => (
+                            <button
+                              key={btnIndex}
+                              onClick={() =>
+                                handleButtonClick(button.action, button.params)
+                              }
+                              className={`w-full px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                                button.variant === "primary"
+                                  ? "bg-amber-500 text-white hover:bg-amber-600"
+                                  : button.variant === "danger"
+                                    ? "bg-red-500 text-white hover:bg-red-600"
+                                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                              }`}
+                            >
+                              {button.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {(loading || isTyping) && (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-100 text-gray-900 rounded-2xl rounded-bl-sm px-4 py-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div
+                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.1s" }}
+                        ></div>
+                        <div
+                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                          style={{ animationDelay: "0.2s" }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Suggestions */}
+              <div className="flex flex-col gap-2 px-6 py-4">
+                {SUGGESTIONS.map((s, i) => (
+                  <button
+                    key={i}
+                    className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 bg-white hover:bg-amber-50 hover:border-amber-200 transition-all duration-200 font-medium text-gray-900 shadow-sm hover:shadow-md text-sm"
+                    onClick={() => handleSuggestionClick(s)}
+                    disabled={loading}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+
+              {/* Info Callout */}
+              <div className="mx-6 mb-2 mt-1 bg-gray-50 border border-dashed border-gray-200 rounded-lg p-3 flex items-center gap-2 text-xs text-gray-700">
+                <span className="inline-block w-4 h-4 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mr-1">
+                  i
+                </span>
+                I work based on your current screen and data.
+                <a href="#" className="ml-auto text-amber-500 hover:underline">
+                  Learn more
+                </a>
+              </div>
+
+              {/* Input Area */}
+              <form
+                id="qwikbite-form"
+                className="mt-auto px-6 pb-6 pt-4 flex items-center gap-3 border-t border-gray-100"
+                onSubmit={handleSend}
+              >
+                <div className="flex-1 relative">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    className="w-full rounded-2xl border border-gray-200 bg-white px-5 py-3 pr-12 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-amber-400 transition text-base shadow-sm hover:shadow-md"
+                    placeholder="Ask me anything about your order..."
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSend();
+                      }
+                    }}
+                    autoFocus
+                    disabled={loading}
+                  />
+                  {loading && (
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      <div className="animate-spin w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full"></div>
                     </div>
                   )}
                 </div>
-              </div>
-            ))}
-            {(loading || isTyping) && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 text-gray-900 rounded-2xl rounded-bl-sm px-4 py-2">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Suggestions */}
-          <div className="flex flex-col gap-2 px-6 py-4">
-            {SUGGESTIONS.map((s, i) => (
-              <button
-                key={i}
-                className="w-full text-left px-4 py-3 rounded-xl border border-gray-200 bg-white hover:bg-amber-50 hover:border-amber-200 transition-all duration-200 font-medium text-gray-900 shadow-sm hover:shadow-md text-sm"
-                onClick={() => handleSuggestionClick(s)}
-                disabled={loading}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-
-          {/* Info Callout */}
-          <div className="mx-6 mb-2 mt-1 bg-gray-50 border border-dashed border-gray-200 rounded-lg p-3 flex items-center gap-2 text-xs text-gray-700">
-            <span className="inline-block w-4 h-4 bg-amber-100 text-amber-500 rounded-full flex items-center justify-center mr-1">i</span>
-            I work based on your current screen and data.
-            <a href="#" className="ml-auto text-amber-500 hover:underline">Learn more</a>
-          </div>
-
-          {/* Input Area */}
-          <form
-            id="qwikbite-form"
-            className="mt-auto px-6 pb-6 pt-4 flex items-center gap-3 border-t border-gray-100"
-            onSubmit={handleSend}
-          >
-            <div className="flex-1 relative">
-              <input
-                ref={inputRef}
-                type="text"
-                className="w-full rounded-2xl border border-gray-200 bg-white px-5 py-3 pr-12 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-300 focus:border-amber-400 transition text-base shadow-sm hover:shadow-md"
-                placeholder="Ask me anything about your order..."
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                autoFocus
-                disabled={loading}
-              />
-              {loading && (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                  <div className="animate-spin w-5 h-5 border-2 border-amber-400 border-t-transparent rounded-full"></div>
-                </div>
-              )}
-            </div>
-            <button
-              type="submit"
-              disabled={!input.trim() || loading}
-              className="bg-amber-400 hover:bg-amber-500 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-2xl px-4 py-3 font-semibold shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center group"
-              aria-label="Send message"
-            >
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform duration-200" />
-            </button>
-          </form>
-        </aside>
+                <button
+                  type="submit"
+                  disabled={!input.trim() || loading}
+                  className="bg-amber-400 hover:bg-amber-500 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-2xl px-4 py-3 font-semibold shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center justify-center group"
+                  aria-label="Send message"
+                >
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform duration-200" />
+                </button>
+              </form>
+            </aside>
           )}
         </>
       )}
@@ -398,7 +421,7 @@ export default function QwikBiteAssistant() {
         }
         .assistant-drawer-enter-active {
           transform: translateX(0);
-          transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
       `}</style>
     </>

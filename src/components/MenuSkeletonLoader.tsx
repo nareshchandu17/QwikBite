@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
+import { motion } from "framer-motion";
 
 export function MenuSkeletonLoader() {
   // Show 24 cards for 4 cols x 6 rows premium grid
@@ -14,7 +14,7 @@ export function MenuSkeletonLoader() {
     transition: {
       duration: 2,
       repeat: 2, // Changed from Infinity to 2
-      ease: 'easeInOut' as const,
+      ease: "easeInOut" as const,
     },
   };
 
@@ -25,7 +25,6 @@ export function MenuSkeletonLoader() {
       transition={{ duration: 0.3 }}
       className="w-full px-4 sm:px-6 lg:px-8"
     >
-      
       {/* Grid Container - Match menu page grid: 4 cols on desktop */}
       <div className="grid grid-cols-4 gap-6 w-full px-4 sm:px-6 lg:px-8">
         {Array.from({ length: skeletonCount }).map((_, index) => (
@@ -36,17 +35,14 @@ export function MenuSkeletonLoader() {
             transition={{
               duration: 0.4,
               delay: Math.min(index * 0.05, 0.5),
-              ease: 'easeOut',
+              ease: "easeOut",
             }}
             className="flex flex-col h-full bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
-            style={{ minHeight: '300px', height: '100%' }}
+            style={{ minHeight: "300px", height: "100%" }}
           >
             {/* Image Skeleton - Rounded top with relative positioning */}
             <div className="relative w-full aspect-square">
-              <motion.div
-                {...pulse}
-                className="w-full h-full bg-gray-200"
-              />
+              <motion.div {...pulse} className="w-full h-full bg-gray-200" />
 
               {/* Heart Icon Placeholder */}
               <div className="absolute top-3 right-3 z-10">
@@ -127,10 +123,12 @@ export function MenuSkeletonLoader() {
         <div className="flex items-center gap-2.5">
           <motion.div
             animate={{ rotate: 360 }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
             className="w-2.5 h-2.5 rounded-full bg-amber-500"
           />
-          <span className="text-gray-500 text-sm font-medium">Loading menu items...</span>
+          <span className="text-gray-500 text-sm font-medium">
+            Loading menu items...
+          </span>
         </div>
       </motion.div>
     </motion.div>

@@ -40,14 +40,14 @@ export function EmailConfirmationCard({
 
   const handleOpenMailApp = () => {
     // Try to open the default mail app
-    window.location.href = 'mailto:';
+    window.location.href = "mailto:";
   };
 
   return (
     <motion.div
       className={cn(
         "relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden",
-        className
+        className,
       )}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -59,8 +59,19 @@ export function EmailConfirmationCard({
         className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors z-20"
         aria-label="Go back to sign in"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
         </svg>
       </button>
 
@@ -88,8 +99,10 @@ export function EmailConfirmationCard({
 
         <p className="text-gray-600 dark:text-gray-300 text-base leading-relaxed mb-8">
           We&apos;ve sent a password reset link to{" "}
-          <span className="font-bold text-[#111827] dark:text-white">{email}</span>.
-          It should arrive in a few minutes.
+          <span className="font-bold text-[#111827] dark:text-white">
+            {email}
+          </span>
+          . It should arrive in a few minutes.
         </p>
 
         {/* Primary CTA Button */}

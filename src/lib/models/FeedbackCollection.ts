@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, model, Types } from 'mongoose';
+import mongoose, { Schema, Document, model, Types } from "mongoose";
 
 export interface IFeedbackCollection extends Document {
   feedbackId: string;
@@ -7,7 +7,7 @@ export interface IFeedbackCollection extends Document {
   starRating: number;
   feedbackText: string;
   adminReply?: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: "pending" | "approved" | "rejected";
   image?: string;
   category?: string;
   quickRating?: string;
@@ -48,12 +48,12 @@ const FeedbackCollectionSchema = new Schema<IFeedbackCollection>(
     adminReply: {
       type: String,
       trim: true,
-      default: '',
+      default: "",
     },
     status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected'],
-      default: 'pending',
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
       index: true,
     },
     image: {
@@ -68,10 +68,12 @@ const FeedbackCollectionSchema = new Schema<IFeedbackCollection>(
       type: String,
       trim: true,
     },
-    reportIssue: [{
-      type: String,
-      trim: true,
-    }],
+    reportIssue: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
     orderReference: {
       type: String,
       trim: true,
@@ -81,7 +83,7 @@ const FeedbackCollectionSchema = new Schema<IFeedbackCollection>(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 // Indexes for better query performance
@@ -93,16 +95,16 @@ FeedbackCollectionSchema.index({ category: 1 });
 FeedbackCollectionSchema.index({ createdAt: -1 });
 
 // Pre-save hook to ensure data consistency
-FeedbackCollectionSchema.pre<IFeedbackCollection>('save', async function() {
+FeedbackCollectionSchema.pre<IFeedbackCollection>("save", async function () {
   // Ensure rating is within bounds
   if (this.starRating < 1) this.starRating = 1;
   if (this.starRating > 5) this.starRating = 5;
-  
+
   // Trim feedback text
   if (this.feedbackText) {
     this.feedbackText = this.feedbackText.trim();
   }
-  
+
   // Trim admin reply if it exists
   if (this.adminReply) {
     this.adminReply = this.adminReply.trim();
@@ -110,6 +112,8 @@ FeedbackCollectionSchema.pre<IFeedbackCollection>('save', async function() {
 });
 
 // Create model with proper typing
-const FeedbackCollection = mongoose.models.FeedbackCollection || model<IFeedbackCollection>('FeedbackCollection', FeedbackCollectionSchema);
+const FeedbackCollection =
+  mongoose.models.FeedbackCollection ||
+  model<IFeedbackCollection>("FeedbackCollection", FeedbackCollectionSchema);
 
 export default FeedbackCollection;

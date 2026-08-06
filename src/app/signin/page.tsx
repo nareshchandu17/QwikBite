@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useSession } from 'next-auth/react';
-import { useAuthModal } from '@/context/AuthModalContext';
+import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { useAuthModal } from "@/context/AuthModalContext";
 
 export default function SignInPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const { openModal } = useAuthModal();
-  const loading = status === 'loading';
+  const loading = status === "loading";
   const isAuthenticated = !!session?.user;
   const user = session?.user;
 
-  const callbackUrl = searchParams?.get('callbackUrl') || '/';
+  const callbackUrl = searchParams?.get("callbackUrl") || "/";
 
   useEffect(() => {
     // Wait until auth initialization finishes
@@ -22,17 +22,15 @@ export default function SignInPage() {
 
     // ✅ If already authenticated, redirect to callback or appropriate page
     if (isAuthenticated && user) {
-      console.log('[SignIn] User already authenticated, redirecting to:', callbackUrl);
-      
       // Redirect to callback URL or role-based home
-      if (callbackUrl && callbackUrl !== '/signin' && callbackUrl !== '/') {
+      if (callbackUrl && callbackUrl !== "/signin" && callbackUrl !== "/") {
         router.replace(callbackUrl);
       } else {
         // Use role-based redirect
-        if (user.role === 'admin' || user.role === 'canteen_staff') {
-          router.replace('/admin/dashboard');
+        if (user.role === "admin" || user.role === "canteen_staff") {
+          router.replace("/admin/dashboard");
         } else {
-          router.replace('/customer/home');
+          router.replace("/customer/home");
         }
       }
       return;
@@ -42,17 +40,15 @@ export default function SignInPage() {
 
     // Prevent redirecting back to /signin (loop safety)
     const cleanCallback =
-      url.pathname === '/signin'
-        ? '/'
-        : url.pathname + url.search;
+      url.pathname === "/signin" ? "/" : url.pathname + url.search;
 
     // Open sign-in modal
-    openModal('signin', cleanCallback);
+    openModal("signin", cleanCallback);
 
     // Fallback: if modal fails to open, redirect home and force modal
     const timer = setTimeout(() => {
       if (!document.querySelector('[role="dialog"]')) {
-        router.replace('/?showAuthModal=signin');
+        router.replace("/?showAuthModal=signin");
       }
     }, 600);
 

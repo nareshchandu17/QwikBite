@@ -4,10 +4,19 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
 import { motion } from "framer-motion";
-import { Eye, EyeOff, Loader2, User, Lock, Mail, Key, HelpCircle } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Loader2,
+  User,
+  Lock,
+  Mail,
+  Key,
+  HelpCircle,
+} from "lucide-react";
 import { toast } from "sonner";
-import { useAuthModal } from '@/context/AuthModalContext';
-import { useAuth } from '@/context/AuthContext';
+import { useAuthModal } from "@/context/AuthModalContext";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 
 type SignInCardProps = {
@@ -39,7 +48,7 @@ export function SignInCard({
 
   const callbackUrl = useMemo(
     () => defaultRedirect || searchParams?.get("callbackUrl") || "/",
-    [defaultRedirect, searchParams]
+    [defaultRedirect, searchParams],
   );
 
   const validateField = (name: string, value: string) => {
@@ -55,7 +64,8 @@ export function SignInCard({
 
   const validateForm = () => {
     const emailValid = form.email !== "" && validateField("email", form.email);
-    const passwordValid = form.password !== "" && validateField("password", form.password);
+    const passwordValid =
+      form.password !== "" && validateField("password", form.password);
 
     setIsValid({
       email: emailValid,
@@ -66,11 +76,11 @@ export function SignInCard({
       toast.error("Please enter your email.", {
         duration: 3000,
         style: {
-          background: 'rgba(239, 68, 68, 0.9)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          color: '#ffffff',
+          background: "rgba(239, 68, 68, 0.9)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          border: "1px solid rgba(255, 255, 255, 0.2)",
+          color: "#ffffff",
         },
       });
       return false;
@@ -80,11 +90,11 @@ export function SignInCard({
       toast.error("Please enter a valid email address.", {
         duration: 3000,
         style: {
-          background: 'rgba(239, 68, 68, 0.9)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          color: '#ffffff',
+          background: "rgba(239, 68, 68, 0.9)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          border: "1px solid rgba(255, 255, 255, 0.2)",
+          color: "#ffffff",
         },
       });
       return false;
@@ -94,11 +104,11 @@ export function SignInCard({
       toast.error("Please enter your password.", {
         duration: 3000,
         style: {
-          background: 'rgba(239, 68, 68, 0.9)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          color: '#ffffff',
+          background: "rgba(239, 68, 68, 0.9)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          border: "1px solid rgba(255, 255, 255, 0.2)",
+          color: "#ffffff",
         },
       });
       return false;
@@ -108,11 +118,11 @@ export function SignInCard({
       toast.error("Password must be at least 6 characters.", {
         duration: 3000,
         style: {
-          background: 'rgba(239, 68, 68, 0.9)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          color: '#ffffff',
+          background: "rgba(239, 68, 68, 0.9)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          border: "1px solid rgba(255, 255, 255, 0.2)",
+          color: "#ffffff",
         },
       });
       return false;
@@ -141,65 +151,75 @@ export function SignInCard({
 
     try {
       // Step 1: Sign in with credentials
-      console.log("🔐 Step 1: Calling signIn()...");
+
       const result = await signIn("credentials", {
         email: form.email,
         password: form.password,
         redirect: false,
       });
 
-      console.log("🔐 Step 2: signIn result:", result);
-
       if (!result?.ok) {
         const errorMessage = result?.error || "Failed to sign in";
-        
+
         // Handle specific error cases
         if (errorMessage.includes("Invalid email or password")) {
-          toast.error("Invalid email or password. Please check your credentials and try again.", {
-            duration: 3000,
-            style: {
-              background: 'rgba(239, 68, 68, 0.9)',
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              color: '#ffffff',
+          toast.error(
+            "Invalid email or password. Please check your credentials and try again.",
+            {
+              duration: 3000,
+              style: {
+                background: "rgba(239, 68, 68, 0.9)",
+                backdropFilter: "blur(10px)",
+                WebkitBackdropFilter: "blur(10px)",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                color: "#ffffff",
+              },
             },
-          });
-        } else if (errorMessage.includes("No account found") || errorMessage.includes("user not found")) {
-          toast.error("No account found with this email. Please sign up first.", {
-            duration: 3000,
-            style: {
-              background: 'rgba(239, 68, 68, 0.9)',
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              color: '#ffffff',
+          );
+        } else if (
+          errorMessage.includes("No account found") ||
+          errorMessage.includes("user not found")
+        ) {
+          toast.error(
+            "No account found with this email. Please sign up first.",
+            {
+              duration: 3000,
+              style: {
+                background: "rgba(239, 68, 68, 0.9)",
+                backdropFilter: "blur(10px)",
+                WebkitBackdropFilter: "blur(10px)",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                color: "#ffffff",
+              },
             },
-          });
-        } else if (errorMessage.includes("verify") || errorMessage.includes("verified")) {
+          );
+        } else if (
+          errorMessage.includes("verify") ||
+          errorMessage.includes("verified")
+        ) {
           toast.error("Please verify your account before signing in.", {
             duration: 3000,
             style: {
-              background: 'rgba(239, 68, 68, 0.9)',
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              color: '#ffffff',
+              background: "rgba(239, 68, 68, 0.9)",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              color: "#ffffff",
             },
           });
         } else {
           toast.error("Something went wrong. Please try again later.", {
             duration: 3000,
             style: {
-              background: 'rgba(239, 68, 68, 0.9)',
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              color: '#ffffff',
+              background: "rgba(239, 68, 68, 0.9)",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
+              color: "#ffffff",
             },
           });
         }
-        
+
         setError(errorMessage);
         return;
       }
@@ -210,47 +230,51 @@ export function SignInCard({
       if (updatedSession?.user) {
         await login({
           id: updatedSession.user.id,
-          name: updatedSession.user.name || '',
-          email: updatedSession.user.email || '',
-          role: updatedSession.user.role || 'customer',
+          name: updatedSession.user.name || "",
+          email: updatedSession.user.email || "",
+          role: updatedSession.user.role || "customer",
         });
       }
 
       // Determine redirect path
-      let redirectPath = '/';
+      let redirectPath = "/";
       const userRole = updatedSession?.user?.role;
 
-      if (typeof redirectOnSuccess === 'string') {
+      if (typeof redirectOnSuccess === "string") {
         redirectPath = redirectOnSuccess;
-      } else if (callbackUrl && callbackUrl !== '/' && !callbackUrl.includes('signin')) {
+      } else if (
+        callbackUrl &&
+        callbackUrl !== "/" &&
+        !callbackUrl.includes("signin")
+      ) {
         redirectPath = callbackUrl;
-      } else if (defaultRedirect && defaultRedirect !== '/') {
+      } else if (defaultRedirect && defaultRedirect !== "/") {
         redirectPath = defaultRedirect;
       } else {
         // Role-based default
-        if (userRole === 'admin' || userRole === 'canteen_staff') {
-          redirectPath = '/admin/dashboard';
+        if (userRole === "admin" || userRole === "canteen_staff") {
+          redirectPath = "/admin/dashboard";
         } else {
-          redirectPath = '/customer';
+          redirectPath = "/customer";
         }
       }
-      
+
       // Navigate FIRST using router.replace to prevent homepage flash
       router.replace(redirectPath);
-      
+
       // Close the modal immediately after navigation is initiated
       onSuccess?.();
-      
+
       // Show toast AFTER navigation to ensure it appears in the destination page
       setTimeout(() => {
         toast.success("Welcome back!", {
           duration: 3000,
           style: {
-            background: 'rgba(34, 197, 94, 0.9)',
-            backdropFilter: 'blur(10px)',
-            WebkitBackdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            color: '#ffffff',
+            background: "rgba(34, 197, 94, 0.9)",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
+            color: "#ffffff",
           },
         });
       }, 100);
@@ -258,24 +282,23 @@ export function SignInCard({
       toast.error("Something went wrong. Please try again later.", {
         duration: 3000,
         style: {
-          background: 'rgba(239, 68, 68, 0.9)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          color: '#ffffff',
+          background: "rgba(239, 68, 68, 0.9)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
+          border: "1px solid rgba(255, 255, 255, 0.2)",
+          color: "#ffffff",
         },
       });
-      
+
       const message = err instanceof Error ? err.message : "Failed to sign in";
       setError(message);
-      console.error("🔴 Sign in error:", err);
     } finally {
       setLoading(false);
     }
   };
 
   const togglePasswordVisibility = () => setShowPassword((prev) => !prev);
-  
+
   const handleClose = () => {
     if (onSuccess) {
       onSuccess();
@@ -286,7 +309,7 @@ export function SignInCard({
     <motion.div
       className={cn(
         "relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 flex flex-col",
-        className
+        className,
       )}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -298,8 +321,19 @@ export function SignInCard({
         className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors z-20"
         aria-label="Close sign in form"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
         </svg>
       </button>
 
@@ -307,13 +341,16 @@ export function SignInCard({
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-orange-400/20 rounded-full blur-[120px] dark:bg-orange-600/20"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-400/10 rounded-full blur-[120px] dark:bg-blue-600/10"></div>
       </div>
-      
+
       <div className="pt-10 px-8 pb-4 text-center">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/30 mb-4 shadow-sm ring-4 ring-orange-50 dark:ring-orange-900/20">
           <User className="h-8 w-8 text-orange-500" />
         </div>
         <h2 className="text-3xl font-bold mb-2 tracking-tight text-[#111827]">
-          Welcome to <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">qwikBite</span>
+          Welcome to{" "}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-600">
+            qwikBite
+          </span>
         </h2>
         <p className="text-gray-500 dark:text-gray-400 text-sm">
           Hungry? Skip the line, not the class.
@@ -333,7 +370,9 @@ export function SignInCard({
               className={cn(
                 "floating-input peer w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-800 border rounded-xl",
                 "focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm",
-                !isValid.email ? "border-red-500" : "border-gray-200 dark:border-gray-700"
+                !isValid.email
+                  ? "border-red-500"
+                  : "border-gray-200 dark:border-gray-700",
               )}
               placeholder=" "
               disabled={loading}
@@ -341,18 +380,20 @@ export function SignInCard({
             <span className="absolute left-3.5 top-3.5 text-gray-400 peer-focus:text-orange-500 transition-colors">
               <Mail className="h-5 w-5" />
             </span>
-            <label 
+            <label
               className={cn(
                 "floating-label absolute left-11 top-3.5 text-gray-500 dark:text-gray-400 text-sm",
                 "transition-all pointer-events-none bg-white dark:bg-gray-900 px-1",
-                "peer-focus:text-orange-500 peer-placeholder-shown:bg-transparent"
+                "peer-focus:text-orange-500 peer-placeholder-shown:bg-transparent",
               )}
               htmlFor="email"
             >
               Student Email
             </label>
             {!isValid.email && (
-              <p className="mt-1 text-xs text-red-500">Please enter a valid email</p>
+              <p className="mt-1 text-xs text-red-500">
+                Please enter a valid email
+              </p>
             )}
           </div>
 
@@ -367,7 +408,9 @@ export function SignInCard({
               className={cn(
                 "floating-input peer w-full pl-11 pr-11 py-3 bg-gray-50 dark:bg-gray-800 border rounded-xl",
                 "focus:ring-2 focus:ring-orange-500 focus:border-orange-500 outline-none transition-all text-sm",
-                !isValid.password ? "border-red-500" : "border-gray-200 dark:border-gray-700"
+                !isValid.password
+                  ? "border-red-500"
+                  : "border-gray-200 dark:border-gray-700",
               )}
               placeholder=" "
               disabled={loading}
@@ -375,11 +418,11 @@ export function SignInCard({
             <span className="absolute left-3.5 top-3.5 text-gray-400 peer-focus:text-orange-500 transition-colors">
               <Lock className="h-5 w-5" />
             </span>
-            <label 
+            <label
               className={cn(
                 "floating-label absolute left-11 top-3.5 text-gray-500 dark:text-gray-400 text-sm",
                 "transition-all pointer-events-none bg-white dark:bg-gray-900 px-1",
-                "peer-focus:text-orange-500 peer-placeholder-shown:bg-transparent"
+                "peer-focus:text-orange-500 peer-placeholder-shown:bg-transparent",
               )}
               htmlFor="password"
             >
@@ -403,29 +446,49 @@ export function SignInCard({
           </div>
 
           <div className="flex space-x-1 h-1 w-full mt-1">
-            <div className={cn(
-              "h-full rounded-full transition-all duration-300",
-              form.password.length > 0 ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
-            )} style={{ width: form.password.length > 0 ? '25%' : '0%' }}></div>
-            <div className={cn(
-              "h-full rounded-full transition-all duration-300",
-              form.password.length > 3 ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
-            )} style={{ width: form.password.length > 3 ? '25%' : '0%' }}></div>
-            <div className={cn(
-              "h-full rounded-full transition-all duration-300",
-              form.password.length > 6 ? "bg-yellow-400" : "bg-gray-200 dark:bg-gray-700"
-            )} style={{ width: form.password.length > 6 ? '25%' : '0%' }}></div>
-            <div className={cn(
-              "h-full rounded-full transition-all duration-300",
-              form.password.length > 8 ? "bg-green-500" : "bg-gray-200 dark:bg-gray-700"
-            )} style={{ width: form.password.length > 8 ? '25%' : '0%' }}></div>
+            <div
+              className={cn(
+                "h-full rounded-full transition-all duration-300",
+                form.password.length > 0
+                  ? "bg-green-500"
+                  : "bg-gray-200 dark:bg-gray-700",
+              )}
+              style={{ width: form.password.length > 0 ? "25%" : "0%" }}
+            ></div>
+            <div
+              className={cn(
+                "h-full rounded-full transition-all duration-300",
+                form.password.length > 3
+                  ? "bg-green-500"
+                  : "bg-gray-200 dark:bg-gray-700",
+              )}
+              style={{ width: form.password.length > 3 ? "25%" : "0%" }}
+            ></div>
+            <div
+              className={cn(
+                "h-full rounded-full transition-all duration-300",
+                form.password.length > 6
+                  ? "bg-yellow-400"
+                  : "bg-gray-200 dark:bg-gray-700",
+              )}
+              style={{ width: form.password.length > 6 ? "25%" : "0%" }}
+            ></div>
+            <div
+              className={cn(
+                "h-full rounded-full transition-all duration-300",
+                form.password.length > 8
+                  ? "bg-green-500"
+                  : "bg-gray-200 dark:bg-gray-700",
+              )}
+              style={{ width: form.password.length > 8 ? "25%" : "0%" }}
+            ></div>
           </div>
 
           <div className="flex items-center justify-between text-sm">
             <label className="flex items-center space-x-2 cursor-pointer group">
-              <input 
-                type="checkbox" 
-                className="form-checkbox h-4 w-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 dark:bg-gray-800 dark:border-gray-600 transition duration-150 ease-in-out" 
+              <input
+                type="checkbox"
+                className="form-checkbox h-4 w-4 text-orange-500 border-gray-300 rounded focus:ring-orange-500 dark:bg-gray-800 dark:border-gray-600 transition duration-150 ease-in-out"
               />
               <span className="text-gray-600 dark:text-gray-300 group-hover:text-gray-800 dark:group-hover:text-gray-100 transition-colors select-none">
                 Remember me
@@ -437,7 +500,7 @@ export function SignInCard({
               onClick={() => {
                 closeModal();
                 setTimeout(() => {
-                  openModal('forgotpassword');
+                  openModal("forgotpassword");
                 }, 100);
               }}
             >
@@ -454,7 +517,7 @@ export function SignInCard({
               "hover:from-orange-600 hover:to-orange-700 text-white font-semibold py-3.5 rounded-xl",
               "shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 transition-all duration-300",
               "transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2",
-              loading ? "opacity-70 cursor-not-allowed" : ""
+              loading ? "opacity-70 cursor-not-allowed" : "",
             )}
             whileHover={{ scale: loading ? 1 : 1.02 }}
             whileTap={{ scale: loading ? 1 : 0.98 }}
@@ -470,9 +533,7 @@ export function SignInCard({
                   Getting your food ready...
                 </>
               ) : (
-                <>
-                  Get My Food Ready 🍽️
-                </>
+                <>Get My Food Ready 🍽️</>
               )}
             </span>
           </motion.button>
@@ -492,9 +553,9 @@ export function SignInCard({
                 Sign up now
               </button>
             ) : (
-              <button 
+              <button
                 onClick={() => {
-                  window.location.href = '/auth/signup';
+                  window.location.href = "/auth/signup";
                 }}
                 className="text-orange-500 font-semibold hover:underline"
               >
@@ -507,7 +568,7 @@ export function SignInCard({
               <Lock className="h-3 w-3" />
               Secure Connection
             </div>
-            <button 
+            <button
               className="flex items-center text-xs text-gray-400 dark:text-gray-500 gap-1 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer transition-colors"
               onClick={() => toast.info("Contact support for assistance")}
             >
@@ -520,5 +581,3 @@ export function SignInCard({
     </motion.div>
   );
 }
-
-

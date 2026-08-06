@@ -90,20 +90,20 @@ const StickyCard = ({
           border border-white/10
         "
       >
-        <Image 
-          src={src} 
-          alt={title} 
+        <Image
+          src={src}
+          alt={title}
           fill
-          className="h-full w-full object-cover opacity-90 transition-opacity duration-500" 
+          className="h-full w-full object-cover opacity-90 transition-opacity duration-500"
         />
         {/* Subtle Lighting Effect */}
         <div className="absolute inset-0 bg-gradient-to-tr from-[hsl(24_85%_55%)]/15 via-transparent to-white/10 pointer-events-none" />
-        
+
         {/* Adjusted Bottom Shadow for Legibility */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-        
+
         <div className="relative z-10 flex h-full flex-col justify-end p-8 md:p-16">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -116,8 +116,8 @@ const StickyCard = ({
               {step}
             </span>
           </motion.div>
-          
-          <motion.h3 
+
+          <motion.h3
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
@@ -125,8 +125,8 @@ const StickyCard = ({
           >
             {title}
           </motion.h3>
-          
-          <motion.p 
+
+          <motion.p
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
@@ -165,8 +165,9 @@ export const ScrollytellingCardStack: React.FC = () => {
               <span className="italic text-[hsl(24_85%_55%)]">to Pickup</span>
             </h2>
             <p className="text-xl text-[#6B7280] font-medium leading-relaxed">
-              Experience the future of campus dining. 
-              Our seamless flow ensures you spend more time enjoying your food and less time waiting for it.
+              Experience the future of campus dining. Our seamless flow ensures
+              you spend more time enjoying your food and less time waiting for
+              it.
             </p>
           </motion.div>
         </div>
@@ -186,7 +187,7 @@ export const ScrollytellingCardStack: React.FC = () => {
             );
           })}
         </div>
-        
+
         {/* Ambient scroll indicator */}
         <div className="absolute left-1/2 top-[15%] grid -translate-x-1/2 content-start justify-items-center gap-6 text-center opacity-20">
           <span className="relative max-w-[12ch] text-[10px] font-black uppercase tracking-widest leading-tight">

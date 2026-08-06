@@ -1,4 +1,4 @@
-import { Skeleton } from "./ui/skeleton"
+import { Skeleton } from "./ui/skeleton";
 
 export function CartSkeleton() {
   return (
@@ -16,7 +16,7 @@ export function CartSkeleton() {
           </div>
         </div>
       ))}
-      
+
       <div className="space-y-3 pt-4 border-t">
         <div className="flex justify-between">
           <Skeleton className="h-5 w-20" />
@@ -31,8 +31,8 @@ export function CartSkeleton() {
           <Skeleton className="h-6 w-24" />
         </div>
       </div>
-      
+
       <Skeleton className="w-full h-12 rounded-lg mt-4" />
     </div>
-  )
+  );
 }

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { ListOrdered } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
-import { useAuthModal } from '@/context/AuthModalContext';
+import { ListOrdered } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { useAuthModal } from "@/context/AuthModalContext";
 
 export default function OrderStatusLink() {
   const router = useRouter();
@@ -12,21 +12,20 @@ export default function OrderStatusLink() {
 
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
-    
+
     if (!isAuthenticated) {
       // If not authenticated, open sign in modal and redirect after sign in
-      openModal('signin', '/order-status/latest');
+      openModal("signin", "/order-status/latest");
       return;
     }
-    
+
     try {
       // Redirect directly to the latest order status page
       // The server will handle fetching the latest order
-      window.location.href = '/order-status/latest';
+      window.location.href = "/order-status/latest";
     } catch (error) {
-      console.error('Error navigating to order status:', error);
       // Fallback to orders page if there's an error
-      window.location.href = '/orders';
+      window.location.href = "/orders";
     }
   };
 

@@ -3,21 +3,29 @@ export const validateEmail = (email: string): boolean => {
   return emailRegex.test(email);
 };
 
-export const validatePassword = (password: string): { valid: boolean; message?: string } => {
+export const validatePassword = (
+  password: string,
+): { valid: boolean; message?: string } => {
   if (password.length < 6) {
-    return { valid: false, message: 'Password must be at least 6 characters.' };
+    return { valid: false, message: "Password must be at least 6 characters." };
   }
-  
+
   // Check for at least one number
   if (!/\d/.test(password)) {
-    return { valid: false, message: 'Password must contain at least one number.' };
+    return {
+      valid: false,
+      message: "Password must contain at least one number.",
+    };
   }
-  
+
   // Check for at least one special character
   if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-    return { valid: false, message: 'Password must contain at least one special character.' };
+    return {
+      valid: false,
+      message: "Password must contain at least one special character.",
+    };
   }
-  
+
   return { valid: true };
 };
 

@@ -3,21 +3,21 @@
  * Displays real-time notifications for orders, menu changes, and feedback
  */
 
-'use client';
+"use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { Bell, X, Package, Menu, MessageSquare, Zap } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
-import { usePusher } from '@/context/PusherContext';
-import { useSession } from 'next-auth/react';
+import React, { useState, useEffect, useCallback } from "react";
+import { Bell, X, Package, Menu, MessageSquare, Zap } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import { usePusher } from "@/context/PusherContext";
+import { useSession } from "next-auth/react";
 
 interface CustomerNotification {
   id: string;
   title: string;
   message: string;
-  type: 'order' | 'menu' | 'feedback' | 'system' | 'alert';
-  priority: 'low' | 'normal' | 'high';
+  type: "order" | "menu" | "feedback" | "system" | "alert";
+  priority: "low" | "normal" | "high";
   icon: string;
   data?: unknown;
   ctaLink?: string;
@@ -25,7 +25,9 @@ interface CustomerNotification {
 }
 
 export default function CustomerNotifications() {
-  const [notifications, setNotifications] = useState<CustomerNotification[]>([]);
+  const [notifications, setNotifications] = useState<CustomerNotification[]>(
+    [],
+  );
   const [unreadCount, setUnreadCount] = useState(0);
   const [showPanel, setShowPanel] = useState(false);
   const { pusherClient, isConnected } = usePusher();
@@ -33,13 +35,13 @@ export default function CustomerNotifications() {
 
   const getIconComponent = (type: string) => {
     switch (type) {
-      case 'order':
+      case "order":
         return <Package className="w-5 h-5 text-blue-500" />;
-      case 'menu':
+      case "menu":
         return <Menu className="w-5 h-5 text-orange-500" />;
-      case 'feedback':
+      case "feedback":
         return <MessageSquare className="w-5 h-5 text-purple-500" />;
-      case 'alert':
+      case "alert":
         return <Zap className="w-5 h-5 text-red-500" />;
       default:
         return <Bell className="w-5 h-5 text-gray-500" />;
@@ -49,75 +51,67 @@ export default function CustomerNotifications() {
   // Listen for Pusher notifications
   useEffect(() => {
     if (!pusherClient || !isConnected) {
-      console.log('[CustomerNotifications] ⚠️ Pusher not ready');
       return;
     }
 
-    console.log('[CustomerNotifications] 🔌 Setting up Pusher listeners');
-
     const handleNotification = (data: any) => {
-      console.log('[CustomerNotifications] 📡 Received notification:', data);
-      
       const newNotification: CustomerNotification = {
         id: Date.now().toString(),
-        title: data.title || 'Notification',
-        message: data.message || '',
-        type: data.type || 'system',
-        priority: data.priority || 'normal',
-        icon: data.icon || '🔔',
+        title: data.title || "Notification",
+        message: data.message || "",
+        type: data.type || "system",
+        priority: data.priority || "normal",
+        icon: data.icon || "🔔",
         data: data.data,
         ctaLink: data.ctaLink,
-        timestamp: new Date(data.timestamp || Date.now())
+        timestamp: new Date(data.timestamp || Date.now()),
       };
 
-      setNotifications(prev => [newNotification, ...prev]);
-      setUnreadCount(prev => prev + 1);
+      setNotifications((prev) => [newNotification, ...prev]);
+      setUnreadCount((prev) => prev + 1);
 
       // Show toast notification
       const toastMessage = `${data.title}: ${data.message}`;
-      if (data.priority === 'high') {
+      if (data.priority === "high") {
         toast.success(toastMessage);
       } else {
         toast.info(toastMessage);
       }
 
       // Play sound for high priority notifications
-      if (data.priority === 'high') {
+      if (data.priority === "high") {
         try {
-          const audio = new Audio('/notification-sound.mp3');
+          const audio = new Audio("/notification-sound.mp3");
           audio.play().catch(() => {
             // Silently fail if audio can't play
-            console.log('[CustomerNotifications] Audio play failed');
           });
-        } catch (err) {
-          console.log('[CustomerNotifications] Sound notification error:', err);
-        }
+        } catch (err) {}
       }
     };
 
     // Listen to broadcast channel
-    const broadcastChannel = pusherClient.subscribe('broadcast');
-    broadcastChannel.bind('new_notification', handleNotification);
-    broadcastChannel.bind('menu_update', handleNotification);
+    const broadcastChannel = pusherClient.subscribe("broadcast");
+    broadcastChannel.bind("new_notification", handleNotification);
+    broadcastChannel.bind("menu_update", handleNotification);
 
     let userChannel: any = null;
-    const userId = session?.user?.id || 'customer';
+    const userId = session?.user?.id || "customer";
     if (userId) {
       userChannel = pusherClient.subscribe(`user-${userId}`);
-      userChannel.bind('new_notification', handleNotification);
-      userChannel.bind('order_status', handleNotification);
-      userChannel.bind('feedback_reply', handleNotification);
+      userChannel.bind("new_notification", handleNotification);
+      userChannel.bind("order_status", handleNotification);
+      userChannel.bind("feedback_reply", handleNotification);
     }
 
     return () => {
-      broadcastChannel.unbind('new_notification', handleNotification);
-      broadcastChannel.unbind('menu_update', handleNotification);
-      pusherClient.unsubscribe('broadcast');
+      broadcastChannel.unbind("new_notification", handleNotification);
+      broadcastChannel.unbind("menu_update", handleNotification);
+      pusherClient.unsubscribe("broadcast");
 
       if (userChannel) {
-        userChannel.unbind('new_notification', handleNotification);
-        userChannel.unbind('order_status', handleNotification);
-        userChannel.unbind('feedback_reply', handleNotification);
+        userChannel.unbind("new_notification", handleNotification);
+        userChannel.unbind("order_status", handleNotification);
+        userChannel.unbind("feedback_reply", handleNotification);
         pusherClient.unsubscribe(`user-${userId}`);
       }
     };
@@ -130,7 +124,7 @@ export default function CustomerNotifications() {
   };
 
   const handleDismiss = useCallback((id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
   const handleMarkAllRead = useCallback(() => {
@@ -150,7 +144,7 @@ export default function CustomerNotifications() {
         <Bell className="w-6 h-6 text-gray-700" />
         {unreadCount > 0 && (
           <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse">
-            {unreadCount > 9 ? '9+' : unreadCount}
+            {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </motion.button>
@@ -234,8 +228,10 @@ export default function CustomerNotifications() {
 
             {/* Connection Status */}
             <div className="bg-gray-100 px-4 py-2 text-xs text-gray-600 flex items-center gap-2 border-t">
-              <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-              {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
+              <div
+                className={`w-2 h-2 rounded-full ${isConnected ? "bg-green-500" : "bg-red-500"}`}
+              />
+              {isConnected ? "🟢 Connected" : "🔴 Disconnected"}
             </div>
           </motion.div>
         )}

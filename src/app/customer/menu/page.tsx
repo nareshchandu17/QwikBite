@@ -1,45 +1,68 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Filter, X, Plus, Minus, ShoppingCart, Star, ChevronDown, Heart, Clock, WifiOff, Wifi } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { debounce } from 'lodash';
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Filter,
+  X,
+  Plus,
+  Minus,
+  ShoppingCart,
+  Star,
+  ChevronDown,
+  Heart,
+  Clock,
+  WifiOff,
+  Wifi,
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { debounce } from "lodash";
 
 // Import types and data
-import { menuItems, categories, dietaryOptions, type MenuItem } from '@/data/menu';
+import {
+  menuItems,
+  categories,
+  dietaryOptions,
+  type MenuItem,
+} from "@/data/menu";
 
 // Import hooks
-import { useSearch } from '@/context/SearchContext';
-import { useFavorites } from '@/context/FavoritesContext';
-import { useCartStore } from '@/stores/cartStore';
-import { useLoadingState } from '@/hooks/useLoadingState';
+import { useSearch } from "@/context/SearchContext";
+import { useFavorites } from "@/context/FavoritesContext";
+import { useCartStore } from "@/stores/cartStore";
+import { useLoadingState } from "@/hooks/useLoadingState";
 // WebSocket removed for serverless compatibility
 
 // Import UI components
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import TimeSlotModal from '@/components/TimeSlotModal';
-import AnimatedGlowingSearchBar from '@/components/ui/animated-glowing-search-bar';
-import MenuSkeletonLoader from '@/components/MenuSkeletonLoader';
-
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import TimeSlotModal from "@/components/TimeSlotModal";
+import AnimatedGlowingSearchBar from "@/components/ui/animated-glowing-search-bar";
+import MenuSkeletonLoader from "@/components/MenuSkeletonLoader";
 
 // Categories for rotating text
 const searchCategories = [
-  'tiffins',
-  'fastfoods',
-  'curries',
-  'drinks',
-  'mocktails',
-  'snacks',
-  'tea corner'
+  "tiffins",
+  "fastfoods",
+  "curries",
+  "drinks",
+  "mocktails",
+  "snacks",
+  "tea corner",
 ];
 
 // Styling constants with enhanced interactivity and glow effect
-const premiumCardClasses = 'bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 border border-gray-100 hover:-translate-y-1 relative group h-full flex flex-col';
+const premiumCardClasses =
+  "bg-white rounded-2xl overflow-hidden shadow-lg transition-all duration-300 border border-gray-100 hover:-translate-y-1 relative group h-full flex flex-col";
 
 // Add global styles for the card glow effect
 const cardGlowStyle = `
@@ -81,22 +104,29 @@ const cardGlowStyle = `
     }
   }
 `;
-const premiumButtonClasses = 'bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-medium transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/30';
+const premiumButtonClasses =
+  "bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-medium transition-all duration-300 hover:shadow-lg hover:shadow-amber-500/30";
 const categoryButtonClasses = (isActive: boolean) =>
-  `px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${isActive
-    ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md'
-    : 'bg-white text-gray-800 border border-gray-200 shadow-sm'
+  `px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
+    isActive
+      ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md"
+      : "bg-white text-gray-800 border border-gray-200 shadow-sm"
   } whitespace-nowrap`;
 
 export default function MenuPage() {
   const isValidObjectId = (value: unknown): boolean =>
-    typeof value === 'string' && /^[a-fA-F0-9]{24}$/.test(value);
+    typeof value === "string" && /^[a-fA-F0-9]{24}$/.test(value);
 
   const resolveFavoriteId = (item: MenuItem): string | null => {
-    const candidates = [item._id, item.id, (item as any)?.menuItemId, (item as any)?.itemId];
+    const candidates = [
+      item._id,
+      item.id,
+      (item as any)?.menuItemId,
+      (item as any)?.itemId,
+    ];
 
     for (const candidate of candidates) {
-      if (typeof candidate === 'string' && candidate.trim()) {
+      if (typeof candidate === "string" && candidate.trim()) {
         const trimmed = candidate.trim();
         if (isValidObjectId(trimmed) || trimmed.length > 0) {
           return trimmed;
@@ -112,15 +142,19 @@ export default function MenuPage() {
     if (directId) return directId;
 
     try {
-      const res = await fetch('/api/menu?limit=200', { cache: 'no-store', credentials: 'include' });
+      const res = await fetch("/api/menu?limit=200", {
+        cache: "no-store",
+        credentials: "include",
+      });
       if (!res.ok) return null;
       const payload = await res.json();
       const apiItems = extractMenuItemsFromResponse(payload);
 
-      const match = apiItems.find((candidate) =>
-        candidate.name?.toLowerCase() === item.name?.toLowerCase() &&
-        candidate.category?.toLowerCase() === item.category?.toLowerCase() &&
-        Number(candidate.price) === Number(item.price)
+      const match = apiItems.find(
+        (candidate) =>
+          candidate.name?.toLowerCase() === item.name?.toLowerCase() &&
+          candidate.category?.toLowerCase() === item.category?.toLowerCase() &&
+          Number(candidate.price) === Number(item.price),
       );
 
       const matchId = match ? resolveFavoriteId(match) : null;
@@ -131,9 +165,9 @@ export default function MenuPage() {
       setMenuItems((prev) =>
         prev.map((menuItem) =>
           menuItem.id === item.id
-            ? { ...menuItem, _id: matchId } as MenuItem
-            : menuItem
-        )
+            ? ({ ...menuItem, _id: matchId } as MenuItem)
+            : menuItem,
+        ),
       );
 
       return matchId;
@@ -151,15 +185,15 @@ export default function MenuPage() {
     return [];
   };
   // All hooks must be called in the same order every render
-  
+
   // State hooks
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isBackgroundRefresh, setIsBackgroundRefresh] = useState(false);
   const [hasData, setHasData] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [dietaryFilters, setDietaryFilters] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0);
@@ -174,7 +208,9 @@ export default function MenuPage() {
   const [reconnectAttempts, setReconnectAttempts] = useState(0);
   const [isTimeSlotModalOpen, setIsTimeSlotModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
-  const [isFavoriteLoading, setIsFavoriteLoading] = useState<string | null>(null);
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState<string | null>(
+    null,
+  );
 
   // Refs
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -182,7 +218,12 @@ export default function MenuPage() {
 
   // Custom hooks
   const { startLoading, stopLoading } = useLoadingState();
-  const { items: cartItems, addItem: addToCart, removeItem: removeFromCart, clear } = useCartStore();
+  const {
+    items: cartItems,
+    addItem: addToCart,
+    removeItem: removeFromCart,
+    clear,
+  } = useCartStore();
   const router = useRouter();
   const searchCtx = useSearch();
   // WebSocket removed
@@ -193,16 +234,16 @@ export default function MenuPage() {
   const maxReconnectAttempts = 5;
   const reconnectDelay = 3000; // 3 seconds
   const selectedDietary = dietaryFilters;
-  
+
   // Calculate pagination
   const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
-  
+
   // Add glow effect styles
   useEffect(() => {
-    const style = document.createElement('style');
+    const style = document.createElement("style");
     style.textContent = cardGlowStyle;
     document.head.appendChild(style);
     return () => {
@@ -221,80 +262,82 @@ export default function MenuPage() {
   }, []);
 
   useEffect(() => {
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener("scroll", handleScroll);
     };
   }, [handleScroll]);
 
   // Categories for filtering
   const categoryOptions = [
-    { id: 'all', name: 'All' },
-    { id: 'Tiffins', name: 'Tiffins' },
-    { id: 'Fast Food', name: 'Fast Food' },
-    { id: 'Curries', name: 'Curries' },
-    { id: 'Drinks', name: 'Drinks' },
-    { id: 'Juices', name: 'Juices' },
-    { id: 'Mocktails', name: 'Mocktails' },
-    { id: 'Snacks', name: 'Snacks' },
-    { id: 'Tea Corner', name: 'Tea Corner' }
+    { id: "all", name: "All" },
+    { id: "Tiffins", name: "Tiffins" },
+    { id: "Fast Food", name: "Fast Food" },
+    { id: "Curries", name: "Curries" },
+    { id: "Drinks", name: "Drinks" },
+    { id: "Juices", name: "Juices" },
+    { id: "Mocktails", name: "Mocktails" },
+    { id: "Snacks", name: "Snacks" },
+    { id: "Tea Corner", name: "Tea Corner" },
   ];
 
   // Fetch initial menu items from API with fallback to local data
-  const fetchMenuItems = useCallback(async (isBackgroundRefresh = false) => {
-    // Case 1: First time user opens Menu page OR Case 4: Hard refresh
-    if (isInitialLoad || !hasData) {
-      setIsLoading(true);
-      startLoading();
-    } 
-    // Case 3: Background refresh
-    else if (isBackgroundRefresh) {
-      setIsBackgroundRefresh(true);
-    }
-    // Case 2: User navigates back - data already exists, no loading needed
-    else {
-      return;
-    }
-
-    try {
-      // Try server API first
-      const res = await fetch('/api/menu?limit=200', { cache: 'no-store', credentials: 'include' });
-      if (res.ok) {
-        const data = await res.json();
-        const items = extractMenuItemsFromResponse(data);
-        if (items && items.length > 0) {
-          setMenuItems(items);
-          setFilteredItems(items);
-          setHasData(true);
-          return;
-        }
+  const fetchMenuItems = useCallback(
+    async (isBackgroundRefresh = false) => {
+      // Case 1: First time user opens Menu page OR Case 4: Hard refresh
+      if (isInitialLoad || !hasData) {
+        setIsLoading(true);
+        startLoading();
+      }
+      // Case 3: Background refresh
+      else if (isBackgroundRefresh) {
+        setIsBackgroundRefresh(true);
+      }
+      // Case 2: User navigates back - data already exists, no loading needed
+      else {
+        return;
       }
 
-      // Fallback to local data if API fails or returns nothing
-      const localMenuItems = (await import('@/data/menu')).menuItems;
-      console.log('Loaded local menu items:', localMenuItems.length);
-      setMenuItems(localMenuItems);
-      setFilteredItems(localMenuItems);
-      setHasData(true);
-
-    } catch (error) {
-      console.error('Error loading menu items:', error);
-      // Fallback to local data on error
       try {
-        const localMenuItems = (await import('@/data/menu')).menuItems;
+        // Try server API first
+        const res = await fetch("/api/menu?limit=200", {
+          cache: "no-store",
+          credentials: "include",
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const items = extractMenuItemsFromResponse(data);
+          if (items && items.length > 0) {
+            setMenuItems(items);
+            setFilteredItems(items);
+            setHasData(true);
+            return;
+          }
+        }
+
+        // Fallback to local data if API fails or returns nothing
+        const localMenuItems = (await import("@/data/menu")).menuItems;
+
         setMenuItems(localMenuItems);
         setFilteredItems(localMenuItems);
         setHasData(true);
-      } catch (e) {
-        console.error('Failed to load local menu items:', e);
+      } catch (error) {
+        // Fallback to local data on error
+        try {
+          const localMenuItems = (await import("@/data/menu")).menuItems;
+          setMenuItems(localMenuItems);
+          setFilteredItems(localMenuItems);
+          setHasData(true);
+        } catch (e) {}
+      } finally {
+        setIsLoading(false);
+        setIsInitialLoad(false);
+        setIsBackgroundRefresh(false);
+        stopLoading();
       }
-    } finally {
-      setIsLoading(false);
-      setIsInitialLoad(false);
-      setIsBackgroundRefresh(false);
-      stopLoading();
-    }
-  }, [startLoading, stopLoading, isInitialLoad, hasData]);
+    },
+    [startLoading, stopLoading, isInitialLoad, hasData],
+  );
 
   // Rotate categories in search placeholder and fetch menu items on mount
   useEffect(() => {
@@ -308,19 +351,20 @@ export default function MenuPage() {
     return () => clearInterval(interval);
   }, [fetchMenuItems]);
 
-
   // Menu update handlers with debouncing
   const handleMenuUpdate = debounce((data: MenuItem) => {
-    setMenuItems(prev => {
-      const exists = prev.some(item => item.id === data.id);
+    setMenuItems((prev) => {
+      const exists = prev.some((item) => item.id === data.id);
       return exists
-        ? prev.map(item => item.id === data.id ? { ...item, ...data } : item)
+        ? prev.map((item) =>
+            item.id === data.id ? { ...item, ...data } : item,
+          )
         : [...prev, data];
     });
   }, 100);
 
   const handleMenuDelete = (data: { id: string }) => {
-    setMenuItems(prev => prev.filter(item => item.id !== data.id));
+    setMenuItems((prev) => prev.filter((item) => item.id !== data.id));
   };
 
   // Connection status handlers - REMOVED
@@ -332,17 +376,15 @@ export default function MenuPage() {
     setIsConnected(false);
   };
 
-  const handleReconnectAttempt = () => {
-    console.log('Reconnecting...');
-  };
+  const handleReconnectAttempt = () => {};
 
   // Set up scroll listener
   useEffect(() => {
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
 
     // Cleanup
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener("scroll", handleScroll);
       handleMenuUpdate.cancel();
     };
   }, [handleScroll, handleMenuUpdate]);
@@ -358,66 +400,61 @@ export default function MenuPage() {
       // Apply search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        result = result.filter(item =>
-          item.name.toLowerCase().includes(query) ||
-          (item.description?.toLowerCase() || '').includes(query) ||
-          item.category.toLowerCase().includes(query)
+        result = result.filter(
+          (item) =>
+            item.name.toLowerCase().includes(query) ||
+            (item.description?.toLowerCase() || "").includes(query) ||
+            item.category.toLowerCase().includes(query),
         );
       }
 
       // Apply category filter
-      if (selectedCategory && selectedCategory !== 'all') {
-        result = result.filter(item => item.category === selectedCategory);
-      } else if (selectedCategory === 'all') {
+      if (selectedCategory && selectedCategory !== "all") {
+        result = result.filter((item) => item.category === selectedCategory);
+      } else if (selectedCategory === "all") {
         // Randomize items when "All" category is selected for better UX
         result = result.sort(() => Math.random() - 0.5);
       }
 
       // Apply dietary filters
       if (dietaryFilters && dietaryFilters.length > 0) {
-        result = result.filter(item =>
-          dietaryFilters.every(diet =>
-            (diet === 'vegetarian' && item.isVegetarian) ||
-            (diet === 'vegan' && item.isVegan) ||
-            (diet === 'glutenFree' && item.isGlutenFree) ||
-            (diet === 'dairyFree' && item.isDairyFree)
-          )
+        result = result.filter((item) =>
+          dietaryFilters.every(
+            (diet) =>
+              (diet === "vegetarian" && item.isVegetarian) ||
+              (diet === "vegan" && item.isVegan) ||
+              (diet === "glutenFree" && item.isGlutenFree) ||
+              (diet === "dairyFree" && item.isDairyFree),
+          ),
         );
       }
 
       setFilteredItems(result);
       setCurrentPage(1); // Reset to first page when filters change
-    } catch (error) {
-      console.error('Error filtering items:', error);
-    }
+    } catch (error) {}
   }, [searchQuery, selectedCategory, dietaryFilters, isMounted, menuItems]);
 
   // Debugging: Log when menuItems or filteredItems change
-  useEffect(() => {
-    console.log('menuItems updated:', menuItems);
-    console.log('filteredItems updated:', filteredItems);
-    console.log('isLoading:', isLoading);
-  }, [menuItems, filteredItems, isLoading]);
+  useEffect(() => {}, [menuItems, filteredItems, isLoading]);
 
   // Call filterItems when filters change or component mounts
   useEffect(() => {
     if (menuItems.length > 0) {
-      console.log('Filtering items...');
       filterItems();
     } else {
-      console.log('No menu items to filter');
     }
   }, [filterItems, menuItems]);
 
-
   // Toggle favorite handler
-  const handleToggleFavorite = async (itemId: string, itemType: string = 'menu') => {
+  const handleToggleFavorite = async (
+    itemId: string,
+    itemType: string = "menu",
+  ) => {
     setIsFavoriteLoading(itemId);
 
     try {
       await toggleFavorite(itemId, itemType);
     } catch (error) {
-      console.error('Error toggling favorite:', error);
     } finally {
       setIsFavoriteLoading(null);
     }
@@ -426,7 +463,6 @@ export default function MenuPage() {
   // Add to cart handler
   const handleAddToCart = (item: MenuItem) => {
     addToCart(item);
-    console.log(`${item.name} has been added to your cart`);
 
     // Notify other clients about popular items (example - disabled for serverless)
     // if (item.isPopular) { ... }
@@ -448,17 +484,17 @@ export default function MenuPage() {
 
   // Calculate total price
   const totalPrice = cart.reduce(
-    (total: number, cartItem: { item: MenuItem; quantity: number }) => total + (cartItem.item.price * cartItem.quantity),
-    0
+    (total: number, cartItem: { item: MenuItem; quantity: number }) =>
+      total + cartItem.item.price * cartItem.quantity,
+    0,
   );
 
   // Toggle dietary filter
 
-
   // Handle page change with smooth scroll
   const paginate = useCallback((pageNumber: number) => {
     setCurrentPage(pageNumber);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   return (
@@ -479,7 +515,9 @@ export default function MenuPage() {
 
       {/* Connection status indicator */}
       <div className="fixed bottom-4 right-4 z-50">
-        <div className={`p-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} text-white shadow-lg`}>
+        <div
+          className={`p-2 rounded-full ${isConnected ? "bg-green-500" : "bg-red-500"} text-white shadow-lg`}
+        >
           {isConnected ? (
             <Wifi className="h-5 w-5" />
           ) : (
@@ -516,9 +554,14 @@ export default function MenuPage() {
             >
               <Filter className="h-4 w-4" />
               <span className="font-medium truncate">
-                {selectedCategory === 'all' ? 'Categories' : categoryOptions.find(c => c.id === selectedCategory)?.name || 'Categories'}
+                {selectedCategory === "all"
+                  ? "Categories"
+                  : categoryOptions.find((c) => c.id === selectedCategory)
+                      ?.name || "Categories"}
               </span>
-              <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isFilterOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown
+                className={`h-4 w-4 transition-transform duration-200 ${isFilterOpen ? "rotate-180" : ""}`}
+              />
             </Button>
 
             {/* Categories Dropdown Menu */}
@@ -539,7 +582,7 @@ export default function MenuPage() {
                           setSelectedCategory(category.id);
                           setIsFilterOpen(false);
                         }}
-                        className={`w-full text-left px-4 py-2 text-sm ${selectedCategory === category.id ? 'bg-amber-50 text-amber-700' : 'text-gray-700 hover:bg-gray-50'}`}
+                        className={`w-full text-left px-4 py-2 text-sm ${selectedCategory === category.id ? "bg-amber-50 text-amber-700" : "text-gray-700 hover:bg-gray-50"}`}
                         role="menuitem"
                         suppressHydrationWarning
                       >
@@ -556,12 +599,16 @@ export default function MenuPage() {
 
       {/* Menu Items */}
       <div className="w-full">
-        {(isInitialLoad || isLoading) ? (
+        {isInitialLoad || isLoading ? (
           <MenuSkeletonLoader />
         ) : menuItems.length === 0 ? (
           <div className="text-center py-12">
-            <h3 className="text-lg font-medium text-gray-900">No menu items found</h3>
-            <p className="mt-2 text-gray-500">Please try refreshing the page or check back later.</p>
+            <h3 className="text-lg font-medium text-gray-900">
+              No menu items found
+            </h3>
+            <p className="mt-2 text-gray-500">
+              Please try refreshing the page or check back later.
+            </p>
             <Button
               onClick={() => window.location.reload()}
               className="mt-4 bg-amber-500 hover:bg-amber-600"
@@ -579,73 +626,85 @@ export default function MenuPage() {
                 </div>
               </div>
             )}
-            
+
             <div className="grid grid-cols-4 gap-6 w-full px-4 sm:px-6 lg:px-8">
               {currentItems.map((item: MenuItem) => (
                 <div
                   key={`menu-item-${item.id}`}
-                  className={`${premiumCardClasses} menu-card ${!item.available ? 'opacity-70' : ''} hover:shadow-md h-full flex flex-col`}
-                  style={{ minHeight: '300px', height: '100%' }}
+                  className={`${premiumCardClasses} menu-card ${!item.available ? "opacity-70" : ""} hover:shadow-md h-full flex flex-col`}
+                  style={{ minHeight: "300px", height: "100%" }}
                 >
                   <div className="relative h-48 overflow-hidden">
                     {(() => {
                       const favoriteId = resolveFavoriteId(item);
                       const isFav = favoriteId ? isFavorite(favoriteId) : false;
-                      const isLoadingFav = favoriteId ? isFavoriteLoading === favoriteId : false;
+                      const isLoadingFav = favoriteId
+                        ? isFavoriteLoading === favoriteId
+                        : false;
 
                       return (
-                    <motion.button
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        const idToUse = favoriteId || (await findDbIdForItem(item)) || item.id;
-                        if (!idToUse) {
-                          console.warn('[Menu] Could not resolve favorite ID for item:', item.name);
-                          return;
-                        }
-                        await handleToggleFavorite(idToUse);
-                      }}
-                      disabled={isLoadingFav}
-                      className={`absolute top-3 right-3 z-10 p-2.5 rounded-full shadow-sm transition-colors duration-200 ${isFav
-                        ? 'bg-red-50 text-red-500 hover:bg-red-100'
-                        : 'bg-white/90 text-gray-400 hover:text-red-400 hover:bg-white'
-                        } ${isLoadingFav ? 'opacity-60 cursor-wait' : 'cursor-pointer'}`}
-                      title={isFav ? 'Remove from favorites' : 'Add to favorites'}
-                      aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
-                      whileTap={{ scale: 0.80 }}
-                      whileHover={{ scale: 1.18 }}
-                      animate={!isLoadingFav
-                        ? { scale: isFav ? 1.08 : 1 }
-                        : { scale: 1 }
-                      }
-                      transition={{
-                        type: 'spring',
-                        stiffness: 450,
-                        damping: 15,
-                        mass: 0.8,
-                      }}
-                      suppressHydrationWarning
-                    >
-                      <motion.div
-                        animate={{ scale: isFav ? 1 : 0.95 }}
-                        transition={{ duration: 0.15 }}
-                      >
-                        <Heart
-                          className={`h-5 w-5 transition-all duration-200 ${isFav
-                            ? 'fill-red-500 text-red-500 drop-shadow-sm'
-                            : 'fill-transparent text-gray-400'}`}
-                          strokeWidth={isFav ? 0 : 1.75}
-                        />
-                      </motion.div>
-                      {/* Pulse ring on active state */}
-                      {isFav && (
-                        <motion.span
-                          className="absolute inset-0 rounded-full bg-red-400"
-                          initial={{ scale: 0.8, opacity: 0.4 }}
-                          animate={{ scale: 1.6, opacity: 0 }}
-                          transition={{ duration: 0.5, ease: 'easeOut' }}
-                        />
-                      )}
-                    </motion.button>
+                        <motion.button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const idToUse =
+                              favoriteId ||
+                              (await findDbIdForItem(item)) ||
+                              item.id;
+                            if (!idToUse) {
+                              return;
+                            }
+                            await handleToggleFavorite(idToUse);
+                          }}
+                          disabled={isLoadingFav}
+                          className={`absolute top-3 right-3 z-10 p-2.5 rounded-full shadow-sm transition-colors duration-200 ${
+                            isFav
+                              ? "bg-red-50 text-red-500 hover:bg-red-100"
+                              : "bg-white/90 text-gray-400 hover:text-red-400 hover:bg-white"
+                          } ${isLoadingFav ? "opacity-60 cursor-wait" : "cursor-pointer"}`}
+                          title={
+                            isFav ? "Remove from favorites" : "Add to favorites"
+                          }
+                          aria-label={
+                            isFav ? "Remove from favorites" : "Add to favorites"
+                          }
+                          whileTap={{ scale: 0.8 }}
+                          whileHover={{ scale: 1.18 }}
+                          animate={
+                            !isLoadingFav
+                              ? { scale: isFav ? 1.08 : 1 }
+                              : { scale: 1 }
+                          }
+                          transition={{
+                            type: "spring",
+                            stiffness: 450,
+                            damping: 15,
+                            mass: 0.8,
+                          }}
+                          suppressHydrationWarning
+                        >
+                          <motion.div
+                            animate={{ scale: isFav ? 1 : 0.95 }}
+                            transition={{ duration: 0.15 }}
+                          >
+                            <Heart
+                              className={`h-5 w-5 transition-all duration-200 ${
+                                isFav
+                                  ? "fill-red-500 text-red-500 drop-shadow-sm"
+                                  : "fill-transparent text-gray-400"
+                              }`}
+                              strokeWidth={isFav ? 0 : 1.75}
+                            />
+                          </motion.div>
+                          {/* Pulse ring on active state */}
+                          {isFav && (
+                            <motion.span
+                              className="absolute inset-0 rounded-full bg-red-400"
+                              initial={{ scale: 0.8, opacity: 0.4 }}
+                              animate={{ scale: 1.6, opacity: 0 }}
+                              transition={{ duration: 0.5, ease: "easeOut" }}
+                            />
+                          )}
+                        </motion.button>
                       );
                     })()}
 
@@ -663,8 +722,12 @@ export default function MenuPage() {
                   <div className="p-4">
                     <div className="flex justify-between items-start">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-gray-900 text-base">{item.name}</h3>
-                        <p className="text-sm text-gray-500/90 mt-1 line-clamp-2 font-light">{item.description}</p>
+                        <h3 className="font-bold text-gray-900 text-base">
+                          {item.name}
+                        </h3>
+                        <p className="text-sm text-gray-500/90 mt-1 line-clamp-2 font-light">
+                          {item.description}
+                        </p>
                       </div>
                       <div className="flex-shrink-0 ml-2">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
@@ -692,7 +755,7 @@ export default function MenuPage() {
                         className="w-full py-3 px-4 font-medium transition-colors duration-200 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white hover:shadow-lg hover:shadow-amber-500/30 cursor-pointer"
                         suppressHydrationWarning
                       >
-                        {item.available ? 'Order Now' : 'Sold Out'}
+                        {item.available ? "Order Now" : "Sold Out"}
                       </Button>
                     </div>
                   </div>
@@ -705,7 +768,9 @@ export default function MenuPage() {
               <div className="mt-16 mb-8 flex flex-col items-center gap-4 w-full">
                 <div>
                   <p className="text-sm text-gray-600">
-                    Showing {indexOfFirstItem + 1}-{Math.min(indexOfLastItem, filteredItems.length)} of {filteredItems.length} items
+                    Showing {indexOfFirstItem + 1}-
+                    {Math.min(indexOfLastItem, filteredItems.length)} of{" "}
+                    {filteredItems.length} items
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -729,18 +794,21 @@ export default function MenuPage() {
                     Next
                   </Button>
                 </div>
-
               </div>
             )}
-            
+
             {currentItems.length === 0 ? (
               <div className="text-center py-12">
-                <h3 className="text-lg font-medium text-gray-900">No items found</h3>
-                <p className="mt-2 text-gray-500">Try adjusting your search or filter criteria</p>
+                <h3 className="text-lg font-medium text-gray-900">
+                  No items found
+                </h3>
+                <p className="mt-2 text-gray-500">
+                  Try adjusting your search or filter criteria
+                </p>
                 <Button
                   onClick={() => {
-                    setSearchQuery('');
-                    setSelectedCategory('all');
+                    setSearchQuery("");
+                    setSelectedCategory("all");
                     setDietaryFilters([]);
                   }}
                   className="mt-4 px-4 py-2 bg-amber-500 text-white hover:bg-amber-600"
@@ -757,10 +825,9 @@ export default function MenuPage() {
   );
 }
 
-
 // Add custom scrollbar styles
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
+if (typeof document !== "undefined") {
+  const style = document.createElement("style");
   style.textContent = `
     /* Custom scrollbar */
     ::-webkit-scrollbar {

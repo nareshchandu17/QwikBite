@@ -14,7 +14,7 @@ class GlobalCache {
 
   private constructor() {
     // Periodic cleanup of expired keys every 30 seconds
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       setInterval(() => this.cleanup(), 30 * 1000);
     }
   }
@@ -32,7 +32,6 @@ class GlobalCache {
   public set<T>(key: string, data: T, ttlSeconds: number): void {
     const expiry = Date.now() + ttlSeconds * 1000;
     this.store.set(key, { data, expiry });
-    // console.log(`[CACHE SET] Key: ${key} | TTL: ${ttlSeconds}s`);
   }
 
   /**
@@ -42,17 +41,14 @@ class GlobalCache {
     const entry = this.store.get(key);
 
     if (!entry) {
-      console.log(`\x1b[33m[CACHE MISS]\x1b[0m ${key}`);
       return null;
     }
 
     if (Date.now() > entry.expiry) {
-      console.log(`\x1b[31m[CACHE EXPIRED]\x1b[0m ${key}`);
       this.store.delete(key);
       return null;
     }
 
-    console.log(`\x1b[32m[CACHE HIT]\x1b[0m ${key}`);
     return entry.data as T;
   }
 
@@ -62,7 +58,6 @@ class GlobalCache {
   public del(key: string): void {
     if (this.store.has(key)) {
       this.store.delete(key);
-      console.log(`\x1b[35m[CACHE INVALIDATED]\x1b[0m ${key}`);
     }
   }
 
@@ -78,7 +73,6 @@ class GlobalCache {
       }
     }
     if (count > 0) {
-      console.log(`\x1b[35m[CACHE INVALIDATED]\x1b[0m Pattern: ${pattern}* (${count} keys)`);
     }
   }
 

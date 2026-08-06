@@ -1,25 +1,25 @@
-import mongoose, { Document, Schema, Types, Model } from 'mongoose';
+import mongoose, { Document, Schema, Types, Model } from "mongoose";
 
 /**
  * Order Status Enum
  */
 export enum OrderStatus {
-  PENDING = 'pending',
-  CONFIRMED = 'confirmed',
-  PREPARING = 'preparing',
-  READY = 'ready',
-  COMPLETED = 'completed',
-  CANCELLED = 'cancelled',
+  PENDING = "pending",
+  CONFIRMED = "confirmed",
+  PREPARING = "preparing",
+  READY = "ready",
+  COMPLETED = "completed",
+  CANCELLED = "cancelled",
 }
 
 /**
  * Payment Status Enum
  */
 export enum PaymentStatus {
-  PENDING = 'pending',
-  PAID = 'paid',
-  FAILED = 'failed',
-  REFUNDED = 'refunded',
+  PENDING = "pending",
+  PAID = "paid",
+  FAILED = "failed",
+  REFUNDED = "refunded",
 }
 
 /**
@@ -84,7 +84,7 @@ const orderItemSchema = new Schema<IOrderItem>(
   {
     menuItem: {
       type: Schema.Types.Mixed, // Use Mixed to allow both ObjectId and String
-      ref: 'MenuItem',
+      ref: "MenuItem",
       required: true,
     },
     name: {
@@ -93,7 +93,7 @@ const orderItemSchema = new Schema<IOrderItem>(
     },
     image: {
       type: String,
-      default: '/placeholder-food.jpg',
+      default: "/placeholder-food.jpg",
     },
     quantity: {
       type: Number,
@@ -110,7 +110,7 @@ const orderItemSchema = new Schema<IOrderItem>(
       min: 0,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 /**
@@ -129,10 +129,10 @@ const statusHistorySchema = new Schema<IStatusHistory>(
     note: String,
     updatedBy: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 /**
@@ -146,14 +146,14 @@ const orderSchema = new Schema<IOrder>(
     },
     user: {
       type: Schema.Types.Mixed, // Use Mixed to allow both ObjectId and String
-      ref: 'User',
+      ref: "User",
       required: true,
       index: true,
     },
     items: {
       type: [orderItemSchema],
       required: true,
-      validate: [(val: unknown[]) => val.length > 0, 'Order must have items'],
+      validate: [(val: unknown[]) => val.length > 0, "Order must have items"],
     },
     totalAmount: {
       type: Number,
@@ -178,7 +178,7 @@ const orderSchema = new Schema<IOrder>(
     },
     slot: {
       type: Schema.Types.ObjectId,
-      ref: 'TimeSlot',
+      ref: "TimeSlot",
       index: true,
     },
     pickupTime: {
@@ -208,7 +208,7 @@ const orderSchema = new Schema<IOrder>(
     },
     assignedStaff: {
       type: Schema.Types.ObjectId,
-      ref: 'Staff',
+      ref: "Staff",
       index: true,
     },
     isCancelled: {
@@ -220,7 +220,7 @@ const orderSchema = new Schema<IOrder>(
     timestamps: true,
     versionKey: false,
     id: false, // Disable virtual id to prevent conflict with real id field
-  }
+  },
 );
 
 /**
@@ -232,7 +232,7 @@ orderSchema.index({ status: 1, createdAt: -1 });
 /**
  * PRE-SAVE HOOK: Generate Order ID & Initial Status History
  */
-orderSchema.pre<IOrder>('save', async function () {
+orderSchema.pre<IOrder>("save", async function () {
   if (!this.orderId) {
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -240,11 +240,11 @@ orderSchema.pre<IOrder>('save', async function () {
   }
 
   // If status is new or changed, add to history
-  if (this.isNew || this.isModified('status')) {
+  if (this.isNew || this.isModified("status")) {
     this.statusHistory.push({
       status: this.status,
       timestamp: new Date(),
-      note: this.isNew ? 'Order placed' : `Status updated to ${this.status}`,
+      note: this.isNew ? "Order placed" : `Status updated to ${this.status}`,
     });
   }
 });
@@ -262,5 +262,4 @@ orderSchema.statics.findActiveOrders = function () {
  * MODEL EXPORT
  */
 export const Order: Model<IOrder> =
-  mongoose.models.Order ||
-  mongoose.model<IOrder>('Order', orderSchema);
+  mongoose.models.Order || mongoose.model<IOrder>("Order", orderSchema);

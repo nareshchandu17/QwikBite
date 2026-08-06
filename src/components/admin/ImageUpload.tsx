@@ -1,16 +1,28 @@
-'use client';
+"use client";
 
-import { useState, useRef, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Upload, X, Image as ImageIcon, Loader2, ZoomIn, AlertCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { useState, useRef, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Upload,
+  X,
+  Image as ImageIcon,
+  Loader2,
+  ZoomIn,
+  AlertCircle,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // Maximum file size (5MB)
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 // Allowed file types
-const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+const ALLOWED_FILE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/avif",
+];
 // Minimum dimensions
 const MIN_DIMENSIONS = { width: 200, height: 200 };
 
@@ -24,51 +36,58 @@ interface ImageUploadProps {
   aspectRatio?: number; // width / height
 }
 
-export default function ImageUpload({ 
-  value, 
-  onChange, 
+export default function ImageUpload({
+  value,
+  onChange,
   onError,
-  label = 'Image',
+  label = "Image",
   required = false,
-  className = '',
-  aspectRatio = 16/9
+  className = "",
+  aspectRatio = 16 / 9,
 }: ImageUploadProps) {
   const [preview, setPreview] = useState<string>(value);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [dimensions, setDimensions] = useState<{width: number; height: number} | null>(null);
+  const [dimensions, setDimensions] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
   const [isZoomed, setIsZoomed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
 
   // Validate image dimensions
-  const validateImage = useCallback((file: File): Promise<boolean> => {
-    return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const isValid = img.width >= MIN_DIMENSIONS.width && 
-                       img.height >= MIN_DIMENSIONS.height;
-        setDimensions({ width: img.width, height: img.height });
-        
-        if (!isValid) {
-          const errorMsg = `Image must be at least ${MIN_DIMENSIONS.width}x${MIN_DIMENSIONS.height}px`;
+  const validateImage = useCallback(
+    (file: File): Promise<boolean> => {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const isValid =
+            img.width >= MIN_DIMENSIONS.width &&
+            img.height >= MIN_DIMENSIONS.height;
+          setDimensions({ width: img.width, height: img.height });
+
+          if (!isValid) {
+            const errorMsg = `Image must be at least ${MIN_DIMENSIONS.width}x${MIN_DIMENSIONS.height}px`;
+            setError(errorMsg);
+            onError?.(errorMsg);
+            resolve(false);
+            return;
+          }
+          setError(null);
+          resolve(true);
+        };
+        img.onerror = () => {
+          const errorMsg = "Failed to load image";
           setError(errorMsg);
           onError?.(errorMsg);
           resolve(false);
-          return;
-        }
-        setError(null);
-        resolve(true);
-      };
-      img.onerror = () => {
-        const errorMsg = 'Failed to load image';
-        setError(errorMsg);
-        onError?.(errorMsg);
-        resolve(false);
-      };
-      img.src = URL.createObjectURL(file);
-    });
-  }, [onError]);
+        };
+        img.src = URL.createObjectURL(file);
+      });
+    },
+    [onError],
+  );
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -80,7 +99,7 @@ export default function ImageUpload({
 
     // Validate file type
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
-      const errorMsg = `Invalid file type. Allowed: ${ALLOWED_FILE_TYPES.join(', ')}`;
+      const errorMsg = `Invalid file type. Allowed: ${ALLOWED_FILE_TYPES.join(", ")}`;
       setError(errorMsg);
       onError?.(errorMsg);
       return;
@@ -113,8 +132,8 @@ export default function ImageUpload({
       };
       reader.readAsDataURL(file);
     } catch (error) {
-      console.error('Error processing image:', error);
-      const errorMsg = error instanceof Error ? error.message : 'Failed to process image';
+      const errorMsg =
+        error instanceof Error ? error.message : "Failed to process image";
       setError(errorMsg);
       onError?.(errorMsg);
     } finally {
@@ -124,8 +143,8 @@ export default function ImageUpload({
 
   const handleUrlChange = async (url: string) => {
     if (!url) {
-      setPreview('');
-      onChange('');
+      setPreview("");
+      onChange("");
       setError(null);
       return;
     }
@@ -139,13 +158,16 @@ export default function ImageUpload({
       try {
         new URL(url);
       } catch {
-        throw new Error('Invalid URL');
+        throw new Error("Invalid URL");
       }
 
       // Check if URL is an image
       const img = new Image();
       img.onload = () => {
-        if (img.width < MIN_DIMENSIONS.width || img.height < MIN_DIMENSIONS.height) {
+        if (
+          img.width < MIN_DIMENSIONS.width ||
+          img.height < MIN_DIMENSIONS.height
+        ) {
           const errorMsg = `Image must be at least ${MIN_DIMENSIONS.width}x${MIN_DIMENSIONS.height}px`;
           setError(errorMsg);
           onError?.(errorMsg);
@@ -156,13 +178,14 @@ export default function ImageUpload({
         onChange(url);
       };
       img.onerror = () => {
-        const errorMsg = 'Failed to load image from URL';
+        const errorMsg = "Failed to load image from URL";
         setError(errorMsg);
         onError?.(errorMsg);
       };
       img.src = url;
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Invalid image URL';
+      const errorMsg =
+        error instanceof Error ? error.message : "Invalid image URL";
       setError(errorMsg);
       onError?.(errorMsg);
     } finally {
@@ -171,12 +194,12 @@ export default function ImageUpload({
   };
 
   const handleRemove = () => {
-    setPreview('');
-    onChange('');
+    setPreview("");
+    onChange("");
     setError(null);
     setDimensions(null);
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -185,7 +208,7 @@ export default function ImageUpload({
   };
 
   return (
-    <div className={cn('space-y-3', className)}>
+    <div className={cn("space-y-3", className)}>
       <div className="flex items-center justify-between">
         <Label className="text-amber-800 font-medium">
           {label} {required && <span className="text-red-500">*</span>}
@@ -196,17 +219,19 @@ export default function ImageUpload({
           </span>
         )}
       </div>
-      
+
       {/* Image Preview */}
       {preview ? (
         <div className="relative group">
-          <div 
+          <div
             className={cn(
-              'relative w-full bg-amber-50 rounded-lg border-2 border-amber-200 overflow-hidden transition-all duration-200',
-              isZoomed ? 'fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4' : 'aspect-video',
-              error && 'border-red-300',
-              isZoomed && 'cursor-zoom-out',
-              !isZoomed && 'cursor-zoom-in'
+              "relative w-full bg-amber-50 rounded-lg border-2 border-amber-200 overflow-hidden transition-all duration-200",
+              isZoomed
+                ? "fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+                : "aspect-video",
+              error && "border-red-300",
+              isZoomed && "cursor-zoom-out",
+              !isZoomed && "cursor-zoom-in",
             )}
             style={{ aspectRatio }}
             onClick={toggleZoom}
@@ -216,11 +241,11 @@ export default function ImageUpload({
               src={preview}
               alt="Preview"
               className={cn(
-                'w-full h-full object-contain transition-all duration-200',
-                isZoomed ? 'max-w-[90vw] max-h-[90vh]' : ''
+                "w-full h-full object-contain transition-all duration-200",
+                isZoomed ? "max-w-[90vw] max-h-[90vh]" : "",
               )}
             />
-            
+
             {/* Loading Overlay */}
             {isUploading && (
               <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
@@ -241,8 +266,8 @@ export default function ImageUpload({
               size="icon"
               variant="destructive"
               className={cn(
-                'absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity',
-                isZoomed && '!opacity-100'
+                "absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity",
+                isZoomed && "!opacity-100",
               )}
               onClick={(e) => {
                 e.stopPropagation();
@@ -252,7 +277,7 @@ export default function ImageUpload({
               <X className="w-4 h-4" />
             </Button>
           </div>
-          
+
           {isZoomed && (
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white text-sm px-3 py-1 rounded-full">
               Click to exit fullscreen
@@ -263,7 +288,10 @@ export default function ImageUpload({
         <div className="w-full aspect-video bg-amber-50 rounded-lg border-2 border-dashed border-amber-200 flex flex-col items-center justify-center p-6 text-center">
           <ImageIcon className="w-12 h-12 mx-auto mb-3 text-amber-300" />
           <p className="text-amber-600 font-medium mb-2">No image selected</p>
-          <p className="text-amber-500 text-sm mb-4">Recommended: {MIN_DIMENSIONS.width}×{MIN_DIMENSIONS.height}px or larger</p>
+          <p className="text-amber-500 text-sm mb-4">
+            Recommended: {MIN_DIMENSIONS.width}×{MIN_DIMENSIONS.height}px or
+            larger
+          </p>
         </div>
       )}
 
@@ -275,7 +303,7 @@ export default function ImageUpload({
             <Input
               ref={fileInputRef}
               type="file"
-              accept={ALLOWED_FILE_TYPES.join(',')}
+              accept={ALLOWED_FILE_TYPES.join(",")}
               onChange={handleFileChange}
               disabled={isUploading}
               className="hidden"
@@ -310,8 +338,8 @@ export default function ImageUpload({
               value={preview}
               onChange={(e) => handleUrlChange(e.target.value)}
               className={cn(
-                'bg-white/90 border-amber-200 text-amber-800 placeholder:text-amber-400 h-10',
-                error && 'border-red-300 focus-visible:ring-red-200'
+                "bg-white/90 border-amber-200 text-amber-800 placeholder:text-amber-400 h-10",
+                error && "border-red-300 focus-visible:ring-red-200",
               )}
               disabled={isUploading}
             />
@@ -331,7 +359,10 @@ export default function ImageUpload({
 
         {/* File Info */}
         <div className="text-xs text-amber-600 flex items-center justify-between">
-          <span>Supported: {ALLOWED_FILE_TYPES.map(t => t.split('/')[1]).join(', ')}</span>
+          <span>
+            Supported:{" "}
+            {ALLOWED_FILE_TYPES.map((t) => t.split("/")[1]).join(", ")}
+          </span>
           <span>Max size: {MAX_FILE_SIZE / (1024 * 1024)}MB</span>
         </div>
       </div>

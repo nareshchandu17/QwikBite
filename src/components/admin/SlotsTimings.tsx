@@ -1,14 +1,22 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { toast } from 'sonner';
-import { getPusherClient } from '@/lib/pusher';
-import { STANDARD_SLOTS } from '@/lib/slot-utils';
-import EditScheduleModal from './EditScheduleModal';
-import SlotLoadViz from './SlotLoadViz';
-import { TimeSlot } from '@/types/slot';
-import { RefreshCw, Clock, ShieldCheck, AlertCircle, Zap, Wifi, WifiOff } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useEffect, useState } from "react";
+import { toast } from "sonner";
+import { getPusherClient } from "@/lib/pusher";
+import { STANDARD_SLOTS } from "@/lib/slot-utils";
+import EditScheduleModal from "./EditScheduleModal";
+import SlotLoadViz from "./SlotLoadViz";
+import { TimeSlot } from "@/types/slot";
+import {
+  RefreshCw,
+  Clock,
+  ShieldCheck,
+  AlertCircle,
+  Zap,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const SlotsTimings: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -17,23 +25,28 @@ const SlotsTimings: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [isConnected, setIsConnected] = useState(false);
-  const [autoRefreshInterval, setAutoRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  const [autoRefreshInterval, setAutoRefreshInterval] =
+    useState<NodeJS.Timeout | null>(null);
 
   // 🔹 FETCH SLOTS FROM DB
   const fetchSlots = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/admin/timeslots/today', { cache: 'no-store' });
+      const res = await fetch("/api/admin/timeslots/today", {
+        cache: "no-store",
+      });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+        throw new Error(
+          errorData.error || `HTTP ${res.status}: ${res.statusText}`,
+        );
       }
       const data = await res.json();
       setSlots(data);
       setLastRefresh(new Date());
     } catch (error) {
-      console.error('Failed to load slots:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       toast.error(`Failed to load time slots: ${errorMessage}`);
     } finally {
       setLoading(false);
@@ -44,20 +57,22 @@ const SlotsTimings: React.FC = () => {
   const handleForceSync = async () => {
     try {
       setIsSyncing(true);
-      const res = await fetch('/api/slots/sync', { method: 'POST' });
+      const res = await fetch("/api/slots/sync", { method: "POST" });
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+        throw new Error(
+          errorData.error || `HTTP ${res.status}: ${res.statusText}`,
+        );
       }
-      
+
       const result = await res.json();
-      toast.success(result.message || 'System reconciled successfully!');
-      
+      toast.success(result.message || "System reconciled successfully!");
+
       // Refresh local data
       await fetchSlots();
     } catch (error) {
-      console.error('Force sync failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       toast.error(`Failed to sync slot data: ${errorMessage}`);
     } finally {
       setIsSyncing(false);
@@ -70,21 +85,18 @@ const SlotsTimings: React.FC = () => {
     // 🔹 Real-time updates via Pusher
     const pusher = getPusherClient();
     if (pusher) {
-      const channel = pusher.subscribe('admin');
-      
-      channel.bind('slot-update', (data: any) => {
-        console.log('Slot update received:', data);
+      const channel = pusher.subscribe("admin");
+
+      channel.bind("slot-update", (data: any) => {
         fetchSlots();
       });
 
-      channel.bind('pusher:connection_established', () => {
+      channel.bind("pusher:connection_established", () => {
         setIsConnected(true);
-        console.log('Pusher connected');
       });
 
-      channel.bind('pusher:connection_failed', () => {
+      channel.bind("pusher:connection_failed", () => {
         setIsConnected(false);
-        console.log('Pusher connection failed');
       });
 
       // Set up auto-refresh as fallback when disconnected
@@ -107,59 +119,61 @@ const SlotsTimings: React.FC = () => {
 
   const getStatusConfig = (status: string, percentage: number) => {
     const s = status.toLowerCase();
-    if (s === 'full' || percentage >= 100) return {
-      label: 'FULL - OVERLOADED',
-      color: 'text-red-400',
-      bg: 'bg-red-500/10',
-      border: 'border-red-500/30',
-      bar: 'bg-red-500',
-      icon: <AlertCircle className="h-3 w-3" />
-    };
-    if (s === 'busy' || percentage >= 70) return {
-      label: 'BUSY - SLIGHT DELAY',
-      color: 'text-amber-400',
-      bg: 'bg-amber-500/10',
-      border: 'border-amber-500/30',
-      bar: 'bg-amber-500',
-      icon: <Clock className="h-3 w-3" />
-    };
+    if (s === "full" || percentage >= 100)
+      return {
+        label: "FULL - OVERLOADED",
+        color: "text-red-400",
+        bg: "bg-red-500/10",
+        border: "border-red-500/30",
+        bar: "bg-red-500",
+        icon: <AlertCircle className="h-3 w-3" />,
+      };
+    if (s === "busy" || percentage >= 70)
+      return {
+        label: "BUSY - SLIGHT DELAY",
+        color: "text-amber-400",
+        bg: "bg-amber-500/10",
+        border: "border-amber-500/30",
+        bar: "bg-amber-500",
+        icon: <Clock className="h-3 w-3" />,
+      };
     return {
-      label: 'OPEN - OPTIMAL',
-      color: 'text-emerald-400',
-      bg: 'bg-emerald-500/10',
-      border: 'border-emerald-500/30',
-      bar: 'bg-emerald-500',
-      icon: <ShieldCheck className="h-3 w-3" />
+      label: "OPEN - OPTIMAL",
+      color: "text-emerald-400",
+      bg: "bg-emerald-500/10",
+      border: "border-emerald-500/30",
+      bar: "bg-emerald-500",
+      icon: <ShieldCheck className="h-3 w-3" />,
     };
   };
 
   const handleSaveSchedule = async (updatedSlots: TimeSlot[]) => {
     try {
-      const res = await fetch('/api/admin/timeslots/today', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/admin/timeslots/today", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slots: updatedSlots }),
       });
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+        throw new Error(
+          errorData.error || `HTTP ${res.status}: ${res.statusText}`,
+        );
       }
 
       const result = await res.json();
       setSlots(updatedSlots);
-      toast.success('Manual overrides applied!');
+      toast.success("Manual overrides applied!");
       setIsModalOpen(false);
-      
+
       // Invalidate cache to ensure fresh data
       try {
-        await fetch('/api/slots', { method: 'POST' });
-      } catch (cacheErr) {
-        console.error('Failed to invalidate cache:', cacheErr);
-      }
+        await fetch("/api/slots", { method: "POST" });
+      } catch (cacheErr) {}
     } catch (error) {
-      console.error('Failed to update schedule:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       toast.error(`Failed to update schedule: ${errorMessage}`);
     }
   };
@@ -168,7 +182,9 @@ const SlotsTimings: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
         <div className="w-10 h-10 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-gray-400 animate-pulse font-medium">Calculating live kitchen load...</p>
+        <p className="text-gray-400 animate-pulse font-medium">
+          Calculating live kitchen load...
+        </p>
       </div>
     );
   }
@@ -182,38 +198,46 @@ const SlotsTimings: React.FC = () => {
             Slot Load Management
           </h1>
           <div className="flex items-center gap-2 mt-1">
-             <p className="text-gray-400 text-sm">
-                Real-time monitoring of kitchen capacity and scheduling.
-             </p>
-             <span className="h-1 w-1 rounded-full bg-gray-600" />
-             <p className="text-xs text-gray-500 italic">
-                Last updated: {lastRefresh.toLocaleTimeString()}
-             </p>
-             <span className="h-1 w-1 rounded-full bg-gray-600" />
-             <div className={`flex items-center gap-1 text-xs ${isConnected ? 'text-emerald-400' : 'text-amber-400'}`}>
-                {isConnected ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
-                {isConnected ? 'Live' : 'Polling'}
-             </div>
+            <p className="text-gray-400 text-sm">
+              Real-time monitoring of kitchen capacity and scheduling.
+            </p>
+            <span className="h-1 w-1 rounded-full bg-gray-600" />
+            <p className="text-xs text-gray-500 italic">
+              Last updated: {lastRefresh.toLocaleTimeString()}
+            </p>
+            <span className="h-1 w-1 rounded-full bg-gray-600" />
+            <div
+              className={`flex items-center gap-1 text-xs ${isConnected ? "text-emerald-400" : "text-amber-400"}`}
+            >
+              {isConnected ? (
+                <Wifi className="h-3 w-3" />
+              ) : (
+                <WifiOff className="h-3 w-3" />
+              )}
+              {isConnected ? "Live" : "Polling"}
+            </div>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
-            <Button 
-                onClick={handleForceSync}
-                disabled={isSyncing}
-                variant="outline"
-                className="bg-white/5 border-white/10 hover:bg-white/10 text-white gap-2 h-10"
-            >
-                <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                {isSyncing ? 'Syncing...' : 'Force Reconcile'}
-            </Button>
-            
-            <Button
-                onClick={() => setIsModalOpen(true)}
-                className="bg-amber-600 hover:bg-amber-700 text-white font-bold h-10 rounded-lg shadow-lg shadow-amber-900/20"
-            >
-                Edit Capacity
-            </Button>
+          <Button
+            onClick={handleForceSync}
+            disabled={isSyncing}
+            variant="outline"
+            className="bg-white/5 border-white/10 hover:bg-white/10 text-white gap-2 h-10"
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`}
+            />
+            {isSyncing ? "Syncing..." : "Force Reconcile"}
+          </Button>
+
+          <Button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-amber-600 hover:bg-amber-700 text-white font-bold h-10 rounded-lg shadow-lg shadow-amber-900/20"
+          >
+            Edit Capacity
+          </Button>
         </div>
       </div>
 
@@ -226,14 +250,20 @@ const SlotsTimings: React.FC = () => {
 
           <div className="relative group overflow-hidden glass-surface p-6 rounded-2xl border border-white/5 bg-black/40 backdrop-blur-md">
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                <Zap className="h-12 w-12 text-amber-500" />
+              <Zap className="h-12 w-12 text-amber-500" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-300">Load Optimization</h3>
+            <h3 className="text-lg font-semibold text-gray-300">
+              Load Optimization
+            </h3>
             <p className="text-3xl font-black mt-2 text-white">
-                {Math.round(slots.reduce((a, b) => a + (b.percentage || 0), 0) / (slots.length || 1))}%
+              {Math.round(
+                slots.reduce((a, b) => a + (b.percentage || 0), 0) /
+                  (slots.length || 1),
+              )}
+              %
             </p>
             <p className="text-xs text-gray-500 mt-1 uppercase tracking-widest font-bold">
-                Overall Daily Utilization
+              Overall Daily Utilization
             </p>
           </div>
         </div>
@@ -248,18 +278,28 @@ const SlotsTimings: React.FC = () => {
                   DYNAMIC
                 </span>
               </div>
-              
+
               <div className="flex gap-4 text-[10px] font-bold text-gray-500">
-                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> OPTIMAL</div>
-                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> BUSY</div>
-                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> FULL</div>
+                <div className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />{" "}
+                  OPTIMAL
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" /> BUSY
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-red-500" /> FULL
+                </div>
               </div>
             </div>
 
             {/* TIME SLOTS GRID */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
               {slots.map((slot: TimeSlot) => {
-                const config = getStatusConfig(slot.status, slot.percentage || 0);
+                const config = getStatusConfig(
+                  slot.status,
+                  slot.percentage || 0,
+                );
                 const isASAP = slot.timeSlot === "ASAP";
 
                 return (
@@ -274,14 +314,20 @@ const SlotsTimings: React.FC = () => {
                     <div className="flex justify-between items-start mb-3 relative z-10">
                       <div>
                         <h3 className="font-bold text-white flex items-center gap-2">
-                          {isASAP ? <Zap className="h-4 w-4 text-amber-400" /> : <Clock className="h-4 w-4 text-gray-400" />}
+                          {isASAP ? (
+                            <Zap className="h-4 w-4 text-amber-400" />
+                          ) : (
+                            <Clock className="h-4 w-4 text-gray-400" />
+                          )}
                           {slot.timeSlot}
                         </h3>
                         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">
-                            {isASAP ? 'Immediate Pickup' : 'Scheduled Window'}
+                          {isASAP ? "Immediate Pickup" : "Scheduled Window"}
                         </p>
                       </div>
-                      <div className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border ${config.border} ${config.color} bg-black/40`}>
+                      <div
+                        className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-wider border ${config.border} ${config.color} bg-black/40`}
+                      >
                         {config.icon}
                         {config.label}
                       </div>
@@ -289,9 +335,13 @@ const SlotsTimings: React.FC = () => {
 
                     <div className="space-y-3 relative z-10">
                       <div className="flex justify-between items-end">
-                        <span className="text-[10px] font-bold text-gray-500 uppercase">Prep Load (mins)</span>
+                        <span className="text-[10px] font-bold text-gray-500 uppercase">
+                          Prep Load (mins)
+                        </span>
                         <div className="text-right">
-                          <span className={`text-sm font-black ${config.color}`}>
+                          <span
+                            className={`text-sm font-black ${config.color}`}
+                          >
                             {slot.used || 0}
                           </span>
                           <span className="text-xs text-gray-600 font-bold ml-1">
@@ -308,9 +358,13 @@ const SlotsTimings: React.FC = () => {
                       </div>
 
                       <div className="flex justify-between items-center text-[9px] font-bold uppercase">
-                        <span className="text-gray-500">{slot.percentage || 0}% Cap. Utilization</span>
+                        <span className="text-gray-500">
+                          {slot.percentage || 0}% Cap. Utilization
+                        </span>
                         {(slot.percentage || 0) >= 100 && (
-                          <span className="text-red-400 animate-pulse">Critical Overload</span>
+                          <span className="text-red-400 animate-pulse">
+                            Critical Overload
+                          </span>
                         )}
                       </div>
                     </div>

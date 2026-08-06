@@ -1,42 +1,57 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { BarChart, Clock, Package, Users, DollarSign, TrendingUp, ArrowRight, Loader2 } from 'lucide-react';
-import { useAdminNavigation, useAdminActions } from '@/lib/adminUtils';
-import { Bar } from 'react-chartjs-2';
-import 'chart.js/auto';
-import Link from 'next/link';
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import {
+  BarChart,
+  Clock,
+  Package,
+  Users,
+  DollarSign,
+  TrendingUp,
+  ArrowRight,
+  Loader2,
+} from "lucide-react";
+import { useAdminNavigation, useAdminActions } from "@/lib/adminUtils";
+import { Bar } from "react-chartjs-2";
+import "chart.js/auto";
+import Link from "next/link";
 
 export default function AdminHome() {
   const router = useRouter();
 
   useEffect(() => {
     // Redirect to admin dashboard
-    router.push('/admin/dashboard');
+    router.push("/admin/dashboard");
   }, [router]);
 
-  const { 
-    analytics, 
-    orders, 
-    formatCurrency, 
-    formatDate, 
+  const {
+    analytics,
+    orders,
+    formatCurrency,
+    formatDate,
     getStatusColor,
-    navigateTo 
+    navigateTo,
   } = useAdminNavigation();
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [recentOrders, setRecentOrders] = useState(orders.slice(0, 5));
   const [chartData, setChartData] = useState({
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
     datasets: [
       {
-        label: 'Revenue',
+        label: "Revenue",
         data: [1200, 1900, 1500, 2500, 2200, 3000, 2800],
-        backgroundColor: 'rgba(245, 158, 11, 0.2)',
-        borderColor: 'rgba(245, 158, 11, 1)',
+        backgroundColor: "rgba(245, 158, 11, 0.2)",
+        borderColor: "rgba(245, 158, 11, 1)",
         borderWidth: 1,
       },
     ],
@@ -84,7 +99,7 @@ export default function AdminHome() {
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-white/80 backdrop-blur-sm border-amber-200 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-amber-800">
@@ -94,14 +109,18 @@ export default function AdminHome() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-amber-700">
-                {orders.filter(o => ['pending', 'preparing', 'ready'].includes(o.status)).length}
+                {
+                  orders.filter((o) =>
+                    ["pending", "preparing", "ready"].includes(o.status),
+                  ).length
+                }
               </div>
               <p className="text-xs text-amber-600">
                 {Math.floor(Math.random() * 5) + 1} new today
               </p>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-white/80 backdrop-blur-sm border-amber-200 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-amber-800">
@@ -118,7 +137,7 @@ export default function AdminHome() {
               </p>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-white/80 backdrop-blur-sm border-amber-200 shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-amber-800">
@@ -141,8 +160,10 @@ export default function AdminHome() {
           <Card className="col-span-4 bg-white/80 backdrop-blur-sm border-amber-200 shadow-sm">
             <CardHeader>
               <div className="flex justify-between items-center">
-                <CardTitle className="text-amber-900">Revenue Overview</CardTitle>
-                <select 
+                <CardTitle className="text-amber-900">
+                  Revenue Overview
+                </CardTitle>
+                <select
                   className="text-xs border border-amber-200 rounded px-2 py-1 bg-white/50 text-amber-800"
                   defaultValue="week"
                 >
@@ -154,7 +175,7 @@ export default function AdminHome() {
             </CardHeader>
             <CardContent className="pl-2">
               <div className="h-[300px]">
-                <Bar 
+                <Bar
                   data={chartData}
                   options={{
                     responsive: true,
@@ -163,34 +184,34 @@ export default function AdminHome() {
                       y: {
                         beginAtZero: true,
                         grid: {
-                          color: 'rgba(0, 0, 0, 0.05)'
+                          color: "rgba(0, 0, 0, 0.05)",
                         },
                         ticks: {
-                          callback: (value) => `$${value}`
-                        }
+                          callback: (value) => `$${value}`,
+                        },
                       },
                       x: {
                         grid: {
-                          display: false
-                        }
-                      }
+                          display: false,
+                        },
+                      },
                     },
                     plugins: {
                       legend: {
-                        display: false
-                      }
-                    }
+                        display: false,
+                      },
+                    },
                   }}
                 />
               </div>
             </CardContent>
           </Card>
-          
+
           <Card className="col-span-3 bg-white/80 backdrop-blur-sm border-amber-200 shadow-sm">
             <div className="flex justify-between items-center p-6 pb-2">
               <CardTitle className="text-amber-900">Recent Orders</CardTitle>
-              <Link 
-                href="/admin/orders" 
+              <Link
+                href="/admin/orders"
                 className="text-xs text-amber-600 hover:text-amber-800 flex items-center"
               >
                 View all <ArrowRight className="ml-1 h-3 w-3" />
@@ -199,8 +220,8 @@ export default function AdminHome() {
             <CardContent>
               <div className="space-y-4">
                 {recentOrders.map((order) => (
-                  <div 
-                    key={order.id} 
+                  <div
+                    key={order.id}
                     className="flex items-center justify-between p-3 rounded-lg hover:bg-amber-50/50 transition-colors"
                   >
                     <div className="space-y-1">
@@ -212,12 +233,15 @@ export default function AdminHome() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(order.status)}`}>
-                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full ${getStatusColor(order.status)}`}
+                      >
+                        {order.status.charAt(0).toUpperCase() +
+                          order.status.slice(1)}
                       </span>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
+                      <Button
+                        variant="outline"
+                        size="sm"
                         className="text-amber-700 border-amber-300 hover:bg-amber-50 text-xs"
                         onClick={() => handleViewOrder(order.id)}
                       >
@@ -229,11 +253,11 @@ export default function AdminHome() {
               </div>
             </CardContent>
             <CardFooter className="pt-0">
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="text-amber-600 hover:bg-amber-50 w-full"
-                onClick={() => navigateTo('/admin/orders')}
+                onClick={() => navigateTo("/admin/orders")}
               >
                 View All Orders
               </Button>

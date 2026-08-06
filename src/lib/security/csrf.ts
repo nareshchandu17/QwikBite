@@ -3,13 +3,13 @@
  * Generates and validates CSRF tokens for state-changing operations
  */
 
-import { createHash, randomBytes } from 'crypto';
+import { createHash, randomBytes } from "crypto";
 
 /**
  * Generate a random CSRF token
  */
 export function generateCSRFToken(): string {
-  return randomBytes(32).toString('hex');
+  return randomBytes(32).toString("hex");
 }
 
 /**
@@ -18,9 +18,9 @@ export function generateCSRFToken(): string {
  * @param token - CSRF token to sign
  */
 export function signCSRFToken(secret: string, token: string): string {
-  const hmac = createHash('sha256');
+  const hmac = createHash("sha256");
   hmac.update(`${token}:${secret}`);
-  return hmac.digest('hex');
+  return hmac.digest("hex");
 }
 
 /**
@@ -29,7 +29,11 @@ export function signCSRFToken(secret: string, token: string): string {
  * @param token - CSRF token to verify
  * @param signature - Expected signature
  */
-export function verifyCSRFToken(secret: string, token: string, signature: string): boolean {
+export function verifyCSRFToken(
+  secret: string,
+  token: string,
+  signature: string,
+): boolean {
   const expectedSignature = signCSRFToken(secret, token);
   return signature === expectedSignature;
 }
@@ -38,13 +42,16 @@ export function verifyCSRFToken(secret: string, token: string, signature: string
  * Extract CSRF token from request headers
  */
 export function getCSRFTokenFromRequest(request: Request): string | null {
-  return request.headers.get('x-csrf-token') || null;
+  return request.headers.get("x-csrf-token") || null;
 }
 
 /**
  * Generate CSRF token for client (to be stored in cookie)
  */
-export function generateClientCSRFToken(secret: string): { token: string; signature: string } {
+export function generateClientCSRFToken(secret: string): {
+  token: string;
+  signature: string;
+} {
   const token = generateCSRFToken();
   const signature = signCSRFToken(secret, token);
   return { token, signature };
@@ -53,18 +60,25 @@ export function generateClientCSRFToken(secret: string): { token: string; signat
 /**
  * Middleware to validate CSRF token for state-changing operations
  */
-export function validateCSRFMiddleware(request: Request, secret: string): boolean {
+export function validateCSRFMiddleware(
+  request: Request,
+  secret: string,
+): boolean {
   // Skip CSRF validation for GET requests (they should be idempotent)
-  if (request.method === 'GET' || request.method === 'HEAD' || request.method === 'OPTIONS') {
+  if (
+    request.method === "GET" ||
+    request.method === "HEAD" ||
+    request.method === "OPTIONS"
+  ) {
     return true;
   }
-  
+
   const token = getCSRFTokenFromRequest(request);
-  const signature = request.headers.get('x-csrf-signature');
-  
+  const signature = request.headers.get("x-csrf-signature");
+
   if (!token || !signature) {
     return false;
   }
-  
+
   return verifyCSRFToken(secret, token, signature);
 }

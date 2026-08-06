@@ -1,8 +1,16 @@
-'use client';
+"use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
-import { getPusherClient } from '@/lib/pusher';
-import { Transaction } from '@/types/payment';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+  useCallback,
+  useRef,
+} from "react";
+import { getPusherClient } from "@/lib/pusher";
+import { Transaction } from "@/types/payment";
 
 interface PusherContextType {
   pusherClient: ReturnType<typeof getPusherClient>;
@@ -13,7 +21,7 @@ interface PusherContextType {
   sendFeedback: (feedback: any) => void;
   updateFeedback: (id: string, updates: any) => void;
   sendNotification: (notification: any) => void;
-  addTransaction: (transaction: Omit<Transaction, 'id' | 'date'>) => void;
+  addTransaction: (transaction: Omit<Transaction, "id" | "date">) => void;
   updateTransaction: (id: string, updates: Partial<Transaction>) => void;
   connect: () => void;
   disconnect: () => void;
@@ -26,13 +34,17 @@ export function PusherProvider({ children }: { children: ReactNode }) {
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
-  
+
   const isMounted = useRef(false);
   const pusherClient = getPusherClient();
 
+  const sendFeedback = useCallback((feedback: any) => {}, []);
+  const updateFeedback = useCallback((id: string, updates: any) => {}, []);
+  const sendNotification = useCallback((notification: any) => {}, []);
+
   const connect = useCallback(() => {
     if (!pusherClient) return;
-    if (pusherClient.connection.state !== 'connected') {
+    if (pusherClient.connection.state !== "connected") {
       pusherClient.connect();
     }
   }, [pusherClient]);
@@ -45,7 +57,7 @@ export function PusherProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isMounted.current) {
-        isMounted.current = true;
+      isMounted.current = true;
     }
 
     if (!pusherClient) return;
@@ -54,20 +66,18 @@ export function PusherProvider({ children }: { children: ReactNode }) {
 
     const handleConnect = () => setIsConnected(true);
     const handleDisconnect = () => setIsConnected(false);
-    const handleError = (err: any) => console.error('[PUSHER ERROR]', err);
 
-    pusherClient.connection.bind('connected', handleConnect);
-    pusherClient.connection.bind('disconnected', handleDisconnect);
-    pusherClient.connection.bind('error', handleError);
+    pusherClient.connection.bind("connected", handleConnect);
+    pusherClient.connection.bind("disconnected", handleDisconnect);
+    pusherClient.connection.bind("error", (error: any) => console.error("Pusher error:", error));
 
-    setIsConnected(pusherClient.connection.state === 'connected');
+    setIsConnected(pusherClient.connection.state === "connected");
 
     // Subscribe to payment updates channel
-    const paymentChannel = pusherClient.subscribe('admin');
-    
-    paymentChannel.bind('payment_update', (data: any) => {
-      console.log('[PUSHER] Payment update received:', data);
-      if (data.type === 'payment_created' || data.type === 'payment_updated') {
+    const paymentChannel = pusherClient.subscribe("admin");
+
+    paymentChannel.bind("payment_update", (data: any) => {
+      if (data.type === "payment_created" || data.type === "payment_updated") {
         const newTransaction = {
           id: data.payment._id,
           transactionId: data.payment.transactionId,
@@ -75,54 +85,65 @@ export function PusherProvider({ children }: { children: ReactNode }) {
           customer: data.payment.customerName,
           amount: data.payment.amount,
           method: data.payment.method,
-          status: data.payment.status.charAt(0).toUpperCase() + data.payment.status.slice(1),
+          status:
+            data.payment.status.charAt(0).toUpperCase() +
+            data.payment.status.slice(1),
           date: data.payment.createdAt,
         };
-        setTransactions(prev => [newTransaction, ...prev]);
+        setTransactions((prev) => [newTransaction, ...prev]);
       }
     });
 
     return () => {
-      paymentChannel.unbind('payment_update');
+      paymentChannel.unbind("payment_update");
       paymentChannel.unsubscribe();
-      pusherClient.connection.unbind('connected', handleConnect);
-      pusherClient.connection.unbind('disconnected', handleDisconnect);
-      pusherClient.connection.unbind('error', handleError);
+      pusherClient.connection.unbind("connected", handleConnect);
+      pusherClient.connection.unbind("disconnected", handleDisconnect);
+      pusherClient.connection.unbind("error");
     };
   }, [connect, pusherClient]);
 
-  const sendFeedback = (feedback: any) => console.log('Feedback via realtime disabled in Pusher mode', feedback);
-  const updateFeedback = (id: string, updates: any) => console.log('Feedback update disabled', id);
-  const sendNotification = (notification: any) => console.log('Notification disabled', notification);
-  const addTransaction = useCallback((transaction: Omit<Transaction, 'id' | 'date'>) => {
-    const newTransaction: Transaction = {
-      ...transaction,
-      id: `temp-${Date.now()}`,
-      date: new Date().toISOString(),
-    };
-    setTransactions(prev => [newTransaction, ...prev]);
-  }, []);
-  const updateTransaction = useCallback((id: string, updates: Partial<Transaction>) => {
-    setTransactions(prev => prev.map(txn => 
-      txn.id === id || txn.transactionId === id ? { ...txn, ...updates } : txn
-    ));
-  }, []);
+  const addTransaction = useCallback(
+    (transaction: Omit<Transaction, "id" | "date">) => {
+      const newTransaction: Transaction = {
+        ...transaction,
+        id: `temp-${Date.now()}`,
+        date: new Date().toISOString(),
+      };
+      setTransactions((prev) => [newTransaction, ...prev]);
+    },
+    [],
+  );
+  const updateTransaction = useCallback(
+    (id: string, updates: Partial<Transaction>) => {
+      setTransactions((prev) =>
+        prev.map((txn) =>
+          txn.id === id || txn.transactionId === id
+            ? { ...txn, ...updates }
+            : txn,
+        ),
+      );
+    },
+    [],
+  );
 
   return (
-    <PusherContext.Provider value={{
-      pusherClient,
-      isConnected,
-      feedbacks,
-      transactions,
-      notifications,
-      sendFeedback,
-      updateFeedback,
-      sendNotification,
-      addTransaction,
-      updateTransaction,
-      connect,
-      disconnect
-    }}>
+    <PusherContext.Provider
+      value={{
+        pusherClient,
+        isConnected,
+        feedbacks,
+        transactions,
+        notifications,
+        sendFeedback,
+        updateFeedback,
+        sendNotification,
+        addTransaction,
+        updateTransaction,
+        connect,
+        disconnect,
+      }}
+    >
       {children}
     </PusherContext.Provider>
   );
@@ -131,7 +152,7 @@ export function PusherProvider({ children }: { children: ReactNode }) {
 export const usePusher = () => {
   const context = useContext(PusherContext);
   if (!context) {
-    throw new Error('usePusher must be used within a PusherProvider');
+    throw new Error("usePusher must be used within a PusherProvider");
   }
   return context;
-}
+};

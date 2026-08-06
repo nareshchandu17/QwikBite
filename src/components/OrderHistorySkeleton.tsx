@@ -1,4 +1,4 @@
-import { Skeleton } from "./ui/skeleton"
+import { Skeleton } from "./ui/skeleton";
 
 export function OrderHistorySkeleton() {
   return (
@@ -12,7 +12,7 @@ export function OrderHistorySkeleton() {
             </div>
             <Skeleton className="h-4 w-20" />
           </div>
-          
+
           <div className="space-y-2 my-3">
             {[...Array(2)].map((_, j) => (
               <div key={j} className="flex justify-between">
@@ -24,7 +24,7 @@ export function OrderHistorySkeleton() {
               </div>
             ))}
           </div>
-          
+
           <div className="flex justify-between items-center pt-3 border-t">
             <Skeleton className="h-4 w-20" />
             <Skeleton className="h-10 w-28 rounded-full" />
@@ -32,5 +32,5 @@ export function OrderHistorySkeleton() {
         </div>
       ))}
     </div>
-  )
+  );
 }

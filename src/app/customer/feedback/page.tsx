@@ -18,7 +18,7 @@ type FeedbackItem = {
   comment?: string;
   images?: string[];
   isAnonymous: boolean;
-  status: 'pending' | 'approved' | 'rejected';
+  status: "pending" | "approved" | "rejected";
   adminComment?: string;
   createdAt: string;
   updatedAt: string;
@@ -31,7 +31,9 @@ export default function FeedbackPage() {
   const [feedbackHistory, setFeedbackHistory] = useState<FeedbackItem[]>([]);
   const [isLoadingFeedback, setIsLoadingFeedback] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-  const [highlightedFeedbackId, setHighlightedFeedbackId] = useState<string | null>(null);
+  const [highlightedFeedbackId, setHighlightedFeedbackId] = useState<
+    string | null
+  >(null);
 
   // Filters
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -59,18 +61,18 @@ export default function FeedbackPage() {
   useEffect(() => {
     setMounted(true);
     fetchFeedbackHistory();
-    
+
     // Check for feedbackId in URL parameter
     const urlParams = new URLSearchParams(window.location.search);
-    const feedbackId = urlParams.get('feedbackId');
+    const feedbackId = urlParams.get("feedbackId");
     if (feedbackId) {
       setHighlightedFeedbackId(feedbackId);
-      
+
       // Scroll to the feedback after data loads
       setTimeout(() => {
         const element = document.getElementById(`feedback-${feedbackId}`);
         if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.scrollIntoView({ behavior: "smooth", block: "center" });
           // Remove highlight after a few seconds
           setTimeout(() => setHighlightedFeedbackId(null), 5000);
         }
@@ -82,27 +84,24 @@ export default function FeedbackPage() {
     setIsLoadingFeedback(true);
     try {
       // Use the real feedback API directly
-      const feedbackRes = await fetch("/api/feedbacks", { 
+      const feedbackRes = await fetch("/api/feedbacks", {
         credentials: "include",
         headers: {
-          'Content-Type': 'application/json'
-        }
+          "Content-Type": "application/json",
+        },
       });
-      
+
       if (!feedbackRes.ok) {
         throw new Error(`HTTP error! status: ${feedbackRes.status}`);
       }
-      
+
       const feedbackJson = await feedbackRes.json();
       if (feedbackJson.success) {
-        console.log("Fetched feedback data:", feedbackJson.data);
         setFeedbackHistory(feedbackJson.data || []);
       } else {
-        console.error("Failed to fetch feedback:", feedbackJson.error);
         toast.error(`Failed: ${feedbackJson.error}`);
       }
     } catch (err: unknown) {
-      console.error("Error fetching feedback:", err);
       toast.error("Failed to load feedback history");
       setFeedbackHistory([]);
     } finally {
@@ -122,12 +121,15 @@ export default function FeedbackPage() {
   const filterFeedback = () => {
     let filtered = feedbackHistory.slice();
     // Note: The new Feedback model doesn&apos;t have category, so we'll filter by rating and date
-    if (starFilter !== 'all') filtered = filtered.filter((f) => f.rating === parseInt(starFilter));
-    if (dateFilter === 'today') {
+    if (starFilter !== "all")
+      filtered = filtered.filter((f) => f.rating === parseInt(starFilter));
+    if (dateFilter === "today") {
       const today = new Date().toDateString();
-      filtered = filtered.filter((f) => new Date(f.createdAt).toDateString() === today);
+      filtered = filtered.filter(
+        (f) => new Date(f.createdAt).toDateString() === today,
+      );
     }
-    if (dateFilter === 'custom' && customDateRange.from && customDateRange.to) {
+    if (dateFilter === "custom" && customDateRange.from && customDateRange.to) {
       const from = new Date(customDateRange.from);
       const to = new Date(customDateRange.to);
       filtered = filtered.filter((f) => {
@@ -142,16 +144,26 @@ export default function FeedbackPage() {
     setFormData((prev) => ({
       ...prev,
       reportIssue: prev.reportIssue.includes(issue)
-        ? prev.reportIssue.filter(i => i !== issue)
-        : [...prev.reportIssue, issue]
+        ? prev.reportIssue.filter((i) => i !== issue)
+        : [...prev.reportIssue, issue],
     }));
   };
 
   const validateForm = () => {
-    const required = ['name', 'studentId', 'emojiRating', 'starRating', 'category', 'feedback'];
-    const missing = required.filter(field => !formData[field as keyof typeof formData] ||
-      (field === 'starRating' && formData.starRating === 0) ||
-      (field === 'emojiRating' && !formData.emojiRating));
+    const required = [
+      "name",
+      "studentId",
+      "emojiRating",
+      "starRating",
+      "category",
+      "feedback",
+    ];
+    const missing = required.filter(
+      (field) =>
+        !formData[field as keyof typeof formData] ||
+        (field === "starRating" && formData.starRating === 0) ||
+        (field === "emojiRating" && !formData.emojiRating),
+    );
 
     if (missing.length > 0) {
       toast.error("Please fill all required fields");
@@ -173,7 +185,9 @@ export default function FeedbackPage() {
         // Note: We'll need to get the order ID from user session or recent orders
         // For now, we'll create a placeholder order reference
         order: null, // This should be updated to get real order ID
-        images: formData.imageAttachment ? [URL.createObjectURL(formData.imageAttachment)] : [],
+        images: formData.imageAttachment
+          ? [URL.createObjectURL(formData.imageAttachment)]
+          : [],
         // Additional fields from the form
         category: formData.category,
         emojiRating: formData.emojiRating,
@@ -186,7 +200,7 @@ export default function FeedbackPage() {
         method: "POST",
         credentials: "include",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(submissionData),
       });
@@ -201,19 +215,20 @@ export default function FeedbackPage() {
           category: "Food",
           feedback: "",
           reportIssue: [],
-          imageAttachment: null
+          imageAttachment: null,
         });
         setImagePreview(null);
         await fetchFeedbackHistory();
-        toast.success("Feedback submitted successfully! Thank you for your valuable input.");
+        toast.success(
+          "Feedback submitted successfully! Thank you for your valuable input.",
+        );
       } else {
         const errorData = await res.json();
-        console.error("Submission failed:", errorData);
+
         toast.error(`Failed: ${errorData.error || "Unknown error"}`);
         throw new Error(errorData.error || "Failed to submit feedback");
       }
     } catch (err) {
-      console.error(err);
       toast.error("Failed to submit feedback. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -230,15 +245,17 @@ export default function FeedbackPage() {
       { key: "Rude Staff", label: "Rude Staff" },
       { key: "Other", label: "Other" },
     ],
-    []
+    [],
   );
 
   const feedbackCharsLeft = 500 - (formData.feedback?.length ?? 0);
-  const filteredHistory = useMemo(() => filterFeedback(), [feedbackHistory, categoryFilter, starFilter, dateFilter, customDateRange]);
+  const filteredHistory = useMemo(
+    () => filterFeedback(),
+    [feedbackHistory, categoryFilter, starFilter, dateFilter, customDateRange],
+  );
 
   return (
     <div className="min-h-screen bg-[#f6efe8]">
-      
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-16 pb-4 lg:pt-20 lg:pb-6">
         {/* Hero */}
         <div className="relative overflow-hidden rounded-3xl border border-white/60 bg-white/60 shadow-[0_20px_80px_-40px_rgba(0,0,0,0.25)] backdrop-blur">
@@ -249,7 +266,8 @@ export default function FeedbackPage() {
                 We Value Your Feedback
               </h1>
               <p className="mt-2 text-base sm:text-lg text-gray-700 max-w-2xl">
-                Help us serve better food, faster. Your input directly shapes menu updates and service improvements.
+                Help us serve better food, faster. Your input directly shapes
+                menu updates and service improvements.
               </p>
               <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-amber-200/70 bg-white/70 px-4 py-2 text-sm font-medium text-amber-800 shadow-sm">
                 <span className="h-2 w-2 rounded-full bg-amber-500" />
@@ -260,7 +278,7 @@ export default function FeedbackPage() {
             {/* hero illustration */}
             <div className="flex justify-end">
               <div className="relative ml-auto h-54 w-full max-w-sm overflow-hidden">
-                  <Image
+                <Image
                   src="/images/feedback_hero.png"
                   alt="Burger, drink and pizza illustration"
                   fill
@@ -279,8 +297,12 @@ export default function FeedbackPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="flex items-end justify-between gap-4">
                 <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">Share Your Experience</h2>
-                  <p className="mt-1 text-sm text-gray-600">Fields marked with * are required.</p>
+                  <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                    Share Your Experience
+                  </h2>
+                  <p className="mt-1 text-sm text-gray-600">
+                    Fields marked with * are required.
+                  </p>
                 </div>
               </div>
 
@@ -290,27 +312,35 @@ export default function FeedbackPage() {
                     Full Name <span className="text-red-500">*</span>
                   </label>
                   <div className="mt-2">
-                      <input
-                        name="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full rounded-2xl border border-gray-200 bg-white/70 px-4 py-3 text-gray-900 shadow-sm focus:border-amber-400 focus:ring-4 focus:ring-amber-200/60 transition"
-                        placeholder="Full Name"
-                        required
-                      />
+                    <input
+                      name="name"
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      className="w-full rounded-2xl border border-gray-200 bg-white/70 px-4 py-3 text-gray-900 shadow-sm focus:border-amber-400 focus:ring-4 focus:ring-amber-200/60 transition"
+                      placeholder="Full Name"
+                      required
+                    />
                   </div>
                 </div>
 
                 <div className="md:col-span-1">
                   <label className="text-sm font-semibold text-gray-700">
-                    Order Number <span className="text-gray-400 text-xs">(Optional)</span>
+                    Order Number{" "}
+                    <span className="text-gray-400 text-xs">(Optional)</span>
                   </label>
                   <div className="mt-2">
                     <input
                       suppressHydrationWarning
                       name="orderNumber"
                       value={formData.orderNumber}
-                      onChange={(e) => setFormData({ ...formData, orderNumber: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          orderNumber: e.target.value,
+                        })
+                      }
                       className="w-full rounded-2xl border border-gray-200 bg-white/70 px-4 py-3 text-gray-900 shadow-sm focus:border-amber-400 focus:ring-4 focus:ring-amber-200/60 transition"
                       placeholder="Enter your order number..."
                     />
@@ -326,7 +356,9 @@ export default function FeedbackPage() {
                       suppressHydrationWarning
                       name="studentId"
                       value={formData.studentId}
-                      onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, studentId: e.target.value })
+                      }
                       className="w-full rounded-2xl border border-gray-200 bg-white/70 px-4 py-3 text-gray-900 shadow-sm focus:border-amber-400 focus:ring-4 focus:ring-amber-200/60 transition"
                       placeholder="Enter your student ID..."
                       required
@@ -342,7 +374,9 @@ export default function FeedbackPage() {
                     <select
                       suppressHydrationWarning
                       value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, category: e.target.value })
+                      }
                       className="w-full appearance-none rounded-2xl border border-gray-200 bg-white/70 px-4 py-3 text-gray-900 shadow-sm focus:border-amber-400 focus:ring-4 focus:ring-amber-200/60 transition"
                       required
                     >
@@ -358,13 +392,22 @@ export default function FeedbackPage() {
               {/* Experience (emoji) */}
               <div>
                 <label className="text-sm font-semibold text-gray-700">
-                  How was your experience? <span className="text-red-500">*</span>
+                  How was your experience?{" "}
+                  <span className="text-red-500">*</span>
                 </label>
                 <div className="mt-3 flex flex-wrap gap-3">
                   {[
                     { emoji: "😊", label: "Happy", value: "happy" as const },
-                    { emoji: "🙂", label: "Neutral", value: "neutral" as const },
-                    { emoji: "😕", label: "Unhappy", value: "unhappy" as const },
+                    {
+                      emoji: "🙂",
+                      label: "Neutral",
+                      value: "neutral" as const,
+                    },
+                    {
+                      emoji: "😕",
+                      label: "Unhappy",
+                      value: "unhappy" as const,
+                    },
                   ].map(({ emoji, label, value }) => {
                     const active = formData.emojiRating === value;
                     return (
@@ -372,7 +415,9 @@ export default function FeedbackPage() {
                         key={value}
                         type="button"
                         suppressHydrationWarning
-                        onClick={() => setFormData({ ...formData, emojiRating: value })}
+                        onClick={() =>
+                          setFormData({ ...formData, emojiRating: value })
+                        }
                         className={[
                           "inline-flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-semibold shadow-sm transition",
                           active
@@ -399,21 +444,27 @@ export default function FeedbackPage() {
                       <button
                         key={star}
                         type="button"
-                        onClick={() => setFormData({ ...formData, starRating: star })}
+                        onClick={() =>
+                          setFormData({ ...formData, starRating: star })
+                        }
                         className="p-1.5 focus:outline-none"
                         aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
                       >
                         <Star
                           className={[
                             "h-7 w-7 transition",
-                            star <= formData.starRating ? "text-amber-500 fill-current" : "text-gray-300",
+                            star <= formData.starRating
+                              ? "text-amber-500 fill-current"
+                              : "text-gray-300",
                           ].join(" ")}
                         />
                       </button>
                     ))}
                   </div>
                   <span className="text-sm text-gray-600">
-                    {formData.starRating > 0 ? `${formData.starRating} of 5` : "Select a rating"}
+                    {formData.starRating > 0
+                      ? `${formData.starRating} of 5`
+                      : "Select a rating"}
                   </span>
                 </div>
               </div>
@@ -422,16 +473,22 @@ export default function FeedbackPage() {
               <div>
                 <div className="flex items-end justify-between gap-3">
                   <label className="text-sm font-semibold text-gray-700">
-                    Tell us what went well or what we can improve… <span className="text-red-500">*</span>
+                    Tell us what went well or what we can improve…{" "}
+                    <span className="text-red-500">*</span>
                   </label>
-                  <span className="text-xs text-gray-500">{Math.max(0, feedbackCharsLeft)}/500</span>
+                  <span className="text-xs text-gray-500">
+                    {Math.max(0, feedbackCharsLeft)}/500
+                  </span>
                 </div>
                 <div className="mt-2">
                   <textarea
                     suppressHydrationWarning
                     value={formData.feedback}
                     onChange={(e) =>
-                      setFormData({ ...formData, feedback: e.target.value.slice(0, 500) })
+                      setFormData({
+                        ...formData,
+                        feedback: e.target.value.slice(0, 500),
+                      })
                     }
                     rows={5}
                     className="w-full resize-none rounded-2xl border border-gray-200 bg-white/70 px-4 py-3 text-gray-900 shadow-sm focus:border-amber-400 focus:ring-4 focus:ring-amber-200/60 transition"
@@ -443,7 +500,9 @@ export default function FeedbackPage() {
 
               {/* Quick tags */}
               <div>
-                <label className="text-sm font-semibold text-gray-700">Quick tags (Optional)</label>
+                <label className="text-sm font-semibold text-gray-700">
+                  Quick tags (Optional)
+                </label>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {issues.map((i) => {
                     const active = formData.reportIssue.includes(i.key);
@@ -485,7 +544,9 @@ export default function FeedbackPage() {
           {/* Sidebar */}
           <aside className="space-y-6">
             <div className="rounded-3xl border border-white/70 bg-white/70 shadow-sm backdrop-blur p-6">
-              <h3 className="text-lg font-bold text-gray-900">Why Your Feedback Matters</h3>
+              <h3 className="text-lg font-bold text-gray-900">
+                Why Your Feedback Matters
+              </h3>
               <div className="mt-4 space-y-3 text-sm text-gray-700">
                 <div className="flex items-start gap-3">
                   <div className="mt-0.5 rounded-xl bg-amber-100 p-2 text-amber-700">
@@ -493,7 +554,9 @@ export default function FeedbackPage() {
                   </div>
                   <div>
                     <div className="font-semibold text-gray-900">1,240</div>
-                    <div className="text-gray-600">improvements made last year</div>
+                    <div className="text-gray-600">
+                      improvements made last year
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -501,7 +564,9 @@ export default function FeedbackPage() {
                     <Zap className="h-4 w-4" />
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">Avg response time: 24 hrs</div>
+                    <div className="font-semibold text-gray-900">
+                      Avg response time: 24 hrs
+                    </div>
                     <div className="text-gray-600">faster issue resolution</div>
                   </div>
                 </div>
@@ -510,7 +575,9 @@ export default function FeedbackPage() {
                     <span className="block h-4 w-4 rounded-full bg-amber-500/70" />
                   </div>
                   <div>
-                    <div className="font-semibold text-gray-900">Menu updates every week</div>
+                    <div className="font-semibold text-gray-900">
+                      Menu updates every week
+                    </div>
                     <div className="text-gray-600">based on top requests</div>
                   </div>
                 </div>
@@ -518,7 +585,9 @@ export default function FeedbackPage() {
             </div>
 
             <div className="rounded-3xl border border-white/70 bg-white/70 shadow-sm backdrop-blur p-6">
-              <h3 className="text-lg font-bold text-gray-900">Top Items This Week</h3>
+              <h3 className="text-lg font-bold text-gray-900">
+                Top Items This Week
+              </h3>
               <div className="mt-4 space-y-4">
                 {[
                   { name: "Spicy Paneer Pizza", rating: 4.8, votes: 1320 },
@@ -528,7 +597,9 @@ export default function FeedbackPage() {
                   <div key={item.name} className="flex items-center gap-3">
                     <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-amber-200/70 to-orange-200/60 shadow-inner" />
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-semibold text-gray-900">{item.name}</div>
+                      <div className="truncate text-sm font-semibold text-gray-900">
+                        {item.name}
+                      </div>
                       <div className="mt-1 flex items-center gap-2 text-xs text-gray-600">
                         <span className="inline-flex items-center gap-1 font-semibold text-amber-700">
                           ★ {item.rating}
@@ -539,7 +610,9 @@ export default function FeedbackPage() {
                       <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-gray-100">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-amber-400 to-orange-400"
-                          style={{ width: `${Math.min(100, (item.rating / 5) * 100)}%` }}
+                          style={{
+                            width: `${Math.min(100, (item.rating / 5) * 100)}%`,
+                          }}
                         />
                       </div>
                     </div>
@@ -547,7 +620,6 @@ export default function FeedbackPage() {
                 ))}
               </div>
             </div>
-
           </aside>
         </div>
 
@@ -606,19 +678,22 @@ export default function FeedbackPage() {
             </div>
           </div>
 
-
           {dateFilter === "custom" && (
             <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input
                 type="date"
                 value={customDateRange.from}
-                onChange={(e) => setCustomDateRange((p) => ({ ...p, from: e.target.value }))}
+                onChange={(e) =>
+                  setCustomDateRange((p) => ({ ...p, from: e.target.value }))
+                }
                 className="rounded-2xl border border-gray-200 bg-white/70 px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-amber-400 focus:ring-4 focus:ring-amber-200/60 transition"
               />
               <input
                 type="date"
                 value={customDateRange.to}
-                onChange={(e) => setCustomDateRange((p) => ({ ...p, to: e.target.value }))}
+                onChange={(e) =>
+                  setCustomDateRange((p) => ({ ...p, to: e.target.value }))
+                }
                 className="rounded-2xl border border-gray-200 bg-white/70 px-3 py-2 text-sm text-gray-800 shadow-sm focus:border-amber-400 focus:ring-4 focus:ring-amber-200/60 transition"
               />
             </div>
@@ -628,7 +703,10 @@ export default function FeedbackPage() {
             {isLoadingFeedback ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="rounded-2xl border border-white/70 bg-white/70 p-4 shadow-sm">
+                  <div
+                    key={i}
+                    className="rounded-2xl border border-white/70 bg-white/70 p-4 shadow-sm"
+                  >
                     <div className="flex items-start gap-3">
                       <div className="h-10 w-10 rounded-2xl bg-gray-200 animate-pulse" />
                       <div className="flex-1">
@@ -645,29 +723,33 @@ export default function FeedbackPage() {
                 ))}
               </div>
             ) : hasLoadedOnce && filteredHistory.length === 0 ? (
-              <div className="text-gray-600 text-center py-10">No feedback submitted yet.</div>
+              <div className="text-gray-600 text-center py-10">
+                No feedback submitted yet.
+              </div>
             ) : (
               filteredHistory.map((f) => (
-                <div 
-                  key={f._id} 
+                <div
+                  key={f._id}
                   id={`feedback-${f._id}`}
                   className={`rounded-2xl border bg-white/70 p-4 shadow-sm transition-all ${
-                    highlightedFeedbackId === f._id 
-                      ? 'border-amber-400 ring-4 ring-amber-200' 
-                      : 'border-white/70'
+                    highlightedFeedbackId === f._id
+                      ? "border-amber-400 ring-4 ring-amber-200"
+                      : "border-white/70"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3 min-w-0">
                       <div className="h-10 w-10 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0">
                         <span className="text-amber-700 font-bold text-sm">
-                          {f.userDetails?.name?.charAt(0)?.toUpperCase() || 'U'}
+                          {f.userDetails?.name?.charAt(0)?.toUpperCase() || "U"}
                         </span>
                       </div>
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="truncate font-semibold text-gray-900 text-sm">
-                            {f.isAnonymous ? 'Anonymous' : (f.userDetails?.name || 'User')}
+                            {f.isAnonymous
+                              ? "Anonymous"
+                              : f.userDetails?.name || "User"}
                           </h3>
                           <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800">
                             {f.rating} ★
@@ -676,11 +758,18 @@ export default function FeedbackPage() {
                             {new Date(f.createdAt).toLocaleDateString("en-US")}
                           </span>
                         </div>
-                        <p className="mt-2 text-sm text-gray-700 leading-relaxed">{f.comment}</p>
+                        <p className="mt-2 text-sm text-gray-700 leading-relaxed">
+                          {f.comment}
+                        </p>
                         {f.images && f.images.length > 0 && (
                           <div className="mt-2 flex gap-2">
                             {f.images.map((img, idx) => (
-                              <img key={idx} src={img} alt="Feedback image" className="h-16 w-16 rounded-lg object-cover" />
+                              <img
+                                key={idx}
+                                src={img}
+                                alt="Feedback image"
+                                className="h-16 w-16 rounded-lg object-cover"
+                              />
                             ))}
                           </div>
                         )}
@@ -689,7 +778,11 @@ export default function FeedbackPage() {
                     <div className="shrink-0 text-right">
                       <div className="text-sm">{renderStars(f.rating)}</div>
                       <div className="mt-1 text-xs text-gray-500">
-                        {f.status === 'approved' ? '✓ Approved' : f.status === 'pending' ? '⏳ Pending' : '✗ Rejected'}
+                        {f.status === "approved"
+                          ? "✓ Approved"
+                          : f.status === "pending"
+                            ? "⏳ Pending"
+                            : "✗ Rejected"}
                       </div>
                     </div>
                   </div>
@@ -697,7 +790,8 @@ export default function FeedbackPage() {
                   {f.adminComment && (
                     <div className="mt-4 border-t border-gray-100 pt-4">
                       <div className="rounded-2xl bg-blue-50 px-4 py-3 text-sm text-blue-900">
-                        <span className="font-semibold">Admin reply:</span> {f.adminComment}
+                        <span className="font-semibold">Admin reply:</span>{" "}
+                        {f.adminComment}
                       </div>
                     </div>
                   )}

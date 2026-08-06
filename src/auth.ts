@@ -1,8 +1,12 @@
-import NextAuth, { type DefaultSession, type AuthOptions, type Session } from "next-auth";
+import NextAuth, {
+  type DefaultSession,
+  type AuthOptions,
+  type Session,
+} from "next-auth";
 import { type JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
-import { User as UserModel } from "@/lib/models/User";
+import { User as UserModel } from "@/models/user.model";
 import { connectDB } from "@/lib/db";
 import type { User } from "next-auth";
 
@@ -39,9 +43,13 @@ declare module "next-auth/jwt" {
 export const authConfig: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   // Ensure a secret is provided in production
-  ...(process.env.NODE_ENV === 'production' && !process.env.NEXTAUTH_SECRET ? {
-    get secret() { throw new Error('NEXTAUTH_SECRET is required in production'); }
-  } : {}),
+  ...(process.env.NODE_ENV === "production" && !process.env.NEXTAUTH_SECRET
+    ? {
+        get secret() {
+          throw new Error("NEXTAUTH_SECRET is required in production");
+        },
+      }
+    : {}),
   pages: {
     signIn: "/signin",
     error: "/signin",
@@ -65,28 +73,32 @@ export const authConfig: AuthOptions = {
 
         try {
           await connectDB();
-          const user = await UserModel.findOne({ email: credentials.email.toLowerCase() }).select("+password");
+          const user = await UserModel.findOne({
+            email: credentials.email.toLowerCase(),
+          }).select("+password");
 
           if (!user || !user.password) {
             throw new Error("Invalid email or password");
           }
 
-          const isValid = await bcrypt.compare(credentials.password, user.password);
+          const isValid = await bcrypt.compare(
+            credentials.password,
+            user.password,
+          );
           if (!isValid) {
             throw new Error("Invalid email or password");
           }
 
           const userObj: User = {
             id: user._id.toString(),
-            name: user.name || '',
-            email: user.email || '',
-            role: (user.role?.toLowerCase() || 'customer') as "customer" | "admin" | "canteen_staff",
+            name: user.name || "",
+            email: user.email || "",
+            role: (user.role?.toLowerCase() || "customer") as
+              "customer" | "admin" | "canteen_staff",
           };
 
-          console.log('[authorize] ✅ User authenticated:', { id: userObj.id, email: userObj.email, role: userObj.role });
           return userObj;
         } catch (error) {
-          console.error('[authorize] ❌ Authentication error:', error);
           throw error;
         }
       },
@@ -113,7 +125,7 @@ export const authConfig: AuthOptions = {
         session.user.name = token.name;
       }
       return session;
-    }
+    },
   },
 };
 

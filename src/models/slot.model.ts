@@ -1,12 +1,12 @@
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import mongoose, { Schema, Document, Model } from "mongoose";
 
 /**
  * Slot Status Enum
  */
 export enum SlotStatus {
-  OPEN = 'open',
-  FULL = 'full',
-  CLOSED = 'closed',
+  OPEN = "open",
+  FULL = "full",
+  CLOSED = "closed",
 }
 
 /**
@@ -18,11 +18,11 @@ export interface ITimeSlot extends Document {
 
   dateOnly: string; // YYYY-MM-DD (for grouping slots)
 
-  maxLoad: number;           // base capacity
-  currentLoad: number;       // used load
+  maxLoad: number; // base capacity
+  currentLoad: number; // used load
   kitchenCapacityFactor: number; // dynamic multiplier
 
-  avgPrepTime: number;       // avg prep time per order (derived)
+  avgPrepTime: number; // avg prep time per order (derived)
   estimatedWaitTime: number; // minutes (derived)
 
   status: SlotStatus;
@@ -116,7 +116,7 @@ const slotSchema = new Schema<ITimeSlot>(
   {
     timestamps: true,
     versionKey: false,
-  }
+  },
 );
 
 /**
@@ -146,10 +146,10 @@ slotSchema.methods.hasCapacity = function (incomingLoad: number) {
  * - update status
  * - compute wait time
  */
-slotSchema.pre<ITimeSlot>('save', async function () {
+slotSchema.pre<ITimeSlot>("save", async function () {
   // dateOnly (YYYY-MM-DD)
   const date = new Date(this.startTime);
-  this.dateOnly = date.toISOString().split('T')[0];
+  this.dateOnly = date.toISOString().split("T")[0];
 
   const effectiveMax = this.maxLoad * this.kitchenCapacityFactor;
 
@@ -165,7 +165,7 @@ slotSchema.pre<ITimeSlot>('save', async function () {
   // estimated wait time (simple model)
   if (this.avgPrepTime > 0) {
     this.estimatedWaitTime = Math.ceil(
-      (this.currentLoad / effectiveMax) * this.avgPrepTime
+      (this.currentLoad / effectiveMax) * this.avgPrepTime,
     );
   } else {
     this.estimatedWaitTime = 0;
@@ -192,5 +192,6 @@ slotSchema.statics.getSlotsByDate = function (date: string) {
 /**
  * MODEL EXPORT
  */
-export const TimeSlot = (mongoose.models.TimeSlot as ITimeSlotModel) ||
-  mongoose.model<ITimeSlot, ITimeSlotModel>('TimeSlot', slotSchema);
+export const TimeSlot =
+  (mongoose.models.TimeSlot as ITimeSlotModel) ||
+  mongoose.model<ITimeSlot, ITimeSlotModel>("TimeSlot", slotSchema);

@@ -24,7 +24,10 @@ export default function UserDropdown({ user }: UserDropdownProps) {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -40,15 +43,15 @@ export default function UserDropdown({ user }: UserDropdownProps) {
   };
 
   const getProfileLink = () => {
-    if (pathname?.startsWith('/customer')) return '/customer/profile';
-    if (pathname?.startsWith('/admin')) return '/admin/profile';
-    return '/profile';
+    if (pathname?.startsWith("/customer")) return "/customer/profile";
+    if (pathname?.startsWith("/admin")) return "/admin/profile";
+    return "/profile";
   };
 
   const getSettingsLink = () => {
-    if (pathname?.startsWith('/customer')) return '/customer/settings';
-    if (pathname?.startsWith('/admin')) return '/admin/settings';
-    return '/settings';
+    if (pathname?.startsWith("/customer")) return "/customer/settings";
+    if (pathname?.startsWith("/admin")) return "/admin/settings";
+    return "/settings";
   };
 
   return (
@@ -61,35 +64,43 @@ export default function UserDropdown({ user }: UserDropdownProps) {
         <div className="w-8 h-8 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center text-white font-bold">
           {user.name.charAt(0).toUpperCase()}
         </div>
-        <span className="text-sm font-medium text-gray-900 dark:text-gray-900 hidden md:inline-block">{user.name}</span>
-        <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`} />
+        <span className="text-sm font-medium text-gray-900 dark:text-gray-900 hidden md:inline-block">
+          {user.name}
+        </span>
+        <ChevronRight
+          className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isOpen ? "rotate-90" : ""}`}
+        />
       </button>
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-amber-200 dark:border-gray-700 py-2 z-50">
           <div className="px-4 py-2 border-b border-amber-100 dark:border-gray-700">
-            <p className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-white">
+              {user.name}
+            </p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+              {user.email}
+            </p>
           </div>
-          
-          <Link 
-            href={getProfileLink()} 
+
+          <Link
+            href={getProfileLink()}
             className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
             onClick={() => setIsOpen(false)}
           >
             <User className="w-4 h-4 mr-3 text-amber-600" />
             View Profile
           </Link>
-          
-          <Link 
-            href={getSettingsLink()} 
+
+          <Link
+            href={getSettingsLink()}
             className="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-amber-50 dark:hover:bg-gray-700 transition-colors cursor-pointer"
             onClick={() => setIsOpen(false)}
           >
             <Settings className="w-4 h-4 mr-3 text-amber-600" />
             Settings
           </Link>
-          
+
           <div className="border-t border-amber-100 dark:border-gray-700 mt-1 pt-1">
             <button
               onClick={() => {

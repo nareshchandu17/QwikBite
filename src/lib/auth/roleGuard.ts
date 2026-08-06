@@ -1,4 +1,4 @@
-'use client';
+"use client";
 /**
  * Role Guard Utility Functions
  * Used to check user roles for conditional rendering and access control
@@ -17,21 +17,21 @@ export interface User {
  * Check if user is a customer
  */
 export function isCustomer(user: User | null): boolean {
-  return user?.role === 'customer';
+  return user?.role === "customer";
 }
 
 /**
  * Check if user is an admin
  */
 export function isAdmin(user: User | null): boolean {
-  return user?.role === 'admin';
+  return user?.role === "admin";
 }
 
 /**
  * Check if user is a canteen staff
  */
 export function isCanteenStaff(user: User | null): boolean {
-  return user?.role === 'canteen_staff';
+  return user?.role === "canteen_staff";
 }
 
 /**
@@ -47,7 +47,7 @@ export function hasRole(user: User | null, ...roles: string[]): boolean {
 export function isAuthenticated(user: User | null): boolean {
   return user !== null && user !== undefined;
 }
-import { useCustomerGuard as useCustomerGuardHook } from '@/hooks/use-customer-guard';
-import { useAdminGuard as useAdminGuardHook } from '@/hooks/use-admin-guard';
+import { useCustomerGuard as useCustomerGuardHook } from "@/hooks/use-customer-guard";
+import { useAdminGuard as useAdminGuardHook } from "@/hooks/use-admin-guard";
 export const useCustomerGuard = useCustomerGuardHook;
 export const useAdminGuard = useAdminGuardHook;

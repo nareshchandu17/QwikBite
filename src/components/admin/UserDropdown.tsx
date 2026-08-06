@@ -1,22 +1,22 @@
-'use client';
+"use client";
 
-import { LogOut, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { LogOut, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { signOut } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+} from "@/components/ui/dropdown-menu";
+import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export default function UserDropdown() {
   const router = useRouter();
 
   const handleLogout = async () => {
     // Immediately redirect while signOut processes in background
-    router.push('/');
+    router.push("/");
     await signOut({ redirect: false });
   };
 
@@ -32,12 +32,15 @@ export default function UserDropdown() {
           </div>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-48 mt-2 mr-2 bg-gray-900 border border-gray-700 shadow-xl" align="end">
+      <DropdownMenuContent
+        className="w-48 mt-2 mr-2 bg-gray-900 border border-gray-700 shadow-xl"
+        align="end"
+      >
         <DropdownMenuItem className="cursor-pointer hover:bg-gray-800">
           <User className="mr-2 h-4 w-4 text-gray-300" />
           <span className="text-gray-300">Profile</span>
         </DropdownMenuItem>
-        <DropdownMenuItem 
+        <DropdownMenuItem
           className="cursor-pointer hover:bg-gray-800 text-red-400"
           onClick={handleLogout}
         >

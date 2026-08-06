@@ -1,32 +1,30 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase, collections } from '@/lib/db/mongodb';
+import logger from "@/lib/logger";
+import { NextRequest, NextResponse } from "next/server";
+import { connectToDatabase, collections } from "@/lib/db/mongodb";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ orderId: string }> }
+  { params }: { params: Promise<{ orderId: string }> },
 ) {
   try {
     const { orderId } = await params;
-    
+
     if (!orderId) {
       return NextResponse.json(
-        { error: 'Order ID is required' },
-        { status: 400 }
+        { error: "Order ID is required" },
+        { status: 400 },
       );
     }
 
     const { db } = await connectToDatabase();
-    
+
     // Find the order
-    const order = await db.collection(collections.orders).findOne({ 
-      id: orderId 
+    const order = await db.collection(collections.orders).findOne({
+      id: orderId,
     });
 
     if (!order) {
-      return NextResponse.json(
-        { error: 'Order not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
     // Generate HTML invoice
@@ -35,33 +33,35 @@ export async function GET(
     // Return as HTML with print-friendly styling
     return new NextResponse(htmlInvoice, {
       headers: {
-        'Content-Type': 'text/html; charset=utf-8',
-        'Content-Disposition': `inline; filename="invoice-${orderId}.html"`
-      }
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Disposition": `inline; filename="invoice-${orderId}.html"`,
+      },
     });
-
   } catch (error) {
-    console.error('Error generating invoice:', error);
+    logger.error("Error generating invoice:", error);
     return NextResponse.json(
-      { error: 'Failed to generate invoice' },
-      { status: 500 }
+      { error: "Failed to generate invoice" },
+      { status: 500 },
     );
   }
 }
 
 function generateInvoiceHTML(order: any) {
-  const orderDate = new Date(order.createdAt).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  const orderDate = new Date(order.createdAt).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 
   const items = Array.isArray(order.items) ? order.items : [];
-  
+
   const subtotal = items.reduce((sum: number, item: any) => {
-    const price = typeof item.price === 'number' ? item.price : parseFloat(item.price?.toString() || '0');
+    const price =
+      typeof item.price === "number"
+        ? item.price
+        : parseFloat(item.price?.toString() || "0");
     const quantity = item.quantity || 1;
-    return sum + (price * quantity);
+    return sum + price * quantity;
   }, 0);
 
   const tax = subtotal * 0.05; // 5% tax
@@ -289,16 +289,16 @@ function generateInvoiceHTML(order: any) {
                     <h3>Order Information</h3>
                     <p class="order-id">Order ID: ${order.id}</p>
                     <p>Date: ${orderDate}</p>
-                    <p>Time Slot: ${order.timeSlot || 'ASAP'}</p>
-                    <p>Pickup Date: ${order.pickupDate || 'N/A'}</p>
+                    <p>Time Slot: ${order.timeSlot || "ASAP"}</p>
+                    <p>Pickup Date: ${order.pickupDate || "N/A"}</p>
                     <p>Status: <span class="status-badge status-${order.status.toLowerCase()}">${order.statusText || order.status}</span></p>
                 </div>
                 
                 <div class="info-block">
                     <h3>Customer Information</h3>
-                    <p>Name: ${order.username || 'Customer'}</p>
-                    <p>Payment Method: ${order.paymentMethod || 'Online'}</p>
-                    <p>Payment Status: ${order.paymentStatus || 'Completed'}</p>
+                    <p>Name: ${order.username || "Customer"}</p>
+                    <p>Payment Method: ${order.paymentMethod || "Online"}</p>
+                    <p>Payment Status: ${order.paymentStatus || "Completed"}</p>
                 </div>
             </div>
             
@@ -312,12 +312,20 @@ function generateInvoiceHTML(order: any) {
                     </tr>
                 </thead>
                 <tbody>
-                    ${items.map((item: any, index: number) => {
-                        const itemName = typeof item === 'string' ? item : item.name;
-                        const quantity = typeof item === 'string' ? 1 : (item.quantity || 1);
-                        const price = typeof item === 'string' ? 0 : (typeof item.price === 'number' ? item.price : parseFloat(item.price?.toString() || '0'));
+                    ${items
+                      .map((item: any, index: number) => {
+                        const itemName =
+                          typeof item === "string" ? item : item.name;
+                        const quantity =
+                          typeof item === "string" ? 1 : item.quantity || 1;
+                        const price =
+                          typeof item === "string"
+                            ? 0
+                            : typeof item.price === "number"
+                              ? item.price
+                              : parseFloat(item.price?.toString() || "0");
                         const itemTotal = price * quantity;
-                        
+
                         return `
                         <tr>
                             <td class="item-name">${itemName}</td>
@@ -326,7 +334,8 @@ function generateInvoiceHTML(order: any) {
                             <td class="item-price">₹${itemTotal.toFixed(2)}</td>
                         </tr>
                         `;
-                    }).join('')}
+                      })
+                      .join("")}
                 </tbody>
             </table>
             

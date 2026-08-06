@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { usePathname } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export function useActivePage() {
   const pathname = usePathname();
@@ -19,12 +19,12 @@ export function useActivePage() {
     if (exact) {
       return activePath === path;
     }
-    
+
     // For non-exact matches, check if current path starts with the given path
-    if (path === '/') {
-      return activePath === '/';
+    if (path === "/") {
+      return activePath === "/";
     }
-    
+
     return activePath === path || activePath.startsWith(`${path}/`);
   };
 

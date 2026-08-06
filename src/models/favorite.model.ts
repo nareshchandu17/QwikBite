@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema, Types, Model } from 'mongoose';
+import mongoose, { Document, Schema, Types, Model } from "mongoose";
 
 export interface IFavorite extends Document {
   user: Types.ObjectId;
@@ -11,7 +11,7 @@ const favoriteSchema = new Schema<IFavorite>(
   {
     user: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
       index: true,
     },
@@ -25,17 +25,14 @@ const favoriteSchema = new Schema<IFavorite>(
   {
     timestamps: { createdAt: true, updatedAt: false },
     versionKey: false,
-  }
+  },
 );
 
 /**
  * UNIQUE CONSTRAINT (critical)
  * Prevent duplicate favorites
  */
-favoriteSchema.index(
-  { user: 1, menuItem: 1 },
-  { unique: true }
-);
+favoriteSchema.index({ user: 1, menuItem: 1 }, { unique: true });
 
 /**
  * INDEXES (performance)
@@ -50,5 +47,7 @@ if (mongoose.models.Favorite) {
   delete (mongoose.models as any).Favorite;
 }
 
-export const Favorite: Model<IFavorite> =
-  mongoose.model<IFavorite>('Favorite', favoriteSchema);
+export const Favorite: Model<IFavorite> = mongoose.models.Favorite || mongoose.model<IFavorite>(
+  "Favorite",
+  favoriteSchema,
+);

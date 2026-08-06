@@ -15,20 +15,19 @@ let csrfToken: CSRFToken | null = null;
  */
 export async function fetchCSRFToken(): Promise<CSRFToken | null> {
   try {
-    const response = await fetch('/api/csrf');
+    const response = await fetch("/api/csrf");
     const data = await response.json();
-    
+
     if (data.success && data.token && data.signature) {
       csrfToken = {
         token: data.token,
-        signature: data.signature
+        signature: data.signature,
       };
       return csrfToken;
     }
-    
+
     return null;
   } catch (error) {
-    console.error('[CSRF] Failed to fetch token:', error);
     return null;
   }
 }
@@ -46,17 +45,19 @@ export async function getCSRFToken(): Promise<CSRFToken | null> {
 /**
  * Add CSRF headers to a fetch request
  */
-export async function addCSRFHeaders(headers: HeadersInit = {}): Promise<HeadersInit> {
+export async function addCSRFHeaders(
+  headers: HeadersInit = {},
+): Promise<HeadersInit> {
   const token = await getCSRFToken();
-  
+
   if (token) {
     return {
       ...headers,
-      'X-CSRF-Token': token.token,
-      'X-CSRF-Signature': token.signature
+      "X-CSRF-Token": token.token,
+      "X-CSRF-Signature": token.signature,
     };
   }
-  
+
   return headers;
 }
 
@@ -65,13 +66,13 @@ export async function addCSRFHeaders(headers: HeadersInit = {}): Promise<Headers
  */
 export async function secureFetch(
   url: string,
-  options: RequestInit = {}
+  options: RequestInit = {},
 ): Promise<Response> {
   const headers = await addCSRFHeaders(options.headers || {});
-  
+
   return fetch(url, {
     ...options,
-    headers
+    headers,
   });
 }
 

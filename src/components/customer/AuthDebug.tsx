@@ -1,21 +1,21 @@
-'use client';
+"use client";
 
-import { useAuth } from '@/context/AuthContext';
-import { useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useAuth } from "@/context/AuthContext";
+import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 
 export default function AuthDebug() {
   const { user, isAuthenticated, loading } = useAuth();
   const { data: session, status } = useSession();
-  const [cookies, setCookies] = useState('');
+  const [cookies, setCookies] = useState("");
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       setCookies(document.cookie);
     }
   }, []);
 
-  if (process.env.NODE_ENV !== 'development') {
+  if (process.env.NODE_ENV !== "development") {
     return null;
   }
 
@@ -26,7 +26,7 @@ export default function AuthDebug() {
         <div className="border-b border-gray-600 pb-1">
           <div className="font-semibold text-green-400">NextAuth Session:</div>
           <div>Status: {status}</div>
-          <div>Session: {session ? '✅ Found' : '❌ None'}</div>
+          <div>Session: {session ? "✅ Found" : "❌ None"}</div>
           {session && (
             <div className="ml-2 text-gray-300">
               <div>User ID: {session.user?.id}</div>
@@ -35,12 +35,12 @@ export default function AuthDebug() {
             </div>
           )}
         </div>
-        
+
         <div className="border-b border-gray-600 pb-1">
           <div className="font-semibold text-blue-400">AuthContext:</div>
-          <div>Loading: {loading ? 'Yes' : 'No'}</div>
-          <div>Is Authenticated: {isAuthenticated ? '✅ Yes' : '❌ No'}</div>
-          <div>User: {user ? '✅ Found' : '❌ None'}</div>
+          <div>Loading: {loading ? "Yes" : "No"}</div>
+          <div>Is Authenticated: {isAuthenticated ? "✅ Yes" : "❌ No"}</div>
+          <div>User: {user ? "✅ Found" : "❌ None"}</div>
           {user && (
             <div className="ml-2 text-gray-300">
               <div>User ID: {user.id}</div>
@@ -53,32 +53,32 @@ export default function AuthDebug() {
         <div className="border-b border-gray-600 pb-1">
           <div className="font-semibold text-orange-400">Cookies:</div>
           <div className="text-gray-300 break-all">
-            {cookies || 'No cookies found'}
+            {cookies || "No cookies found"}
           </div>
         </div>
 
         <div className="text-purple-400">
           <div className="font-semibold">Quick Test:</div>
-          <button 
-            onClick={() => window.location.href = '/api/auth-debug'}
+          <button
+            onClick={() => (window.location.href = "/api/auth-debug")}
             className="bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-white mr-2 mb-2"
           >
             Test Auth API
           </button>
-          <button 
-            onClick={() => window.location.href = '/api/test-session'}
+          <button
+            onClick={() => (window.location.href = "/api/test-session")}
             className="bg-purple-600 hover:bg-purple-700 px-2 py-1 rounded text-white mr-2 mb-2"
           >
             Test Server Session
           </button>
           <br />
-          <button 
+          <button
             onClick={() => window.location.reload()}
             className="bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-white mr-2"
           >
             Reload Page
           </button>
-          <button 
+          <button
             onClick={() => {
               localStorage.clear();
               sessionStorage.clear();

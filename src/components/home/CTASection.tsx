@@ -6,11 +6,11 @@ import Image from "next/image";
 
 const fadeScaleVariant: Variants = {
   hidden: { opacity: 0, scale: 0.8 },
-  visible: { 
-    opacity: 1, 
-    scale: 1, 
-    transition: { duration: 0.5, ease: "easeOut" } 
-  }
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.5, ease: "easeOut" },
+  },
 };
 
 export const CTASection: React.FC = () => {
@@ -19,19 +19,26 @@ export const CTASection: React.FC = () => {
   // Motion variants for consistency
   const textVariant: Variants = {
     hidden: { opacity: 0, x: -50 },
-    visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: "easeOut" } },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: { duration: 0.6, ease: "easeOut" },
+    },
   };
 
   const imageVariant: Variants = {
     hidden: { opacity: 0, x: 50 },
-    visible: { opacity: 1, x: 0, transition: { duration: 0.6, ease: "easeOut", delay: 0.2 } },
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: { duration: 0.6, ease: "easeOut", delay: 0.2 },
+    },
   };
 
   return (
     <section className="relative overflow-hidden bg-[#1A1A1A] min-h-screen">
       <div className="mx-auto max-w-[1600px] px-6 sm:px-12 lg:px-20 flex items-center justify-between min-h-screen">
         <div className="relative flex flex-col items-start gap-24 lg:flex-row lg:items-center lg:gap-48">
-          
           {/* Left Text Content */}
           <motion.div
             variants={textVariant}
@@ -74,7 +81,7 @@ export const CTASection: React.FC = () => {
             {/* CTA Buttons */}
             <div className="flex flex-col items-center gap-8 sm:flex-row lg:items-center">
               <button
-                onClick={() => openModal('signup')}
+                onClick={() => openModal("signup")}
                 className="flex w-full items-center justify-center gap-2 rounded-full bg-[hsl(24_85%_55%)] px-8 py-4 text-base font-black text-white transition-all hover:scale-105 shadow-2xl shadow-[hsl(24_85%_55%)]/20 sm:w-auto cursor-pointer"
               >
                 Get Started <ArrowRight className="h-5 w-5" />
@@ -145,7 +152,9 @@ export const CTASection: React.FC = () => {
                   <span className="text-xl font-bold text-white">✓</span>
                 </div>
                 <div>
-                  <p className="text-lg font-black text-[#1A1A1A]">Order Placed!</p>
+                  <p className="text-lg font-black text-[#1A1A1A]">
+                    Order Placed!
+                  </p>
                   <p className="text-sm font-bold uppercase tracking-widest text-gray-500">
                     Ready in 4 mins
                   </p>

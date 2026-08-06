@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
-import { Order, OrderStatus } from '@/types/order';
-import { websocketClient } from '@/lib/websocket';
+import React, { useState, useEffect } from "react";
+import { Order, OrderStatus } from "@/types/order";
+
 import {
   ArrowLeft,
   Clock,
@@ -15,16 +15,16 @@ import {
   CookingPot,
   Timer,
   Handshake,
-  Truck
-} from 'lucide-react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
-import { motion } from 'framer-motion';
-import { useCustomerGuard } from '@/hooks/use-customer-guard';
+  Truck,
+} from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { motion } from "framer-motion";
+import { useCustomerGuard } from "@/hooks/use-customer-guard";
 
 interface OrderStatusClientProps {
   initialOrder: Order;
@@ -32,15 +32,15 @@ interface OrderStatusClientProps {
 }
 
 const statusMessages: Partial<Record<string, string>> = {
-  received: 'Your order has been received by the canteen.',
-  preparing: 'Our chefs are preparing your delicious meal.',
-  almost_ready: 'Your meal is almost ready!',
-  ready: 'Your order is ready for pickup at Counter #2.',
-  collected: 'Order completed successfully. Enjoy your meal!',
-  Delivered: 'Your order has been delivered successfully!',
-  Pending: 'Your order is pending confirmation.',
-  Ready: 'Your order is ready for pickup.',
-  'Out for Delivery': 'Your order is out for delivery!',
+  received: "Your order has been received by the canteen.",
+  preparing: "Our chefs are preparing your delicious meal.",
+  almost_ready: "Your meal is almost ready!",
+  ready: "Your order is ready for pickup at Counter #2.",
+  collected: "Order completed successfully. Enjoy your meal!",
+  Delivered: "Your order has been delivered successfully!",
+  Pending: "Your order is pending confirmation.",
+  Ready: "Your order is ready for pickup.",
+  "Out for Delivery": "Your order is out for delivery!",
 };
 
 const statusIcons: Partial<Record<string, React.ReactNode>> = {
@@ -52,80 +52,72 @@ const statusIcons: Partial<Record<string, React.ReactNode>> = {
   Delivered: <CheckCircle className="w-5 h-5 text-green-500" />,
   Pending: <Clock className="w-5 h-5 text-yellow-500" />,
   Ready: <CheckCircle className="w-5 h-5 text-green-500" />,
-  'Out for Delivery': <Truck className="w-5 h-5 text-blue-500" />,
+  "Out for Delivery": <Truck className="w-5 h-5 text-blue-500" />,
 };
 
 const statusColors: Partial<Record<string, string>> = {
-  received: 'bg-blue-500',
-  Delivered: 'bg-green-500',
-  Pending: 'bg-yellow-500',
-  Ready: 'bg-green-400',
-  'Out for Delivery': 'bg-blue-400',
-  preparing: 'bg-amber-500',
-  almost_ready: 'bg-orange-500',
-  ready: 'bg-green-500',
-  collected: 'bg-green-500',
+  received: "bg-blue-500",
+  Delivered: "bg-green-500",
+  Pending: "bg-yellow-500",
+  Ready: "bg-green-400",
+  "Out for Delivery": "bg-blue-400",
+  preparing: "bg-amber-500",
+  almost_ready: "bg-orange-500",
+  ready: "bg-green-500",
+  collected: "bg-green-500",
 };
 
-export function OrderStatusClient({ initialOrder, orderId }: OrderStatusClientProps) {
+export function OrderStatusClient({
+  initialOrder,
+  orderId,
+}: OrderStatusClientProps) {
   useCustomerGuard(); // Add this hook to protect the page
 
   const [order, setOrder] = useState<Order>(initialOrder);
-  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
+  const [connectionStatus, setConnectionStatus] = useState<
+    "connecting" | "connected" | "disconnected" | "error"
+  >("connecting");
 
   useEffect(() => {
-    // Connect to WebSocket
-    console.log('Connecting to WebSocket for order:', orderId);
-    websocketClient.connect(orderId);
+    // Connect to WebSocket (Legacy Socket.IO removed)
+    // We rely on Pusher for realtime updates in OrderContext
 
     // Handle WebSocket events
     const handleConnect = () => {
-      console.log('WebSocket connected');
-      setConnectionStatus('connected');
-      toast.success('Connected to real-time updates');
+      setConnectionStatus("connected");
+      toast.success("Connected to real-time updates");
     };
 
     const handleDisconnect = () => {
-      console.log('WebSocket disconnected');
-      setConnectionStatus('disconnected');
-      toast.info('Disconnected from real-time updates');
+      setConnectionStatus("disconnected");
+      toast.info("Disconnected from real-time updates");
     };
 
     const handleError = (error: any) => {
-      console.error('WebSocket error:', error);
-      setConnectionStatus('error');
-      toast.error('Connection error: ' + (error?.message || 'Failed to connect'));
+      setConnectionStatus("error");
+      toast.error(
+        "Connection error: " + (error?.message || "Failed to connect"),
+      );
     };
 
     const handleOrderUpdate = (data: any) => {
-      console.log('Received order update:', data);
       if (data && data.orderId === orderId) {
-        setOrder(prevOrder => ({
+        setOrder((prevOrder) => ({
           ...prevOrder,
-          status: data.status
+          status: data.status,
         }));
         toast.info(data.message || `Order status updated to ${data.status}`);
       }
     };
 
-    // Register event listeners
-    websocketClient.on('connect', handleConnect);
-    websocketClient.on('disconnect', handleDisconnect);
-    websocketClient.on('error', handleError);
-    websocketClient.on('order_update', handleOrderUpdate);
+    // Legacy websocket event registration removed
 
     // Cleanup
-    return () => {
-      websocketClient.off('connect', handleConnect);
-      websocketClient.off('disconnect', handleDisconnect);
-      websocketClient.off('error', handleError);
-      websocketClient.off('order_update', handleOrderUpdate);
-      websocketClient.disconnect();
-    };
+      // Legacy websocket cleanup removed
   }, [orderId]);
 
   // Safety check for order status
-  const safeOrderStatus = order?.status || 'received';
+  const safeOrderStatus = order?.status || "received";
   const statusKeys = Object.keys(statusMessages) as string[];
   const statusIndex = statusKeys.indexOf(safeOrderStatus);
   const progress = order ? ((statusIndex + 1) / statusKeys.length) * 100 : 0;
@@ -142,16 +134,29 @@ export function OrderStatusClient({ initialOrder, orderId }: OrderStatusClientPr
           {/* Connection Status Indicator */}
           <div className="mb-6">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600 dark:text-gray-400">Real-time Updates</span>
+              <span className="text-gray-600 dark:text-gray-400">
+                Real-time Updates
+              </span>
               <div className="flex items-center">
-                <div className={`w-2 h-2 rounded-full mr-2 ${connectionStatus === 'connected' ? 'bg-green-500' :
-                  connectionStatus === 'connecting' ? 'bg-yellow-500' :
-                    connectionStatus === 'error' ? 'bg-red-500' : 'bg-gray-500'
-                  }`}></div>
+                <div
+                  className={`w-2 h-2 rounded-full mr-2 ${
+                    connectionStatus === "connected"
+                      ? "bg-green-500"
+                      : connectionStatus === "connecting"
+                        ? "bg-yellow-500"
+                        : connectionStatus === "error"
+                          ? "bg-red-500"
+                          : "bg-gray-500"
+                  }`}
+                ></div>
                 <span className="capitalize text-gray-900 dark:text-white">
-                  {connectionStatus === 'connected' ? 'Connected' :
-                    connectionStatus === 'connecting' ? 'Connecting...' :
-                      connectionStatus === 'error' ? 'Connection Error' : 'Disconnected'}
+                  {connectionStatus === "connected"
+                    ? "Connected"
+                    : connectionStatus === "connecting"
+                      ? "Connecting..."
+                      : connectionStatus === "error"
+                        ? "Connection Error"
+                        : "Disconnected"}
                 </span>
               </div>
             </div>
@@ -166,7 +171,9 @@ export function OrderStatusClient({ initialOrder, orderId }: OrderStatusClientPr
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Orders
             </Link>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Order Status</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Order Status
+            </h1>
             <p className="text-gray-600 dark:text-gray-400">
               Track your order&apos;s journey from kitchen to counter!
             </p>
@@ -184,23 +191,33 @@ export function OrderStatusClient({ initialOrder, orderId }: OrderStatusClientPr
                 <span>Order Progress</span>
                 <span>{Math.round(progress)}% Complete</span>
               </div>
-              <Progress value={progress} className="h-2.5 bg-gray-200 dark:bg-gray-700" />
+              <Progress
+                value={progress}
+                className="h-2.5 bg-gray-200 dark:bg-gray-700"
+              />
             </div>
 
             <div className="grid grid-cols-5 gap-2">
               {statusKeys.map((status, index) => (
                 <div key={status} className="flex flex-col items-center">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${index <= statusIndex
-                    ? (statusColors[status] || 'bg-blue-500') + ' text-white'
-                    : 'bg-gray-200 dark:bg-gray-700 text-gray-400'
-                    }`}>
+                  <div
+                    className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
+                      index <= statusIndex
+                        ? (statusColors[status] || "bg-blue-500") +
+                          " text-white"
+                        : "bg-gray-200 dark:bg-gray-700 text-gray-400"
+                    }`}
+                  >
                     {statusIcons[status] || <Clock className="w-5 h-5" />}
                   </div>
-                  <span className={`text-xs text-center ${index <= statusIndex
-                    ? 'text-gray-900 dark:text-white font-medium'
-                    : 'text-gray-500 dark:text-gray-400'
-                    }`}>
-                    {status.replace('_', ' ')}
+                  <span
+                    className={`text-xs text-center ${
+                      index <= statusIndex
+                        ? "text-gray-900 dark:text-white font-medium"
+                        : "text-gray-500 dark:text-gray-400"
+                    }`}
+                  >
+                    {status.replace("_", " ")}
                   </span>
                 </div>
               ))}
@@ -208,7 +225,7 @@ export function OrderStatusClient({ initialOrder, orderId }: OrderStatusClientPr
 
             <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
               <p className="text-center text-gray-900 dark:text-white font-medium">
-                {statusMessages[safeOrderStatus] || 'Processing your order...'}
+                {statusMessages[safeOrderStatus] || "Processing your order..."}
               </p>
             </div>
           </motion.div>
@@ -228,15 +245,22 @@ export function OrderStatusClient({ initialOrder, orderId }: OrderStatusClientPr
             <CardContent className="p-6">
               <div className="space-y-6">
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Order ID</span>
-                  <span className="font-medium text-gray-900 dark:text-white">#{order?.id || orderId}</span>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    Order ID
+                  </span>
+                  <span className="font-medium text-gray-900 dark:text-white">
+                    #{order?.id || orderId}
+                  </span>
                 </div>
 
                 <div className="border-t border-gray-200 dark:border-gray-700"></div>
 
                 <div className="space-y-4">
                   {order?.items?.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between group">
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between group"
+                    >
                       <div className="flex items-center space-x-4">
                         <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center overflow-hidden">
                           {item.image ? (
@@ -247,7 +271,9 @@ export function OrderStatusClient({ initialOrder, orderId }: OrderStatusClientPr
                             />
                           ) : (
                             <div className="w-full h-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                              <span className="text-xs text-gray-400 dark:text-gray-500">No Image</span>
+                              <span className="text-xs text-gray-400 dark:text-gray-500">
+                                No Image
+                              </span>
                             </div>
                           )}
                         </div>
@@ -271,20 +297,28 @@ export function OrderStatusClient({ initialOrder, orderId }: OrderStatusClientPr
 
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                    <span className="text-gray-900 dark:text-white">${order.total.toFixed(2)}</span>
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Subtotal
+                    </span>
+                    <span className="text-gray-900 dark:text-white">
+                      ${order.total.toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Tax</span>
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Tax
+                    </span>
                     <span className="text-gray-900 dark:text-white">$0.00</span>
                   </div>
                   <div className="flex justify-between font-semibold text-lg pt-2 border-t border-gray-200 dark:border-gray-700">
                     <span>Total</span>
-                    <span className="text-amber-600 dark:text-amber-400">${order.total.toFixed(2)}</span>
+                    <span className="text-amber-600 dark:text-amber-400">
+                      ${order.total.toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 pt-1">
                     <span>Payment Method</span>
-                    <span>{order.paymentMethod || 'Not specified'}</span>
+                    <span>{order.paymentMethod || "Not specified"}</span>
                   </div>
                 </div>
               </div>
@@ -306,7 +340,8 @@ export function OrderStatusClient({ initialOrder, orderId }: OrderStatusClientPr
               <ChevronRight className="w-5 h-5" />
             </Link>
 
-            {order?.status === 'completed' || (order?.status as string) === 'collected' ? (
+            {order?.status === "completed" ||
+            (order?.status as string) === "collected" ? (
               <Link
                 href={`/feedback?orderId=${order?.id || orderId}`}
                 className="px-6 py-4 bg-white text-amber-600 border border-amber-200 hover:bg-amber-50 dark:bg-gray-800 dark:border-amber-800 dark:hover:bg-gray-700 shadow-lg font-semibold rounded-xl transition-all text-center flex-1 flex items-center justify-center gap-2"

@@ -1,17 +1,18 @@
+import logger from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import { User } from "@/lib/models/User";
+import { User } from "@/models/user.model";
 import { Order } from "@/lib/models/Order";
-import { MenuItem } from "@/lib/models/MenuItem";
-import { Favorite } from "@/lib/models/Favorite";
+import { MenuItem } from "@/models/menuItem.model";
+import { Favorite } from "@/models/favorite.model";
 import { getAuthCookie, verifyToken } from "@/lib/auth";
 
 // CORS headers
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Max-Age': '86400',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Max-Age": "86400",
 };
 
 // Handle OPTIONS requests for CORS
@@ -26,11 +27,11 @@ export async function GET(req: NextRequest) {
   try {
     // Get token from cookie
     const token = getAuthCookie(req);
-    
+
     if (!token) {
       return NextResponse.json(
         { error: "Authentication required" },
-        { status: 401, headers: corsHeaders }
+        { status: 401, headers: corsHeaders },
       );
     }
 
@@ -39,17 +40,17 @@ export async function GET(req: NextRequest) {
     try {
       decoded = verifyToken(token);
     } catch (tokenError: any) {
-      console.error('Token verification error:', tokenError);
+      logger.error("Token verification error:", tokenError);
       return NextResponse.json(
         { error: "Invalid or expired token" },
-        { status: 401, headers: corsHeaders }
+        { status: 401, headers: corsHeaders },
       );
     }
-    
+
     if (!decoded) {
       return NextResponse.json(
         { error: "Invalid or expired token" },
-        { status: 401, headers: corsHeaders }
+        { status: 401, headers: corsHeaders },
       );
     }
 
@@ -57,10 +58,10 @@ export async function GET(req: NextRequest) {
     try {
       await connectDB();
     } catch (dbError: any) {
-      console.error('Database connection error:', dbError);
+      logger.error("Database connection error:", dbError);
       return NextResponse.json(
         { error: "Database connection failed" },
-        { status: 503, headers: corsHeaders }
+        { status: 503, headers: corsHeaders },
       );
     }
 
@@ -80,24 +81,30 @@ export async function GET(req: NextRequest) {
       totalMenuItems = await MenuItem.countDocuments();
       availableMenuItems = await MenuItem.countDocuments({ available: true });
       totalFavorites = await Favorite.countDocuments();
-      
+
       // Get user's recent orders if they're a customer
-      if (decoded.role === 'customer') {
-        userOrders = await Order.find({ userId: decoded.id }).sort({ createdAt: -1 }).limit(5).lean();
+      if (decoded.role === "customer") {
+        userOrders = await Order.find({ userId: decoded.id })
+          .sort({ createdAt: -1 })
+          .limit(5)
+          .lean();
       }
     } catch (queryError: any) {
-      console.error('Database query error:', queryError);
+      logger.error("Database query error:", queryError);
       return NextResponse.json(
         { error: "Failed to fetch dashboard data" },
-        { status: 500, headers: corsHeaders }
+        { status: 500, headers: corsHeaders },
       );
     }
 
     // Calculate user-specific stats
     const userOrderStats = {
-      totalOrders: decoded.role === 'customer' ? userOrders.length : 0,
-      pendingOrders: userOrders.filter((o: any) => o.status === 'pending' || o.status === 'received').length,
-      completedOrders: userOrders.filter((o: any) => o.status === 'completed').length,
+      totalOrders: decoded.role === "customer" ? userOrders.length : 0,
+      pendingOrders: userOrders.filter(
+        (o: any) => o.status === "pending" || o.status === "received",
+      ).length,
+      completedOrders: userOrders.filter((o: any) => o.status === "completed")
+        .length,
     };
 
     return NextResponse.json(
@@ -111,46 +118,45 @@ export async function GET(req: NextRequest) {
         },
         stats: {
           users: {
-            total: totalUsers
+            total: totalUsers,
           },
           orders: {
             total: totalOrders,
             recent: recentOrders.map((order: any) => ({
               id: order.id || order._id?.toString(),
               total: order.total || 0,
-              status: order.status || 'unknown',
-              createdAt: order.createdAt
-            }))
+              status: order.status || "unknown",
+              createdAt: order.createdAt,
+            })),
           },
           menu: {
             total: totalMenuItems,
-            available: availableMenuItems
+            available: availableMenuItems,
           },
           favorites: {
-            total: totalFavorites
+            total: totalFavorites,
           },
           userOrders: userOrders.map((order: any) => ({
             id: order.id || order._id?.toString(),
             total: order.total || 0,
-            status: order.status || 'unknown',
-            createdAt: order.createdAt
+            status: order.status || "unknown",
+            createdAt: order.createdAt,
           })),
           totalOrders: userOrderStats.totalOrders,
           pendingOrders: userOrderStats.pendingOrders,
           completedOrders: userOrderStats.completedOrders,
-        }
+        },
       },
-      { headers: corsHeaders }
+      { headers: corsHeaders },
     );
   } catch (err: any) {
-    console.error("Dashboard error:", err);
+    logger.error("Dashboard error:", err);
     return NextResponse.json(
       {
         error: "Server error",
-        details: err.message || "Unknown error occurred"
+        details: err.message || "Unknown error occurred",
       },
-      { status: 500, headers: corsHeaders }
+      { status: 500, headers: corsHeaders },
     );
   }
 }
-

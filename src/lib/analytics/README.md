@@ -36,7 +36,7 @@ NEXT_PUBLIC_ANALYTICS_REAL_DATA_PERCENT=25
 ### Usage in Components
 
 ```tsx
-import { useAnalytics } from '@/lib/analytics';
+import { useAnalytics } from "@/lib/analytics";
 
 function MyComponent() {
   const {
@@ -62,6 +62,7 @@ function MyComponent() {
 ## 📊 Data Blending Rules
 
 ### Visual Consistency Rule
+
 - When real data ≤ 50%, analytics page looks identical to mock
 - No sudden drops, spikes, or empty charts
 - Trends remain smooth and believable
@@ -69,17 +70,20 @@ function MyComponent() {
 ### Blending Algorithms
 
 #### Numeric Values
+
 ```typescript
 // Weighted average with natural variance
-blendedValue = (realValue * realWeight) + (mockValue * mockWeight) + variance
+blendedValue = realValue * realWeight + mockValue * mockWeight + variance;
 ```
 
 #### Array Data (Charts)
+
 - Maintains data structure integrity
 - Preserves temporal ordering
 - Applies trend preservation algorithms
 
 #### Insights
+
 - Text-based insights prefer real data
 - Percentages are blended with proper formatting
 - Currency values use weighted averages
@@ -88,34 +92,37 @@ blendedValue = (realValue * realWeight) + (mockValue * mockWeight) + variance
 
 ### Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `NEXT_PUBLIC_ANALYTICS_REAL_DATA_PERCENT` | `0` | Percentage of real data (0-100) |
+| Variable                                  | Default | Description                     |
+| ----------------------------------------- | ------- | ------------------------------- |
+| `NEXT_PUBLIC_ANALYTICS_REAL_DATA_PERCENT` | `0`     | Percentage of real data (0-100) |
 
 ### Blend Config
 
 ```typescript
 interface BlendConfig {
-  realDataPercentage: number;    // 0-100
-  mockDataPercentage: number;    // 0-100
-  preserveTrends: boolean;       // Maintain data trends
-  smoothTransitions: boolean;    // Add natural variance
+  realDataPercentage: number; // 0-100
+  mockDataPercentage: number; // 0-100
+  preserveTrends: boolean; // Maintain data trends
+  smoothTransitions: boolean; // Add natural variance
 }
 ```
 
 ## 🎨 UI Features
 
 ### Data Source Indicator
+
 - Shows current data source (Live/Demo/Blended)
 - Displays real data percentage
 - Real-time updates
 
 ### Error Handling
+
 - Graceful fallback to mock data
 - User-friendly error messages
 - Retry mechanisms
 
 ### Loading States
+
 - Skeleton loaders for charts
 - Smooth transitions
 - Progressive data loading
@@ -136,7 +143,7 @@ interface BlendConfig {
 ### Custom Blend Configuration
 
 ```tsx
-import { blendAnalyticsData, getBlendConfig } from '@/lib/analytics';
+import { blendAnalyticsData, getBlendConfig } from "@/lib/analytics";
 
 const customBlend = blendAnalyticsData(realData, mockData, {
   realDataPercentage: 75,
@@ -148,14 +155,14 @@ const customBlend = blendAnalyticsData(realData, mockData, {
 ### Debug Mode
 
 ```tsx
-import { useAnalyticsDebug } from '@/lib/analytics';
+import { useAnalyticsDebug } from "@/lib/analytics";
 
 function DebugComponent() {
   const { debugInfo, ...analytics } = useAnalyticsDebug();
-  
-  console.log('Blend Config:', debugInfo.blendConfig);
-  console.log('Data Source:', debugInfo.dataInfo);
-  
+
+  console.log("Blend Config:", debugInfo.blendConfig);
+  console.log("Data Source:", debugInfo.dataInfo);
+
   return <AnalyticsDashboard {...analytics} />;
 }
 ```
@@ -163,16 +170,19 @@ function DebugComponent() {
 ## 📈 Performance Considerations
 
 ### Caching
+
 - API responses cached for 5 minutes
 - Mock data cached for session duration
 - Intelligent cache invalidation
 
 ### Error Recovery
+
 - Automatic retry with exponential backoff
 - Partial data handling
 - Graceful degradation
 
 ### Bundle Size
+
 - Tree-shaking enabled
 - Minimal runtime overhead
 - Lazy loading of analytics components
@@ -180,11 +190,13 @@ function DebugComponent() {
 ## 🔒 Security
 
 ### Authentication
+
 - Session-based authentication
 - Role-based access control
 - API endpoint protection
 
 ### Data Validation
+
 - Input sanitization
 - Response structure validation
 - Type safety throughout
@@ -192,6 +204,7 @@ function DebugComponent() {
 ## 🧪 Testing
 
 ### Unit Tests
+
 ```bash
 # Test blending algorithms
 npm test -- blendAnalyticsData.test.ts
@@ -204,6 +217,7 @@ npm test -- useAnalyticsData.test.ts
 ```
 
 ### Integration Tests
+
 ```bash
 # Test complete analytics flow
 npm test -- analytics.integration.test.ts
@@ -212,16 +226,19 @@ npm test -- analytics.integration.test.ts
 ## 🚀 Production Deployment
 
 ### Environment Setup
+
 1. Set `NEXT_PUBLIC_ANALYTICS_REAL_DATA_PERCENT=100`
 2. Ensure analytics API endpoint is available
 3. Configure proper caching headers
 
 ### Monitoring
+
 - Track data source percentages
 - Monitor API response times
 - Log blending errors
 
 ### Scaling
+
 - Horizontal scaling support
 - Database query optimization
 - CDN integration for static assets
@@ -231,16 +248,19 @@ npm test -- analytics.integration.test.ts
 ### Common Issues
 
 #### Data Not Loading
+
 - Check environment variable
 - Verify API endpoint accessibility
 - Check authentication status
 
 #### Inconsistent Charts
+
 - Verify data structure consistency
 - Check blend configuration
 - Review console for errors
 
 #### Performance Issues
+
 - Reduce real data percentage
 - Optimize database queries
 - Enable aggressive caching
@@ -256,22 +276,26 @@ console.log(analytics.debugInfo.blendConfig);
 
 // Monitor data source changes
 useEffect(() => {
-  console.log('Data source changed:', analytics.dataSource);
+  console.log("Data source changed:", analytics.dataSource);
 }, [analytics.dataSource]);
 ```
 
 ## 📚 API Reference
 
 ### useAnalytics()
+
 Main hook for accessing analytics data.
 
 ### useAnalyticsData()
+
 Advanced hook with more control over fetching.
 
 ### blendAnalyticsData()
+
 Utility function for manual data blending.
 
 ### getBlendConfig()
+
 Get current blend configuration.
 
 ## 🤝 Contributing

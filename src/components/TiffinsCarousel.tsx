@@ -1,17 +1,20 @@
-'use client';
+"use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import PlaceholderImage from '@/components/PlaceholderImage';
-import { MenuItem } from '@/data/menu';
+import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import PlaceholderImage from "@/components/PlaceholderImage";
+import { MenuItem } from "@/data/menu";
 
 interface TiffinsCarouselProps {
   items: MenuItem[];
   onBuyNow?: (item: MenuItem) => void;
 }
 
-const TiffinsCarousel: React.FC<TiffinsCarouselProps> = ({ items, onBuyNow }) => {
+const TiffinsCarousel: React.FC<TiffinsCarouselProps> = ({
+  items,
+  onBuyNow,
+}) => {
   const carouselRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -20,11 +23,11 @@ const TiffinsCarousel: React.FC<TiffinsCarouselProps> = ({ items, onBuyNow }) =>
       <div
         ref={carouselRef}
         className="flex overflow-x-auto scrollbar-hide gap-4 py-4 pl-4 md:pl-8 pr-4 snap-x snap-mandatory"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {items.map((item) => (
           <div key={item.id} className="w-64 flex-shrink-0 p-2">
-            <div 
+            <div
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -58,10 +61,16 @@ const TiffinsCarousel: React.FC<TiffinsCarouselProps> = ({ items, onBuyNow }) =>
                 )}
               </div>
               <div className="p-4 flex-1 flex flex-col">
-                <h3 className="font-medium text-gray-900 dark:text-white mb-1">{item.name}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">{item.description}</p>
+                <h3 className="font-medium text-gray-900 dark:text-white mb-1">
+                  {item.name}
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 mb-3 line-clamp-2">
+                  {item.description}
+                </p>
                 <div className="mt-auto flex justify-between items-center">
-                  <span className="text-lg font-bold text-amber-600 dark:text-amber-400">₹{item.price}</span>
+                  <span className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                    ₹{item.price}
+                  </span>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

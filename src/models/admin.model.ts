@@ -1,6 +1,6 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema } from "mongoose";
 
-export type AdminRole = 'superAdmin' | 'staff';
+export type AdminRole = "superAdmin" | "staff";
 
 export interface IAdmin extends Document {
   name: string;
@@ -19,27 +19,29 @@ const adminSchema = new Schema<IAdmin>(
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    role: { 
-      type: String, 
-      enum: ['superAdmin', 'staff'], 
-      default: 'staff' 
-    },
-    permissions: [{ 
+    role: {
       type: String,
-      enum: [
-        'menu_manage', 
-        'orders_manage', 
-        'users_manage', 
-        'analytics_view',
-        'promotions_manage',
-        'staff_manage',
-        'content_manage'
-      ]
-    }],
+      enum: ["superAdmin", "staff"],
+      default: "staff",
+    },
+    permissions: [
+      {
+        type: String,
+        enum: [
+          "menu_manage",
+          "orders_manage",
+          "users_manage",
+          "analytics_view",
+          "promotions_manage",
+          "staff_manage",
+          "content_manage",
+        ],
+      },
+    ],
     lastLogin: { type: Date },
-    isActive: { type: Boolean, default: true }
+    isActive: { type: Boolean, default: true },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Indexes
@@ -47,4 +49,4 @@ adminSchema.index({ email: 1 }, { unique: true });
 adminSchema.index({ role: 1 });
 adminSchema.index({ isActive: 1 });
 
-export const Admin = mongoose.model<IAdmin>('Admin', adminSchema);
+export const Admin = mongoose.models.Admin || mongoose.model<IAdmin>("Admin", adminSchema);

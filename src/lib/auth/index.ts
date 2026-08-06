@@ -1,23 +1,34 @@
-import 'server-only';
-import jwt from 'jsonwebtoken';
-import { NextRequest, NextResponse } from 'next/server';
-import { serialize, parse } from 'cookie';
-import { getRequiredEnvVar } from '@/lib/env';
+import "server-only";
+import jwt from "jsonwebtoken";
+import { NextRequest, NextResponse } from "next/server";
+import { serialize, parse } from "cookie";
+import { getRequiredEnvVar } from "@/lib/env";
+import logger from "@/lib/logger";
 
 // Parse cookies from cookie header string
-export function parseCookies(cookieHeader?: string | null): Record<string, string> {
+export function parseCookies(
+  cookieHeader?: string | null,
+): Record<string, string> {
   const res: Record<string, string> = {};
   if (!cookieHeader) return res;
-  const cookies = cookieHeader.split(';');
+  const cookies = cookieHeader.split(";");
   for (const c of cookies) {
-    const [k, ...v] = c.trim().split('=');
-    res[k] = decodeURIComponent(v.join('='));
+    const [k, ...v] = c.trim().split("=");
+    res[k] = decodeURIComponent(v.join("="));
   }
   return res;
 }
-const _safeGet = (_obj: unknown, _path: string[], defaultValue: unknown = null) => {
+const _safeGet = (
+  _obj: unknown,
+  _path: string[],
+  defaultValue: unknown = null,
+) => {
   try {
-    return _path.reduce((acc: any, key) => (acc && acc[key] !== undefined ? acc[key] : defaultValue), _obj);
+    return _path.reduce(
+      (acc: any, key) =>
+        acc && acc[key] !== undefined ? acc[key] : defaultValue,
+      _obj,
+    );
   } catch {
     return defaultValue;
   }
@@ -26,7 +37,7 @@ const _safeGet = (_obj: unknown, _path: string[], defaultValue: unknown = null) 
 // Helper to safely check if we're in a browser environment
 const _isBrowser = () => {
   try {
-    return typeof window !== 'undefined' && typeof document !== 'undefined';
+    return typeof window !== "undefined" && typeof document !== "undefined";
   } catch {
     return false;
   }
@@ -38,15 +49,19 @@ const _safeConsoleError = (..._args: unknown[]) => {
 
   try {
     const browserConsole = window.console;
-    if (browserConsole && typeof browserConsole.error === 'function') {
+    if (browserConsole && typeof browserConsole.error === "function") {
       try {
         browserConsole.error(..._args);
       } catch (_error) {
         // If structured logging fails, try stringifying
         try {
-          browserConsole.error(_args.map(arg =>
-            typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-          ).join(' '));
+          browserConsole.error(
+            _args
+              .map((arg) =>
+                typeof arg === "object" ? JSON.stringify(arg) : String(arg),
+              )
+              .join(" "),
+          );
         } catch (_error) {
           // Last resort - do nothing
         }
@@ -57,10 +72,13 @@ const _safeConsoleError = (..._args: unknown[]) => {
   }
 };
 
-const JWT_SECRET = getRequiredEnvVar('JWT_SECRET', { allowEmptyInDevelopment: false, requiredInProduction: true });
+const JWT_SECRET = getRequiredEnvVar("JWT_SECRET", {
+  allowEmptyInDevelopment: false,
+  requiredInProduction: true,
+});
 
 const FINAL_SECRET = JWT_SECRET;
-const TOKEN_NAME = 'auth_token';
+const TOKEN_NAME = "auth_token";
 const TOKEN_MAX_AGE = 60 * 60 * 24; // 24 hours
 
 export interface JwtPayload {
@@ -74,22 +92,25 @@ export interface JwtPayload {
 }
 
 export const generateToken = (payload: JwtPayload): string => {
-  return jwt.sign(payload, FINAL_SECRET, { expiresIn: '1d' });
+  return jwt.sign(payload, FINAL_SECRET, { expiresIn: "1d" });
 };
 
 export const verifyToken = (token: string): JwtPayload | null => {
-  console.log('[verifyToken] Verifying token:', token ? token.substring(0, 20) + '...' : 'No token');
+  logger.info(
+    "[verifyToken] Verifying token:",
+    token ? token.substring(0, 20) + "..." : "No token",
+  );
 
-  if (!token || typeof token !== 'string') {
-    console.log('[verifyToken] Invalid token format or no token');
+  if (!token || typeof token !== "string") {
+    logger.info("[verifyToken] Invalid token format or no token");
     return null;
   }
 
   try {
     // Simple verification without any external dependencies
-    const parts = token.split('.');
+    const parts = token.split(".");
     if (parts.length !== 3) {
-      console.log('[verifyToken] Invalid JWT structure - not 3 parts');
+      logger.info("[verifyToken] Invalid JWT structure - not 3 parts");
       return null;
     }
 
@@ -97,14 +118,19 @@ export const verifyToken = (token: string): JwtPayload | null => {
     let decoded;
     try {
       decoded = jwt.verify(token, FINAL_SECRET) as JwtPayload;
-      console.log('[verifyToken] Token verification successful:', decoded);
+      logger.info("[verifyToken] Token verification successful:", decoded);
     } catch (_error) {
-      console.log('[verifyToken] JWT verification failed:', _error);
+      logger.info("[verifyToken] JWT verification failed:", _error);
       return null;
     }
 
     // Basic validation
-    if (!decoded || typeof decoded !== 'object' || !decoded.id || !decoded.email) {
+    if (
+      !decoded ||
+      typeof decoded !== "object" ||
+      !decoded.id ||
+      !decoded.email
+    ) {
       return null;
     }
 
@@ -124,8 +150,8 @@ export const verifyToken = (token: string): JwtPayload | null => {
 };
 
 export const getTokenFromRequest = (req: NextRequest): string | null => {
-  const authHeader = req.headers.get('authorization');
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return null;
   }
   return authHeader.substring(7);
@@ -133,25 +159,25 @@ export const getTokenFromRequest = (req: NextRequest): string | null => {
 
 // Cookie-based authentication functions with enhanced security
 export const setAuthCookie = (token: string, res: NextResponse) => {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = process.env.NODE_ENV === "production";
 
   const cookieOptions = {
     httpOnly: true,
     secure: isProduction, // Only secure in production
     maxAge: TOKEN_MAX_AGE,
-    path: '/',
-    sameSite: 'lax' as const,
+    path: "/",
+    sameSite: "lax" as const,
     // Don't set domain in development to avoid issues
     domain: isProduction ? undefined : undefined,
   };
 
   const cookie = serialize(TOKEN_NAME, token, cookieOptions);
 
-  res.headers.set('Set-Cookie', cookie);
+  res.headers.set("Set-Cookie", cookie);
 
   // Log cookie for debugging in development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Setting auth cookie:', {
+  if (process.env.NODE_ENV === "development") {
+    logger.info("Setting auth cookie:", {
       tokenLength: token.length,
       cookieOptions,
       cookieString: cookie, // Log the actual cookie string
@@ -160,15 +186,15 @@ export const setAuthCookie = (token: string, res: NextResponse) => {
 };
 
 export const getAuthCookie = (req: NextRequest): string | undefined => {
-  const cookieHeader = req.headers.get('cookie');
+  const cookieHeader = req.headers.get("cookie");
 
   // Log cookie header for debugging in development
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Reading cookies from request:', {
+  if (process.env.NODE_ENV === "development") {
+    logger.info("Reading cookies from request:", {
       hasCookieHeader: !!cookieHeader,
       cookieHeaderLength: cookieHeader?.length,
-      userAgent: req.headers.get('user-agent'),
-      host: req.headers.get('host'),
+      userAgent: req.headers.get("user-agent"),
+      host: req.headers.get("host"),
       cookieHeader: cookieHeader, // Log the actual cookie header
     });
   }
@@ -180,8 +206,8 @@ export const getAuthCookie = (req: NextRequest): string | undefined => {
   const cookies = parse(cookieHeader);
   const token = cookies[TOKEN_NAME];
 
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Parsed auth cookie:', {
+  if (process.env.NODE_ENV === "development") {
+    logger.info("Parsed auth cookie:", {
       hasToken: !!token,
       tokenLength: token?.length,
       token: token, // Log the actual token
@@ -192,19 +218,19 @@ export const getAuthCookie = (req: NextRequest): string | undefined => {
 };
 
 export const clearAuthCookie = (res: NextResponse) => {
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = process.env.NODE_ENV === "production";
 
   const cookieOptions = {
     httpOnly: true,
     secure: isProduction, // Only secure in production
     maxAge: 0,
-    path: '/',
-    sameSite: 'lax' as const,
+    path: "/",
+    sameSite: "lax" as const,
     // Don't set domain in development to avoid issues
     domain: isProduction ? undefined : undefined,
   };
 
-  const cookie = serialize(TOKEN_NAME, '', cookieOptions);
+  const cookie = serialize(TOKEN_NAME, "", cookieOptions);
 
-  res.headers.set('Set-Cookie', cookie);
+  res.headers.set("Set-Cookie", cookie);
 };

@@ -1,11 +1,11 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Bell, BellOff } from 'lucide-react';
-import { requestNotificationPermission } from '@/lib/notifications';
-import { useAuth } from '@/context/AuthContext';
-import { cn } from '@/lib/utils';
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Bell, BellOff } from "lucide-react";
+import { requestNotificationPermission } from "@/lib/notifications";
+import { useAuth } from "@/context/AuthContext";
+import { cn } from "@/lib/utils";
 
 export function NotificationManager() {
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -14,7 +14,7 @@ export function NotificationManager() {
 
   useEffect(() => {
     // Check if notifications are supported and permission is granted
-    if ('Notification' in window && Notification.permission === 'granted') {
+    if ("Notification" in window && Notification.permission === "granted") {
       checkSubscription();
     }
   }, [user]);
@@ -26,9 +26,7 @@ export function NotificationManager() {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
       setIsSubscribed(!!subscription);
-    } catch (error) {
-      console.error('Error checking subscription:', error);
-    }
+    } catch (error) {}
   };
 
   const handleSubscribe = async () => {
@@ -40,12 +38,12 @@ export function NotificationManager() {
 
       if (subscription) {
         // Send subscription to your server
-        const response = await fetch('/api/notifications/subscribe', {
-          method: 'POST',
+        const response = await fetch("/api/notifications/subscribe", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
-          credentials: 'include',
+          credentials: "include",
           body: JSON.stringify({ subscription }),
         });
 
@@ -54,7 +52,6 @@ export function NotificationManager() {
         }
       }
     } catch (error) {
-      console.error('Error subscribing to notifications:', error);
     } finally {
       setIsLoading(false);
     }
@@ -72,21 +69,20 @@ export function NotificationManager() {
         await subscription.unsubscribe();
 
         // Notify server about unsubscription
-        await fetch('/api/notifications/unsubscribe', {
-          method: 'POST',
-          credentials: 'include',
+        await fetch("/api/notifications/unsubscribe", {
+          method: "POST",
+          credentials: "include",
         });
 
         setIsSubscribed(false);
       }
     } catch (error) {
-      console.error('Error unsubscribing from notifications:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!('Notification' in window)) {
+  if (!("Notification" in window)) {
     return null; // Notifications not supported
   }
 
@@ -97,10 +93,12 @@ export function NotificationManager() {
         size="icon"
         onClick={isSubscribed ? handleUnsubscribe : handleSubscribe}
         disabled={isLoading}
-        aria-label={isSubscribed ? 'Disable notifications' : 'Enable notifications'}
+        aria-label={
+          isSubscribed ? "Disable notifications" : "Enable notifications"
+        }
         className={cn(
-          'rounded-full',
-          isLoading && 'opacity-50 cursor-not-allowed'
+          "rounded-full",
+          isLoading && "opacity-50 cursor-not-allowed",
         )}
       >
         {isSubscribed ? (

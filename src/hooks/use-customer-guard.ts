@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export function useCustomerGuard() {
   // Use the centralized Auth context which is initialized from the server
@@ -16,12 +16,13 @@ export function useCustomerGuard() {
     // Only redirect if we're sure the user is not authenticated
     if (!loading && !isAuthenticated) {
       // Store the current path to redirect back after login
-      const currentPath = typeof window !== 'undefined' ? window.location.pathname : undefined;
-      if (currentPath && currentPath !== '/signin') {
-        sessionStorage.setItem('redirectAfterLogin', currentPath);
+      const currentPath =
+        typeof window !== "undefined" ? window.location.pathname : undefined;
+      if (currentPath && currentPath !== "/signin") {
+        sessionStorage.setItem("redirectAfterLogin", currentPath);
       }
       // Use the canonical sign-in route used across the app/middleware
-      router.push('/signin');
+      router.push("/signin");
     }
   }, [isAuthenticated, loading, router]);
 

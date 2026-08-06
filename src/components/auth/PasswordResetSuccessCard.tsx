@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { CheckCircle, Star, Sparkles, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAuthModal } from '@/context/AuthModalContext';
+import { useAuthModal } from "@/context/AuthModalContext";
 
 type PasswordResetSuccessCardProps = {
   onSuccess?: () => void;
@@ -22,7 +22,7 @@ export function PasswordResetSuccessCard({
   const handleBackToLogin = () => {
     closeModal();
     setTimeout(() => {
-      openModal('signin');
+      openModal("signin");
     }, 100);
     onSuccess?.();
   };
@@ -31,7 +31,7 @@ export function PasswordResetSuccessCard({
     <motion.div
       className={cn(
         "relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden",
-        className
+        className,
       )}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -43,8 +43,19 @@ export function PasswordResetSuccessCard({
         className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors z-20"
         aria-label="Go back to sign in"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M6 18L18 6M6 6l12 12"
+          />
         </svg>
       </button>
 
@@ -86,7 +97,7 @@ export function PasswordResetSuccessCard({
             animate={{ scale: 1 }}
             transition={{ duration: 0.5, delay: 0.2, type: "spring" }}
             style={{
-              boxShadow: '0 0 40px rgba(34, 197, 94, 0.2)'
+              boxShadow: "0 0 40px rgba(34, 197, 94, 0.2)",
             }}
           >
             <CheckCircle className="w-14 h-14 text-white" />
@@ -109,7 +120,8 @@ export function PasswordResetSuccessCard({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            Your password has been successfully updated. You can now log in to your account.
+            Your password has been successfully updated. You can now log in to
+            your account.
           </motion.p>
         </div>
 

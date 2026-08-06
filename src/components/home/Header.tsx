@@ -13,7 +13,7 @@ export const Header: React.FC = () => {
   useEffect(() => {
     setMounted(true);
   }, []);
-  
+
   return (
     <div className="absolute top-0 left-0 right-0 z-50 flex justify-center px-4 pt-4 md:pt-6 pointer-events-none">
       <nav
@@ -70,7 +70,7 @@ export const Header: React.FC = () => {
           ) : (
             <>
               <button
-                onClick={() => openModal('signin')}
+                onClick={() => openModal("signin")}
                 className="
                   hidden sm:block
                   font-black text-sm uppercase tracking-widest
@@ -93,7 +93,7 @@ export const Header: React.FC = () => {
               </button>
 
               <button
-                onClick={() => openModal('signup')}
+                onClick={() => openModal("signup")}
                 className="
                   group/getstarted
                   relative overflow-hidden

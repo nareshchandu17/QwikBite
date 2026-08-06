@@ -1,27 +1,28 @@
-import { NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
+import logger from "@/lib/logger";
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { verifyToken } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
+    const token = cookieStore.get("auth_token")?.value;
 
     if (!token) {
       return NextResponse.json(
-        { error: 'No auth token found' },
-        { status: 401 }
+        { error: "No auth token found" },
+        { status: 401 },
       );
     }
 
     const payload = verifyToken(token);
-    
+
     if (!payload) {
       return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
+        { error: "Invalid or expired token" },
+        { status: 401 },
       );
     }
 
@@ -32,13 +33,13 @@ export async function GET() {
         name: payload.name,
         role: payload.role,
       },
-      token
+      token,
     });
   } catch (error) {
-    console.error('Error in /api/auth/me:', error);
+    logger.error("Error in /api/auth/me:", error);
     return NextResponse.json(
-      { error: 'Invalid or expired token' },
-      { status: 401 }
+      { error: "Invalid or expired token" },
+      { status: 401 },
     );
   }
 }
