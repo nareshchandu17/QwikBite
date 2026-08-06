@@ -1,0 +1,46 @@
+name: QwikBite Continuous Integration
+
+# Ye events appudu ee checks run avvali?
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x] # Multiple versions lo test chesthe inka safe
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm' # Package caching for faster runs
+
+      - name: Install Dependencies
+        run: npm ci # 'npm install' kante 'npm ci' fast and reliable in CI environments
+
+      - name: Run ESLint Check
+        run: npm run lint
+        # Lint thappulu unte ikkade aagipothundhi, Vercel ki velladhu.
+
+      - name: Run Vitest Unit Tests
+        run: npm run test
+        # Nuvvu rase business logic (Slot math, Auth helper) fail ayithe deploy stop avthundhi.
+
+      - name: Verify Build Engine
+        run: npm run build
+        env:
+          # Vercel lo rase environment variables ikkada kuda ivvali 
+          # (dummy values are fine just to check if build passes)
+          NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
