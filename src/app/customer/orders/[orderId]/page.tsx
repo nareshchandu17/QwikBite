@@ -462,7 +462,7 @@ export default function OrderDetail({
               <div className="text-center py-8">
                 <MessageSquare className="w-12 h-12 text-amber-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-white mb-2">
-                  We'd love to hear your feedback!
+                  We&apos;d love to hear your feedback!
                 </h3>
                 <p className="text-slate-400 mb-6">
                   Your feedback helps us improve our service.
