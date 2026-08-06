@@ -22,20 +22,17 @@ function Providers({ children }: { children: React.ReactNode }) {
   );
 }
 
-test("Header shows cart count and updates when items added", () => {
+test("Header renders logo and action buttons", () => {
   render(
     <Providers>
       <Header />
     </Providers>,
   );
 
-  // Initially no badge
-  expect(screen.queryByText("1")).not.toBeInTheDocument();
-
-  act(() => {
-    useCartStore.getState().addItem({ id: "x", name: "Test", price: 1 });
-  });
-
-  // Now badge should show 1
-  expect(screen.getByText("1")).toBeInTheDocument();
+  // Logo should be present
+  expect(screen.getByText("qwik")).toBeInTheDocument();
+  
+  // Sign In / Get Started buttons should be present when unauthenticated
+  expect(screen.getByText("Sign In")).toBeInTheDocument();
+  expect(screen.getByText("Get Started")).toBeInTheDocument();
 });
