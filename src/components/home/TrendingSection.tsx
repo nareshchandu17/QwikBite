@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { Plus, Star } from "lucide-react";
 import { useAuthModal } from "@/context/AuthModalContext";

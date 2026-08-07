@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { motion } from "framer-motion";
 import { useAuthModal } from "@/context/AuthModalContext";
@@ -107,7 +109,7 @@ export const HeroSection: React.FC = () => {
         <motion.div
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="relative flex justify-center lg:justify-end"
         >
           {/* Image-local glow (kept subtle) */}
@@ -120,7 +122,7 @@ export const HeroSection: React.FC = () => {
             className="relative w-[120%] max-w-[760px] translate-x-12"
           >
             <Image
-              src="/images/heroimage.png"
+              src="/images/heroimage.webp"
               alt="qwikBite App Preview"
               width={760}
               height={500}

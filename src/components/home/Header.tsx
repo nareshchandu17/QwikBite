@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { useAuthModal } from "@/context/AuthModalContext";

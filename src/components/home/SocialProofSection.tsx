@@ -1,3 +1,5 @@
+"use client";
+
 import { motion } from "framer-motion";
 import { Heart, MessageCircle, Share2, Star } from "lucide-react";
 import React from "react";
