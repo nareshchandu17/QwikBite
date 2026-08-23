@@ -6,18 +6,10 @@ const nextConfig = {
     optimizeCss: false, // Set to false because 'critters' dependency is missing
     webpackBuildWorker: true,
   },
-  typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // !! WARN !!
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
-    ignoreDuringBuilds: true,
-  },
+  // TypeScript errors will now fail the build (as they should)
+
+  // ESLint errors will now fail the build
+
   images: {
     remotePatterns: [
       {

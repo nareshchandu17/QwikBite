@@ -139,7 +139,8 @@ export class SlotService {
 
     const istOffset = 330;
     const now = new Date();
-    const istNow = new Date(now.getTime() + istOffset * 60000);
+    // Normalize to IST by neutralizing the local timezone offset first
+    const istNow = new Date(now.getTime() + (now.getTimezoneOffset() + istOffset) * 60000);
 
     // Parse slot start time
     const startTimeStr = timeSlot.split("-")[0];
