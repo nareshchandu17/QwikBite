@@ -541,12 +541,12 @@ Currently, there are no known limitations! Every item has been successfully reso
 - **Bloat & Unused Packages** — Cleaned up `package.json` by removing `firebase` and duplicate Auth.js packages (`@auth/core`), leaving only stable `next-auth` v4.
 - **Cross-Platform `dev` script** — Standardized `npm run dev` to work out-of-the-box on Mac/Linux using `next dev -p 3001`, leaving `start-dev.bat` isolated as a Windows helper (`dev:win`).
 - **Slot Reservation Concurrency** — Implemented comprehensive unit/concurrency tests simulating atomic MongoDB operations to ensure `maxLoad` boundaries cannot be bypassed during concurrent request spikes.
+- **Robust Rate Limiting** — Replaced the basic in-memory sliding window with a production-ready Upstash Redis adapter (`@upstash/ratelimit`), ensuring rate limits persist across serverless function cold starts.
 
 ---
 
 ## Future Improvements
 
-- Replace the in-memory rate limiter with an Upstash Redis adapter.
 - Implement group ordering with split-bill payment via Stripe.
 - Add Redis-backed caching for hot read paths (menu items, slot data).
 - Add Playwright or Cypress E2E tests for the full ordering flow.
