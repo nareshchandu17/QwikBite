@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "start-dev.bat",
+    "dev": "next dev -p 3001",
+    "dev:win": "start-dev.bat",
     "dev:safe": "next dev -p 3001",
     "dev:kill": "start-dev.bat",
     "dev:kill-ps": "powershell -ExecutionPolicy Bypass -File start-dev.ps1",
@@ -13,13 +14,11 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
-    "dev:server": "ts-node --project tsconfig.server.json src/server/index.ts",
     "seed:menu": "ts-node src/scripts/seed-menu-items.ts",
     "init:db": "ts-node src/scripts/init-database.ts",
     "migrate:data": "ts-node src/scripts/migrate-data.ts"
   },
   "dependencies": {
-    "@auth/core": "^0.41.1",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-aspect-ratio": "^1.1.0",
