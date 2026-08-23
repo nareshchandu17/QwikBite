@@ -133,26 +133,35 @@ Student                          System                          Admin
 
 QwikBite runs entirely on Vercel's serverless infrastructure. There are no persistent WebSocket servers. Real-time functionality is delegated to the Pusher managed event bus, which allows the application to remain stateless across all compute instances.
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                     Browser (Next.js)                   │
-│  Server Components  │  Client Components  │  PWA / SW   │
-└────────────┬────────┴──────────┬──────────┴─────────────┘
-             │ HTTP/fetch         │ Pusher WS subscription
-             ▼                   ▼
-┌────────────────────┐   ┌───────────────────┐
-│  Next.js API Routes│   │  Pusher Event Bus  │
-│  (Vercel Functions)│──►│  (Managed Service) │
-└────────┬───────────┘   └───────────────────┘
-         │
-    ┌────┴──────────────────────────┐
-    │                               │
-    ▼                               ▼
-┌──────────────┐            ┌──────────────────┐
-│ MongoDB Atlas│            │  External Services│
-│  (Mongoose)  │            │  Stripe  · SendGrid│
-│              │            │  Twilio  · OpenRouter│
-└──────────────┘            └──────────────────┘
+```mermaid
+graph TD
+    subgraph "Customer Panel"
+        C1[Student Browser] -->|Browse & Filter| C2(Next.js App)
+        C2 -->|Store Cart & Slot| C3(Zustand)
+        C3 -->|Checkout| C4(Stripe Elements)
+        C2 -.->|Listen for Status Updates| P(Pusher Event Bus)
+    end
+
+    subgraph "Serverless Backend (Vercel)"
+        API(Next.js API Routes / Edge Middleware)
+        API -->|Read/Write Data| DB[(MongoDB Atlas)]
+        API -->|Broadcast Events| P
+        API <-->|Process Payments| S(Stripe API)
+        API <-->|Email/SMS Notifications| ES(SendGrid / Twilio)
+        API <-->|AI Requests| AI(OpenRouter)
+        C4 -->|Payment Intent| API
+    end
+
+    subgraph "Admin Panel"
+        A1[Kitchen / Admin Browser] -->|Manage Menu/Slots| API
+        A1 -.->|Listen for New Orders| P
+        A1 -->|Update Order Status| API
+    end
+
+    style C1 fill:#e6f3ff,stroke:#3399ff,stroke-width:2px
+    style A1 fill:#ffe6e6,stroke:#ff3333,stroke-width:2px
+    style DB fill:#e6ffe6,stroke:#33cc33,stroke-width:2px
+    style P fill:#f9e6ff,stroke:#cc33ff,stroke-width:2px
 ```
 
 **Edge Middleware** (`src/middleware.ts`) runs on Vercel's Edge Network and enforces role-based route protection before a request ever reaches a serverless function. Unauthenticated requests to `/admin/*` or `/customer/*` are redirected immediately at the CDN layer.
