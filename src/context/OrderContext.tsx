@@ -244,6 +244,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({
         }
       });
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pusherClient, orders.length, isInitialized]);
 
   // Fetch orders from database on initial load

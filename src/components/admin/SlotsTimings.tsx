@@ -115,6 +115,7 @@ const SlotsTimings: React.FC = () => {
         }
       };
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected]);
 
   const getStatusConfig = (status: string, percentage: number) => {

@@ -497,6 +497,7 @@ export default function PaymentSuccessPage() {
     } catch (error: unknown) {
       logger.error("[Payment Success] Error processing order:", error);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderData, orderProcessedRef, addOrder, router, selectedPaymentMethod]);
 
   // Effect: Process order ONLY if it hasn't been created yet

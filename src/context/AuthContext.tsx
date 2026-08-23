@@ -207,6 +207,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     syncAuth().finally(() => {
       setIsInitialSync(false);
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, status]);
 
   const router = useRouter();

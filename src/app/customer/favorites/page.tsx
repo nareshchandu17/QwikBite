@@ -435,6 +435,7 @@ export default function FavouritesPage() {
     }, 200);
 
     return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [favourites, debouncedSearchQuery, isMounted, startLoading, stopLoading]);
 
   // NOTE: removeFromFavourites is intentionally not used in the JSX.

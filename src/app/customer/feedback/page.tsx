@@ -251,6 +251,7 @@ export default function FeedbackPage() {
   const feedbackCharsLeft = 500 - (formData.feedback?.length ?? 0);
   const filteredHistory = useMemo(
     () => filterFeedback(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [feedbackHistory, categoryFilter, starFilter, dateFilter, customDateRange],
   );
 

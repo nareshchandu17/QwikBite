@@ -17,6 +17,7 @@ export function NotificationManager() {
     if ("Notification" in window && Notification.permission === "granted") {
       checkSubscription();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const checkSubscription = async () => {

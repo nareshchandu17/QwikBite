@@ -73,6 +73,7 @@ export function useRealtimeData<T>(
 
     // Cleanup
     return () => clearInterval(intervalId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endpoint, refreshInterval]);
 
   const updateData = async (updates: Partial<T>, updateEndpoint?: string) => {

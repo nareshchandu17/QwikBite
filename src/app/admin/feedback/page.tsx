@@ -55,6 +55,7 @@ export default function AdminFeedbackDashboard() {
 
   useEffect(() => {
     fetchFeedbacks();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchFeedbacks = async () => {

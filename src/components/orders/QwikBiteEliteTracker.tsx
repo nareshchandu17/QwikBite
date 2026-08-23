@@ -242,6 +242,7 @@ export default function QwikBiteEliteTracker({
       channel.unbind("order:time", handleTimeUpdate);
       pusherClient.unsubscribe(channelName);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pusherClient, isOpen, liveOrder?.id, liveOrder.status]);
 
   // Removed API fetch call - using the order data passed from parent component

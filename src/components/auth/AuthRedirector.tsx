@@ -11,6 +11,7 @@ export function AuthRedirector({ children }: { children: React.ReactNode }) {
   const [hasRedirected, setHasRedirected] = useState(false);
 
   // Public paths that Don&apos;t require authentication
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const publicPaths = ["/", "/signin", "/signup", "/customer/menu", "/api", "/_next"];
 
   useEffect(() => {

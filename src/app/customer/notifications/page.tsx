@@ -167,6 +167,7 @@ const NotificationsPage = () => {
         if (userId) pusherClient.unsubscribe(`user-${userId}`);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pusherClient, notifications.length > 0 ? notifications[0].userId : ""]);
 
   const filteredNotifications = notifications.filter((notification) => {

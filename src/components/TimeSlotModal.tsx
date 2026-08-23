@@ -146,6 +146,7 @@ const TimeSlotModal: React.FC<TimeSlotModalProps> = ({
 
   useEffect(() => {
     if (isOpen) fetchSlots();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   useEffect(() => {
