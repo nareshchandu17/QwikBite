@@ -37,7 +37,7 @@ export async function GET(
     }
 
     const identifier = getRateLimitIdentifier(req as Request);
-    const rateLimitResult = checkRateLimit(
+    const  = await checkRateLimit(
       identifier,
       RateLimitPresets.STANDARD.limit,
       RateLimitPresets.STANDARD.windowMs,
