@@ -558,7 +558,6 @@ Currently, there are no known limitations! Every item has been successfully reso
 
 - Implement group ordering with split-bill payment via Stripe.
 - Add Redis-backed caching for hot read paths (menu items, slot data).
-- Add Playwright or Cypress E2E tests for the full ordering flow.
 - Build a smart display board integration for kitchen staff (WebSocket or Pusher subscription on a dedicated kiosk).
 
 ---
