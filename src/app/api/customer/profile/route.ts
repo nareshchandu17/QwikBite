@@ -94,7 +94,7 @@ export async function PUT(request: Request) {
 
     // Rate limiting
     const identifier = getRateLimitIdentifier(request);
-    const rateLimit = checkRateLimit(
+    const rateLimit = await checkRateLimit(
       identifier,
       RateLimitPresets.STANDARD.limit,
       RateLimitPresets.STANDARD.windowMs,

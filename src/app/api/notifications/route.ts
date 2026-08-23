@@ -155,3 +155,26 @@ export async function PATCH(req: NextRequest) {
     );
   }
 }
+// DELETE /api/notifications - Delete notification
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await getAuthenticatedUser(req);
+    if (!user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    await connectToDatabase();
+    
+    const url = new URL(req.url);
+    // Parse ID from either search params or path
+    let notificationId = url.searchParams.get("id");
+    const pathParts = url.pathname.split('/');
+    if (!notificationId && pathParts.length > 0 && pathParts[pathParts.length - 1] !== 'notifications') {
+      notificationId = pathParts[pathParts.length - 1];
+    }
+    
+    if (!notificationId) return NextResponse.json({ error: "Notification ID required" }, { status: 400 });
+    
+    await Notification.findOneAndDelete({ _id: notificationId, userId: user.id });
+    return NextResponse.json({ success: true }, { status: 200 });
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
+  }
+}

@@ -1,36 +1,40 @@
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import { SlotService } from '../slotService';
 import { TimeSlot } from '@/models/slot.model';
 import { MenuItem } from '@/models/menuItem.model';
-import * as db from '@/lib/db';
+import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 
-// Mock dependencies
-vi.mock('@/lib/db', () => ({
-  connectDB: vi.fn(),
-}));
-
-vi.mock('@/models/slot.model', () => ({
-  TimeSlot: {
-    findOneAndUpdate: vi.fn(),
-  },
-}));
-
-vi.mock('@/models/menuItem.model', () => ({
-  MenuItem: {
-    findOne: vi.fn(),
-  },
-}));
+let mongoServer: MongoMemoryServer;
 
 describe('SlotService', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  // Setup MongoMemoryServer before all tests
+  beforeAll(async () => {
+    mongoServer = await MongoMemoryServer.create();
+    const uri = mongoServer.getUri();
+    process.env.MONGODB_URI = uri;
+    await mongoose.connect(uri);
+  });
+
+  // Cleanup after all tests
+  afterAll(async () => {
+    await mongoose.disconnect();
+    await mongoServer.stop();
+  });
+
+  // Clear DB after each test
+  afterEach(async () => {
+    const collections = mongoose.connection.collections;
+    for (const key in collections) {
+      const collection = collections[key];
+      await collection.deleteMany({});
+    }
   });
 
   describe('validateSlotTiming', () => {
     beforeEach(() => {
-      // Mock new Date() for predictable tests
       vi.useFakeTimers();
-      const mockNow = new Date('2026-08-23T12:00:00Z'); // 5:30 PM IST
+      const mockNow = new Date('2026-08-23T12:00:00Z'); // 5:30 PM IST locally
       vi.setSystemTime(mockNow);
     });
 
@@ -44,126 +48,133 @@ describe('SlotService', () => {
     });
 
     it('should reject a slot that has already passed', () => {
-      // Current time is 5:30 PM IST (12:00 UTC). A 5:00 PM slot is in the past.
       const result = SlotService.validateSlotTiming('05:00-05:30', 10);
       expect(result.valid).toBe(false);
       expect(result.error).toMatch(/already passed/);
     });
 
     it('should reject a slot with insufficient prep time', () => {
-      // Current time is 5:30 PM IST. A 5:45 PM slot is 15 mins away. Needs 20 mins.
       const result = SlotService.validateSlotTiming('05:45-06:15', 20);
       expect(result.valid).toBe(false);
       expect(result.error).toMatch(/Insufficient time/);
     });
 
     it('should allow a valid future slot', () => {
-      // Current time is 5:30 PM IST. A 6:00 PM slot is 30 mins away. Needs 15 mins.
       const result = SlotService.validateSlotTiming('06:00-06:30', 15);
       expect(result.valid).toBe(true);
     });
   });
 
-  describe('reserveSlot', () => {
-    it('should attempt atomic booking with capacity limits', async () => {
-      const mockSlot = { _id: 'slot1', save: vi.fn() };
-      (TimeSlot.findOneAndUpdate as any).mockResolvedValue(mockSlot);
-
-      const result = await SlotService.reserveSlot('10:00-10:30', '2026-08-25', 15);
-
-      expect(db.connectDB).toHaveBeenCalled();
-      expect(TimeSlot.findOneAndUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          dateOnly: '2026-08-25',
-          isActive: true,
-          $expr: expect.objectContaining({
-            $lte: [
-              { $add: ['$currentLoad', 15] },
-              { $multiply: ['$maxLoad', '$kitchenCapacityFactor'] },
-            ],
-          }),
-        }),
-        { $inc: { currentLoad: 15 } },
-        { new: true, upsert: false }
-      );
-      expect(mockSlot.save).toHaveBeenCalled();
-      expect(result).toBe(mockSlot);
-    });
-
-    it('should return null if capacity is full', async () => {
-      (TimeSlot.findOneAndUpdate as any).mockResolvedValue(null);
-      const result = await SlotService.reserveSlot('10:00-10:30', '2026-08-25', 500);
-      expect(result).toBeNull();
-    });
-
-    it('should handle N concurrent requests safely (atomic booking simulation)', async () => {
-      // Simulate a real DB where atomic operations check capacity
-      let currentDbLoad = 0;
-      const maxDbLoad = 20; // 20 units of prep time max
-      const kitchenCapacityFactor = 1;
-      
-      // We will override the mock for just this test to simulate atomic evaluation
-      (TimeSlot.findOneAndUpdate as any).mockImplementation(async (query: any, update: any) => {
-        // The query has an $expr $lte check. Let's manually evaluate it like MongoDB would:
-        // currentDbLoad + requestedLoad <= maxDbLoad * kitchenCapacityFactor
-        
-        // Extract the requested load from the update object
-        const requestedLoad = update.$inc.currentLoad;
-        
-        if (currentDbLoad + requestedLoad <= maxDbLoad * kitchenCapacityFactor) {
-          // If valid, increment and return the slot
-          currentDbLoad += requestedLoad;
-          return { _id: 'slot1', currentLoad: currentDbLoad, save: vi.fn() };
-        }
-        
-        // If it violates the capacity limit, MongoDB returns null (document not found matching query)
-        return null;
+  describe('reserveSlot (Real Concurrency Test)', () => {
+    beforeEach(async () => {
+      // Seed a single slot with maxLoad = 5
+      await TimeSlot.create({
+        dateOnly: '2026-08-25',
+        startTime: new Date('2026-08-25T10:00:00.000Z'),
+        endTime: new Date('2026-08-25T10:30:00.000Z'),
+        timeSlot: '10:00-10:30',
+        maxLoad: 5, // Extremely constrained capacity
+        currentLoad: 0,
+        kitchenCapacityFactor: 1,
+        isActive: true,
+        status: 'open'
       });
+    });
 
-      // 5 concurrent users trying to book 5 units of load each (Total 25 load requested)
-      // Since max is 20, exactly 4 should succeed and 1 should fail.
-      const N = 5;
-      const requestedLoadPerUser = 5;
+    it('should handle N concurrent requests safely (atomic booking with real DB)', async () => {
+      // We will fire 20 parallel reserveSlot calls
+      // Each call requests a load of 1.
+      // Since maxLoad is 5, exactly 5 should succeed, and 15 should fail (return null).
+      
+      const N = 20;
+      const requestedLoadPerUser = 1;
+
+      // Mock the SlotService.getSlotStartTime to return our exact UTC date to avoid timezone issues in the test
+      const originalGetSlotStartTime = SlotService.getSlotStartTime;
+      SlotService.getSlotStartTime = vi.fn().mockReturnValue(new Date('2026-08-25T10:00:00.000Z'));
 
       const promises = Array(N).fill(0).map(() => 
         SlotService.reserveSlot('10:00-10:30', '2026-08-25', requestedLoadPerUser)
       );
 
+      // Execute all 20 reservations in parallel
       const results = await Promise.all(promises);
       
+      // Restore original function
+      SlotService.getSlotStartTime = originalGetSlotStartTime;
+
       const successfulBookings = results.filter(result => result !== null);
       const failedBookings = results.filter(result => result === null);
 
-      expect(successfulBookings.length).toBe(4); // 4 * 5 = 20 (Max Load)
-      expect(failedBookings.length).toBe(1);     // The 5th request should be rejected
-      expect(currentDbLoad).toBe(20);            // The database state should be perfectly at capacity
+      // Exactly 5 reservations should have squeezed through
+      expect(successfulBookings.length).toBe(5);
+      // The remaining 15 were rejected natively by MongoDB's atomic evaluation
+      expect(failedBookings.length).toBe(15);
+
+      // Verify the final state in the database directly
+      const finalSlot = await TimeSlot.findOne({ dateOnly: '2026-08-25' });
+      expect(finalSlot?.currentLoad).toBe(5); // Load perfectly matches max capacity, no overbooking
+    });
+
+    it('should return null if capacity is full from a single large request', async () => {
+      const result = await SlotService.reserveSlot('10:00-10:30', '2026-08-25', 10);
+      expect(result).toBeNull();
     });
   });
 
   describe('releaseSlot', () => {
+    beforeEach(async () => {
+      await TimeSlot.create({
+        dateOnly: '2026-08-25',
+        startTime: new Date('2026-08-25T10:00:00.000Z'),
+        endTime: new Date('2026-08-25T10:30:00.000Z'),
+        timeSlot: '10:00-10:30',
+        maxLoad: 20,
+        currentLoad: 15, // Already has load
+        kitchenCapacityFactor: 1,
+        isActive: true,
+        status: 'open'
+      });
+    });
+
     it('should decrease the load for a slot (rollback)', async () => {
-      const mockSlot = { _id: 'slot1', save: vi.fn() };
-      (TimeSlot.findOneAndUpdate as any).mockResolvedValue(mockSlot);
+      const originalGetSlotStartTime = SlotService.getSlotStartTime;
+      SlotService.getSlotStartTime = vi.fn().mockReturnValue(new Date('2026-08-25T10:00:00.000Z'));
 
-      await SlotService.releaseSlot('10:00-10:30', '2026-08-25', 15);
+      await SlotService.releaseSlot('10:00-10:30', '2026-08-25', 5);
 
-      expect(TimeSlot.findOneAndUpdate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          dateOnly: '2026-08-25',
-        }),
-        { $inc: { currentLoad: -15 } },
-        { new: true }
-      );
-      expect(mockSlot.save).toHaveBeenCalled();
+      SlotService.getSlotStartTime = originalGetSlotStartTime;
+
+      const slot = await TimeSlot.findOne({ dateOnly: '2026-08-25' });
+      expect(slot?.currentLoad).toBe(10); // 15 - 5
     });
   });
 
   describe('calculateOrderLoad', () => {
-    it('should calculate total load based on menu item prep time', async () => {
-      (MenuItem.findOne as any)
-        .mockResolvedValueOnce({ preparationTime: 10 }) // Item 1
-        .mockResolvedValueOnce({ preparationTime: 5 });  // Item 2
+    beforeEach(async () => {
+      await MenuItem.create({
+        id: '1',
+        name: 'Item 1',
+        price: 10,
+        category: 'Food',
+        preparationTime: 10,
+        status: 'available',
+        image: 'img1.jpg',
+        images: ['img1.jpg']
+      });
+      await MenuItem.create({
+        id: '2',
+        name: 'Item 2',
+        price: 15,
+        category: 'Food',
+        preparationTime: 5,
+        status: 'available',
+        image: 'img2.jpg',
+        images: ['img2.jpg']
+      });
+    });
 
+    it('should calculate total load based on menu item prep time', async () => {
       const items = [
         { id: '1', quantity: 2 },
         { id: '2', quantity: 3 }
@@ -175,9 +186,7 @@ describe('SlotService', () => {
     });
 
     it('should use default 5 mins if item not found', async () => {
-      (MenuItem.findOne as any).mockResolvedValue(null);
-
-      const items = [{ id: '1', quantity: 2 }];
+      const items = [{ id: 'missing-id', quantity: 2 }];
       const load = await SlotService.calculateOrderLoad(items);
       // (5 * 2) = 10
       expect(load).toBe(10);

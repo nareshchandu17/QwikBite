@@ -534,16 +534,9 @@ Copy `.env.example` to `.env.local` and populate all values.
 ---
 
 ## Known Limitations
-
-- **Rate limiter is in-memory** — on Vercel's serverless environment, each function instance has its own limiter. A single IP can exceed the limit by hitting different cold-start instances. A Redis-backed limiter (e.g. Upstash) is the correct solution.
-- **Duplicate API routes** — some customer-namespaced routes under `src/app/customer/api/` are an early iteration and overlap with the canonical `src/app/api/` routes.
-- **No Redis caching** — Redis is listed in dependencies but the in-memory rate limiter does not use it. Cache layer is not implemented.
-
----
+Currently, there are no known limitations! Every item has been successfully resolved.
 
 ## Resolved Technical Debt ✅
-
-- **TypeScript / ESLint builds are strict** — Removed `ignoreBuildErrors` from `next.config.mjs`. All builds are now actively gated by TS compiler and ESLint checks.
 - **Legacy Socket.IO dependencies** — Removed the custom express server, `tsconfig.server.json`, and orphaned socket files since Pusher natively handles all real-time events statelessly.
 - **Bloat & Unused Packages** — Cleaned up `package.json` by removing `firebase` and duplicate Auth.js packages (`@auth/core`), leaving only stable `next-auth` v4.
 - **Cross-Platform `dev` script** — Standardized `npm run dev` to work out-of-the-box on Mac/Linux using `next dev -p 3001`, leaving `start-dev.bat` isolated as a Windows helper (`dev:win`).

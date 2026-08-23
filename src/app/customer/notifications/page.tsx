@@ -50,7 +50,7 @@ const NotificationsPage = () => {
     try {
       setIsLoading(true);
 
-      const res = await fetch("/api/customer/notifications", {
+      const res = await fetch("/api/notifications", {
         method: "GET",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -180,7 +180,7 @@ const NotificationsPage = () => {
 
   const markAsRead = useCallback(async (id: string) => {
     try {
-      const response = await fetch(`/api/customer/notifications/${id}`, {
+      const response = await fetch(`/api/notifications?id=${id}`, {
         method: "PATCH",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -202,7 +202,7 @@ const NotificationsPage = () => {
   const markAllAsRead = useCallback(async () => {
     try {
       const response = await fetch(
-        "/api/customer/notifications/mark-all-read",
+        "/api/notifications/mark-all-read",
         {
           method: "POST",
           credentials: "include",
@@ -223,7 +223,7 @@ const NotificationsPage = () => {
 
   const deleteNotification = useCallback(async (id: string) => {
     try {
-      const response = await fetch(`/api/customer/notifications/${id}`, {
+      const response = await fetch(`/api/notifications/${id}`, {
         method: "DELETE",
         credentials: "include",
         headers: { "Content-Type": "application/json" },

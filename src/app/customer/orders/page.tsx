@@ -284,7 +284,7 @@ const OrderCard: React.FC<{
 
       // Open invoice in new tab
       const invoiceWindow = window.open(
-        `/api/customer/orders/${orderId}/invoice`,
+        `/api/orders/customer/${orderId}/invoice`,
         "_blank",
         "width=800,height=600,scrollbars=yes,resizable=yes",
       );
