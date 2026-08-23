@@ -33,9 +33,55 @@ const beVietnamPro = Be_Vietnam_Pro({
 });
 
 export const metadata: Metadata = {
-  title: "qwikBite - Smart Campus Dining",
+  metadataBase: new URL("https://qwikbite.vercel.app"),
+  title: {
+    default: "qwikBite - Smart Campus Dining",
+    template: "%s | qwikBite",
+  },
   description:
     "Order from your canteen in seconds. Skip the queues. Enjoy your break.",
+  openGraph: {
+    title: "qwikBite - Smart Campus Dining",
+    description: "Order from your canteen in seconds. Skip the queues. Enjoy your break.",
+    url: "https://qwikbite.vercel.app",
+    siteName: "qwikBite",
+    locale: "en_US",
+    type: "website",
+    images: [
+      {
+        url: "/icon.png",
+        width: 800,
+        height: 600,
+        alt: "qwikBite Logo",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "qwikBite - Smart Campus Dining",
+    description: "Order from your canteen in seconds. Skip the queues. Enjoy your break.",
+    images: ["/icon.png"],
+  },
+  verification: {
+    // Replace these placeholders with your actual verification strings
+    google: "0d9f3079be06abfb",
+    yandex: "yandex",
+    yahoo: "yahoo",
+    other: {
+      "msvalidate.01": ["YOUR_BING_WEBMASTER_VERIFICATION_CODE"],
+    },
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export const viewport: Viewport = {
