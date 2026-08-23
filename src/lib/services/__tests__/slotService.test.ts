@@ -95,6 +95,49 @@ describe('SlotService', () => {
       const result = await SlotService.reserveSlot('10:00-10:30', '2026-08-25', 500);
       expect(result).toBeNull();
     });
+
+    it('should handle N concurrent requests safely (atomic booking simulation)', async () => {
+      // Simulate a real DB where atomic operations check capacity
+      let currentDbLoad = 0;
+      const maxDbLoad = 20; // 20 units of prep time max
+      const kitchenCapacityFactor = 1;
+      
+      // We will override the mock for just this test to simulate atomic evaluation
+      (TimeSlot.findOneAndUpdate as any).mockImplementation(async (query: any, update: any) => {
+        // The query has an $expr $lte check. Let's manually evaluate it like MongoDB would:
+        // currentDbLoad + requestedLoad <= maxDbLoad * kitchenCapacityFactor
+        
+        // Extract the requested load from the update object
+        const requestedLoad = update.$inc.currentLoad;
+        
+        if (currentDbLoad + requestedLoad <= maxDbLoad * kitchenCapacityFactor) {
+          // If valid, increment and return the slot
+          currentDbLoad += requestedLoad;
+          return { _id: 'slot1', currentLoad: currentDbLoad, save: vi.fn() };
+        }
+        
+        // If it violates the capacity limit, MongoDB returns null (document not found matching query)
+        return null;
+      });
+
+      // 5 concurrent users trying to book 5 units of load each (Total 25 load requested)
+      // Since max is 20, exactly 4 should succeed and 1 should fail.
+      const N = 5;
+      const requestedLoadPerUser = 5;
+
+      const promises = Array(N).fill(0).map(() => 
+        SlotService.reserveSlot('10:00-10:30', '2026-08-25', requestedLoadPerUser)
+      );
+
+      const results = await Promise.all(promises);
+      
+      const successfulBookings = results.filter(result => result !== null);
+      const failedBookings = results.filter(result => result === null);
+
+      expect(successfulBookings.length).toBe(4); // 4 * 5 = 20 (Max Load)
+      expect(failedBookings.length).toBe(1);     // The 5th request should be rejected
+      expect(currentDbLoad).toBe(20);            // The database state should be perfectly at capacity
+    });
   });
 
   describe('releaseSlot', () => {

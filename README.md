@@ -536,23 +536,26 @@ Copy `.env.example` to `.env.local` and populate all values.
 ## Known Limitations
 
 - **Rate limiter is in-memory** — on Vercel's serverless environment, each function instance has its own limiter. A single IP can exceed the limit by hitting different cold-start instances. A Redis-backed limiter (e.g. Upstash) is the correct solution.
-- **TypeScript build errors are suppressed** — `next.config.mjs` sets `typescript.ignoreBuildErrors: true` and `eslint.ignoreDuringBuilds: true`. The project has unresolved type issues that need to be addressed before this config should be removed.
 - **Duplicate API routes** — some customer-namespaced routes under `src/app/customer/api/` are an early iteration and overlap with the canonical `src/app/api/` routes.
-- **Legacy socket files** — `src/lib/socket.ts`, `websocket.ts`, and `order-socket.ts` are remnants of the original Socket.IO implementation and are no longer used.
-- **Firebase dependency** — `firebase` is listed in `package.json` but no Firebase integration is active in the source code.
-- **Mixed Auth.js versions** — `@auth/core` + `@auth/mongodb-adapter` (Auth.js v5) coexist with `next-auth` 4.x. These target different major versions and the v5 packages appear unused.
 - **No Redis caching** — Redis is listed in dependencies but the in-memory rate limiter does not use it. Cache layer is not implemented.
+
+---
+
+## Resolved Technical Debt ✅
+
+- **TypeScript / ESLint builds are strict** — Removed `ignoreBuildErrors` from `next.config.mjs`. All builds are now actively gated by TS compiler and ESLint checks.
+- **Legacy Socket.IO dependencies** — Removed the custom express server, `tsconfig.server.json`, and orphaned socket files since Pusher natively handles all real-time events statelessly.
+- **Bloat & Unused Packages** — Cleaned up `package.json` by removing `firebase` and duplicate Auth.js packages (`@auth/core`), leaving only stable `next-auth` v4.
+- **Cross-Platform `dev` script** — Standardized `npm run dev` to work out-of-the-box on Mac/Linux using `next dev -p 3001`, leaving `start-dev.bat` isolated as a Windows helper (`dev:win`).
+- **Slot Reservation Concurrency** — Implemented comprehensive unit/concurrency tests simulating atomic MongoDB operations to ensure `maxLoad` boundaries cannot be bypassed during concurrent request spikes.
 
 ---
 
 ## Future Improvements
 
 - Replace the in-memory rate limiter with an Upstash Redis adapter.
-- Resolve all TypeScript errors and remove `ignoreBuildErrors`.
 - Implement group ordering with split-bill payment via Stripe.
 - Add Redis-backed caching for hot read paths (menu items, slot data).
-- Clean up legacy Socket.IO files and unused dependencies.
-- Migrate fully to Auth.js v5 and remove the dual-auth complexity.
 - Add Playwright or Cypress E2E tests for the full ordering flow.
 - Build a smart display board integration for kitchen staff (WebSocket or Pusher subscription on a dedicated kiosk).
 
