@@ -157,7 +157,7 @@ export const TrendingSection: React.FC = () => {
       </div>
 
       {/* Horizontal Scroll */}
-      <div className="flex overflow-x-auto gap-6 px-6 pb-8 snap-x snap-mandatory hide-scrollbar">
+      <div className="flex overflow-x-auto gap-6 px-6 pb-8 snap-x snap-mandatory scrollbar-hide">
         {TRENDING_ITEMS.map((item) => (
           <div
             key={item.id}

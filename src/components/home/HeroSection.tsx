@@ -47,7 +47,7 @@ export const HeroSection: React.FC = () => {
       />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-gradient-to-r from-amber-200/15 to-orange-300/15 blur-3xl" />
 
-      <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-20 lg:grid-cols-2">
+      <div className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 lg:grid-cols-2 min-h-[calc(100vh-8rem)] py-16">
         {/* LEFT — CONTENT */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
@@ -110,7 +110,7 @@ export const HeroSection: React.FC = () => {
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="relative flex justify-center lg:justify-end"
+          className="relative flex justify-center lg:justify-end overflow-hidden"
         >
           {/* Image-local glow (kept subtle) */}
           <div className="absolute inset-0 -z-10 rounded-full bg-orange-500/20 blur-[160px]" />
@@ -119,22 +119,22 @@ export const HeroSection: React.FC = () => {
           <motion.div
             animate={{ y: [0, -18, 0] }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            className="relative w-[120%] max-w-[760px] translate-x-12"
+            className="relative w-full max-w-[600px]"
           >
             <Image
               src="/images/heroimage.webp"
               alt="qwikBite App Preview"
-              width={760}
-              height={500}
+              width={600}
+              height={400}
               priority
-              className="w-full drop-shadow-[0_60px_80px_rgba(0,0,0,0.35)]"
+              className="w-full h-auto drop-shadow-[0_60px_80px_rgba(0,0,0,0.35)]"
             />
           </motion.div>
         </motion.div>
       </div>
 
       {/* Bottom fade */}
-      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-white to-transparentz to-transparent" />
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-white to-transparent" />
     </section>
   );
 };
