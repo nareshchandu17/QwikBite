@@ -1,50 +1,79 @@
 import logger from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { connectDB } from "@/lib/db";
-import { Order } from "@/models/order.model";
+import { Order, OrderStatus } from "@/models/order.model";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import mongoose from "mongoose";
+import { syncTimeSlotUsage } from "@/lib/slot-utils";
 
-const jsonResponse = (data: unknown, status = 200) => {
-  return new NextResponse(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
+const STAFF_ROLES = new Set(["admin", "canteen_staff", "staff"]);
+
+function orderFilter(id: string) {
+  return {
+    $or: [
+      { orderId: id },
+      ...(mongoose.isValidObjectId(id) ? [{ _id: id }] : []),
+    ],
+  };
+}
+
+async function cancelOrder(
+  order: mongoose.HydratedDocument<any>,
+  actorId: string,
+) {
+  if (![OrderStatus.PENDING, OrderStatus.CONFIRMED].includes(order.status)) {
+    return { ok: false, status: 409, error: "This order can no longer be cancelled." };
+  }
+
+  order.status = OrderStatus.CANCELLED;
+  order.isCancelled = true;
+  order.statusHistory.push({
+    status: OrderStatus.CANCELLED,
+    timestamp: new Date(),
+    note: "Order cancelled",
+    updatedBy: mongoose.isValidObjectId(actorId)
+      ? new mongoose.Types.ObjectId(actorId)
+      : undefined,
   });
-};
+
+  await order.save();
+
+  if (order.pickupDate) {
+    await syncTimeSlotUsage(order.pickupDate);
+  }
+
+  return { ok: true, status: 200, data: order.toObject() };
+}
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: { id: string } },
 ) {
   try {
     await connectDB();
-    const { id } = params;
-
     const session = await getServerSession(authOptions);
-    if (!session || !session.user?.id)
-      return jsonResponse({ error: "Unauthorized" }, 401);
-    const userId = session.user.id;
 
-    // The 'id' in URL can be the orderId (ORD-...) or the MongoDB _id
-    const order = await Order.findOne({
-      $or: [
-        { orderId: id },
-        ...(mongoose.Types.ObjectId.isValid(id) ? [{ _id: id }] : []),
-      ],
-    });
-
-    if (!order) return jsonResponse({ error: "Order not found" }, 404);
-
-    // Check ownership or admin role
-    if (order.user.toString() !== userId && session.user.role !== "admin") {
-      return jsonResponse({ error: "Forbidden" }, 403);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    return jsonResponse({ order });
-  } catch (err) {
-    logger.error("GET /api/orders/[id] error:", err);
-    return jsonResponse({ error: "Internal server error" }, 500);
+    const order = await Order.findOne(orderFilter(params.id)).lean();
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    const role = String(session.user.role || "").toLowerCase();
+    const isOwner = String(order.user) === session.user.id;
+
+    if (!isOwner && !STAFF_ROLES.has(role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    return NextResponse.json({ order }, { status: 200 });
+  } catch (error) {
+    logger.error("GET /api/orders/[id] error", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -54,55 +83,63 @@ export async function PATCH(
 ) {
   try {
     await connectDB();
-    const { id } = params;
 
     const session = await getServerSession(authOptions);
-    if (!session || !session.user?.id)
-      return jsonResponse({ error: "Unauthorized" }, 401);
-    const userId = session.user.id;
-
-    const body = await req.json().catch(() => ({}));
-
-    const order = await Order.findOne({
-      $or: [
-        { orderId: id },
-        ...(mongoose.Types.ObjectId.isValid(id) ? [{ _id: id }] : []),
-      ],
-    });
-
-    if (!order) return jsonResponse({ error: "Order not found" }, 404);
-
-    if (order.user.toString() !== userId && session.user.role !== "admin") {
-      return jsonResponse({ error: "Forbidden" }, 403);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Only allow specific status updates or meta updates
-    const updated = await Order.findByIdAndUpdate(
-      order._id,
-      { $set: body },
-      { new: true },
-    ).lean();
+    const order = await Order.findOne(orderFilter(params.id));
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
 
-    // Notify Customer about status change
-    if (updated && body.status && body.status !== order.status) {
-      try {
-        const { NotificationService } =
-          await import("@/lib/services/notification.service");
-        await NotificationService.notifyCustomer({
-          userId: order.user.toString(),
-          title: 'Order Status Update',
-          message: `Your order ${order.id} status is now ${order.status}`,
-          type: 'order'
-        });
-      } catch (notifErr) {
-        logger.error("[Order Patch] Notification error:", notifErr);
+    const role = String(session.user.role || "").toLowerCase();
+    const body = await req.json().catch(() => ({}));
+
+    if (body.action === "cancel") {
+      if (String(order.user) !== session.user.id && !STAFF_ROLES.has(role)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+
+      const result = await cancelOrder(order, session.user.id);
+      if (!result.ok) {
+        return NextResponse.json({ error: result.error }, { status: result.status });
+      }
+
+      return NextResponse.json({ data: result.data }, { status: 200 });
+    }
+
+    if (!STAFF_ROLES.has(role)) {
+      return NextResponse.json(
+        { error: "Only canteen staff can edit operational order fields." },
+        { status: 403 },
+      );
+    }
+
+    const allowedFields = ["assignedStaff", "estimatedReadyTime", "chefMessage"];
+    const update: Record<string, unknown> = {};
+
+    for (const key of allowedFields) {
+      if (Object.prototype.hasOwnProperty.call(body, key)) {
+        update[key] = body[key];
       }
     }
 
-    return jsonResponse({ data: updated });
-  } catch (err) {
-    logger.error("PATCH /api/orders/[id] error:", err);
-    return jsonResponse({ error: "Internal server error" }, 500);
+    if (!Object.keys(update).length) {
+      return NextResponse.json(
+        { error: "No supported fields were supplied." },
+        { status: 400 },
+      );
+    }
+
+    Object.assign(order, update);
+    await order.save();
+
+    return NextResponse.json({ data: order.toObject() }, { status: 200 });
+  } catch (error) {
+    logger.error("PATCH /api/orders/[id] error", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -112,32 +149,30 @@ export async function DELETE(
 ) {
   try {
     await connectDB();
-    const { id } = params;
 
     const session = await getServerSession(authOptions);
-    if (!session || !session.user?.id)
-      return jsonResponse({ error: "Unauthorized" }, 401);
-
-    const order = await Order.findOne({
-      $or: [
-        { orderId: id },
-        ...(mongoose.Types.ObjectId.isValid(id) ? [{ _id: id }] : []),
-      ],
-    });
-
-    if (!order) return jsonResponse({ error: "Order not found" }, 404);
-
-    if (
-      order.user.toString() !== session.user.id &&
-      session.user.role !== "admin"
-    ) {
-      return jsonResponse({ error: "Forbidden" }, 403);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await Order.findByIdAndDelete(order._id);
-    return jsonResponse({ success: true });
-  } catch (err) {
-    logger.error("DELETE /api/orders/[id] error:", err);
-    return jsonResponse({ error: "Internal server error" }, 500);
+    const order = await Order.findOne(orderFilter(params.id));
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    const role = String(session.user.role || "").toLowerCase();
+    if (String(order.user) !== session.user.id && !STAFF_ROLES.has(role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const result = await cancelOrder(order, session.user.id);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
+    }
+
+    return NextResponse.json({ success: true, data: result.data }, { status: 200 });
+  } catch (error) {
+    logger.error("DELETE /api/orders/[id] error", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
