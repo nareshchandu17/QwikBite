@@ -75,6 +75,11 @@ export async function syncTimeSlotUsage(targetDate?: string): Promise<void> {
   const orders = await Order.find({
     pickupDate: dateStr,
     status: { $nin: ["cancelled", "completed"] },
+    $or: [
+      { paymentMethod: { $ne: "stripe" } },
+      { paymentStatus: "paid" },
+      { reservationExpiresAt: { $gte: new Date() } },
+    ],
   }).lean();
 
   const slotStats: Record<string, number> = {};
