@@ -154,6 +154,9 @@ const orderSchema = new Schema<IOrder>(
     paymentIntentId: { type: String, index: true, sparse: true },
     idempotencyKey: { type: String, index: true, sparse: true },
     reservationExpiresAt: { type: Date, index: true },
+    feedbackGiven: { type: Boolean, default: false },
+    rating: { type: Number, min: 0, max: 5 },
+    comment: { type: String, maxlength: 1000, trim: true },
     slot: { type: Schema.Types.ObjectId, ref: "TimeSlot", index: true },
     pickupTime: Date,
     pickupDate: {
