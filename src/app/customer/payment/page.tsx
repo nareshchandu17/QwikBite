@@ -120,24 +120,10 @@ export default function PremiumPaymentPage() {
   }, [upiId]);
 
   // 🔍 Check if payment button should be enabled
-  const isPaymentEnabled = () => {
-    if (processing) return false;
+  const isPaymentEnabled = () => !processing;
 
-    switch (selectedMethod) {
-      case "cod":
-        return true; // Cash on delivery is always enabled
-      case "upi":
-        return upiStatus === "success";
-      case "card":
-        return cardNumberValid && expiryValid && cvvValid;
-      case "wallet":
-        return true; // Wallet payment (assuming It&apos;s always enabled for now)
-      default:
-        return false;
-    }
-  };
+  // 🔒 All non-COD payments are completed by the secure Stripe flow.
 
-  // 🔍 Card Validation Logic
   useEffect(() => {
     // Card Number: 16 digits and Luhn check
     const cleanCardNumber = cardNumber.replace(/\s/g, "");
@@ -206,8 +192,11 @@ export default function PremiumPaymentPage() {
 
     try {
       localStorage.setItem("selectedPaymentMethod", selectedMethod);
-      // Navigate to processing page first
-      router.push("/customer/payment/processing");
+      if (selectedMethod === "cod") {
+        router.push("/customer/payment/processing");
+      } else {
+        router.push("/customer/payment/stripe");
+      }
     } catch (error) {
       toast.error("Payment failed. Please try again.");
       setProcessing(false);
@@ -264,7 +253,25 @@ export default function PremiumPaymentPage() {
               {/* Payment Method Content */}
               <div className="mt-8 p-8 rounded-xl bg-white shadow-sm border border-[#e9d5ce]">
                 <div className="flex flex-col gap-8">
-                  {selectedMethod === "upi" && (
+                  {selectedMethod !== "cod" && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
+                      <div className="flex items-start gap-3">
+                        <ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-amber-600" />
+                        <div>
+                          <p className="font-bold text-[#1c110d]">
+                            Secure online payment
+                          </p>
+                          <p className="mt-1 text-sm text-[#9e6047]">
+                            You’ll continue to Stripe for the selected online payment
+                            method. QwikBite never trusts card, UPI, wallet, or total
+                            values sent by the browser.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {false && selectedMethod === "upi" && (
                     <div>
                       <label className="block mb-4">
                         <div className="flex justify-between items-center mb-3">
@@ -368,7 +375,7 @@ export default function PremiumPaymentPage() {
                     </div>
                   )}
 
-                  {selectedMethod === "card" && (
+                  {false && selectedMethod === "card" && (
                     <div className="flex flex-col gap-10">
                       <div className="relative w-full max-w-[420px] mx-auto aspect-[1.58/1] rounded-2xl p-8 text-white shadow-2xl overflow-hidden bg-gradient-to-br from-[#f96124] via-[#fb923c] to-[#fcd34d]">
                         <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
@@ -573,7 +580,7 @@ export default function PremiumPaymentPage() {
                     </div>
                   )}
 
-                  {selectedMethod === "wallet" && (
+                  {false && selectedMethod === "wallet" && (
                     <div className="flex flex-col gap-6">
                       <label className="relative block group cursor-pointer">
                         <input
