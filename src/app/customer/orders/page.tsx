@@ -130,30 +130,19 @@ const getOrderItemImages = (order: Order): string[] => {
 
 const StatsCard: React.FC = () => {
   return (
-    <div className="w-full bg-amber-50 dark:bg-gray-800/50 rounded-2xl p-5 border border-amber-100 dark:border-gray-700 flex items-center justify-between shadow-sm h-24">
-      <div className="flex items-center gap-4 h-full">
-        <div className="p-2 bg-[#f9f506]/20 rounded-full text-amber-700 dark:text-[#f9f506] shrink-0">
-          <span className="material-symbols-outlined text-2xl">stars</span>
+    <div className="w-full rounded-2xl border border-amber-100 bg-amber-50 p-5 dark:border-gray-700 dark:bg-gray-800/50">
+      <div className="flex items-center gap-4">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-700 dark:bg-gray-700 dark:text-amber-300">
+          <span className="material-symbols-outlined text-2xl">sync</span>
         </div>
-        <div className="flex flex-col justify-center">
-          <p className="text-gray-900 dark:text-white font-bold text-base md:text-lg leading-tight">
-            you&apos;re 2 orders away from a free meal!
+        <div>
+          <p className="font-bold text-gray-900 dark:text-white">
+            Your order history stays synced with the server
           </p>
-          <p className="text-amber-700 dark:text-[#f9f506] text-sm font-bold uppercase tracking-wider mt-0.5">
-            Loyalty Level: Gold Member
+          <p className="mt-0.5 text-sm text-amber-700 dark:text-amber-300">
+            Status, payments, and totals come from verified order records.
           </p>
         </div>
-      </div>
-      <div className="flex items-center gap-3 w-1/3 min-w-[200px] pl-4">
-        <div className="relative h-3 w-full rounded-full bg-white dark:bg-gray-700 overflow-hidden shadow-inner ring-1 ring-black/5">
-          <div
-            className="absolute top-0 left-0 h-full rounded-full bg-[#f9f506]"
-            style={{ width: "80%" }}
-          ></div>
-        </div>
-        <span className="text-amber-800 dark:text-[#f9f506] font-bold text-base whitespace-nowrap">
-          80%
-        </span>
       </div>
     </div>
   );
