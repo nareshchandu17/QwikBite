@@ -159,12 +159,13 @@ export async function aggregateTimeSlots() {
         used: currentLoad,
         percentage,
         status:
-          dbMatch?.status ||
-          (currentLoad >= effectiveMax
-            ? "full"
-            : currentLoad >= effectiveMax * 0.7
-              ? "busy"
-              : "open"),
+          dbMatch?.isActive === false
+            ? "closed"
+            : currentLoad >= effectiveMax
+              ? "full"
+              : currentLoad >= effectiveMax * 0.7
+                ? "busy"
+                : "open",
       };
     },
   );
