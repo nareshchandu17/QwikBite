@@ -127,13 +127,14 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (updatedId !== order.id) return;
         setOrders((prev) => prev.map((current) => current.id === order.id ? { ...current, ...formatOrder({ ...data.order, orderId: order.id }) } as Order : current));
       };
-      pusherClient.subscribe(channel);
-      pusherClient.bind(channel, "order:update", handler);
+      const channelObject = pusherClient.subscribe(channel);
+      channelObject.bind("order:update", handler);
       handlers.push({ channel, handler });
     });
     return () => {
       handlers.forEach(({ channel, handler }) => {
-        pusherClient.unbind(channel, "order:update", handler);
+        const channelObject = pusherClient.channel(channel);
+        if (channelObject) channelObject.unbind("order:update", handler);
         pusherClient.unsubscribe(channel);
       });
     };
