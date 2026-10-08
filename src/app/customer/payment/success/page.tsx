@@ -32,7 +32,6 @@ function displayPaymentMethod(method?: string) {
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
