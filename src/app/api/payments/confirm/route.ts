@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      order.reservationExpiresAt = undefined;
       await order.save();
     }
 
