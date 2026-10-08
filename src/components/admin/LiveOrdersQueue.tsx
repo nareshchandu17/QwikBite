@@ -283,7 +283,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
           {/* Cancel Button - available if not completed */}
           <button
             onClick={() => onUpdateStatus(order.id, "cancelled")}
-            disabled={["cancelled", "completed"].includes(order.status)}
+            disabled={["ready", "cancelled", "completed"].includes(order.status)}
             className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300
                         ${
                           order.status === "cancelled"
