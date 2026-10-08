@@ -1,25 +1,38 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
-interface OrderItem {
-  id: string;
+interface RawItem {
+  id?: string | number;
+  menuItem?: string | { name?: string; price?: number };
   name: string;
   quantity: number;
   price: number;
-  menuItem: {
-    name: string;
-    price: number;
-  };
 }
 
 export interface Order {
   id: string;
-  status:
-    "PENDING" | "PREPARING" | "READY_FOR_PICKUP" | "COMPLETED" | "CANCELLED";
+  status: "PENDING" | "CONFIRMED" | "PREPARING" | "READY_FOR_PICKUP" | "COMPLETED" | "CANCELLED";
   total: number;
-  items: OrderItem[];
+  items: Array<{
+    id: string;
+    name: string;
+    quantity: number;
+    price: number;
+    menuItem: { name: string; price: number };
+  }>;
   createdAt: string;
   updatedAt: string;
+}
+
+function normalizeStatus(status: string): Order["status"] {
+  switch (String(status).toLowerCase()) {
+    case "confirmed": return "CONFIRMED";
+    case "preparing": return "PREPARING";
+    case "ready": return "READY_FOR_PICKUP";
+    case "completed": return "COMPLETED";
+    case "cancelled": return "CANCELLED";
+    default: return "PENDING";
+  }
 }
 
 export function useActiveOrder() {
@@ -28,10 +41,14 @@ export function useActiveOrder() {
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
+    let active = true;
+
     const fetchActiveOrder = async () => {
       if (!isAuthenticated) {
-        setIsLoading(false);
-        setActiveOrder(null);
+        if (active) {
+          setActiveOrder(null);
+          setIsLoading(false);
+        }
         return;
       }
 
@@ -39,33 +56,55 @@ export function useActiveOrder() {
         const response = await fetch("/api/orders/customer/recent", {
           credentials: "include",
           cache: "no-store",
-          headers: {
-            "Content-Type": "application/json",
-          },
         });
 
-        if (response.ok) {
-          const data = await response.json();
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "Unable to load order");
 
-          setActiveOrder(data.order || null);
-        } else {
-          const errorText = await response.text();
-
-          setActiveOrder(null);
+        const raw = payload.order as (RawItem & { status:string; orderId?:string; total?:number; totalAmount?:number; createdAt:string; updatedAt:string; items:RawItem[] }) | null;
+        if (active) {
+          if (!raw) {
+            setActiveOrder(null);
+          } else {
+            setActiveOrder({
+              id: raw.orderId || String(raw.id),
+              status: normalizeStatus(raw.status),
+              total: Number(raw.total ?? raw.totalAmount ?? 0),
+              items: raw.items.map((item, index) => {
+                const menu =
+                  typeof item.menuItem === "object" && item.menuItem
+                    ? item.menuItem
+                    : { name: item.name, price: item.price };
+                return {
+                  id: String(item.id ?? item.menuItem ?? index),
+                  name: item.name,
+                  quantity: Number(item.quantity),
+                  price: Number(item.price),
+                  menuItem: {
+                    name: String(menu.name || item.name),
+                    price: Number(menu.price ?? item.price),
+                  },
+                };
+              }),
+              createdAt: raw.createdAt,
+              updatedAt: raw.updatedAt,
+            });
+          }
         }
-      } catch (error) {
-        setActiveOrder(null);
+      } catch {
+        if (active) setActiveOrder(null);
       } finally {
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     };
 
     fetchActiveOrder();
+    const interval = setInterval(fetchActiveOrder, 15000);
 
-    // Poll for order status updates every 30 seconds
-    const interval = setInterval(fetchActiveOrder, 30000);
-
-    return () => clearInterval(interval);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, [isAuthenticated]);
 
   return { activeOrder, isLoading };
