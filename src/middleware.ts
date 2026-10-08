@@ -23,8 +23,13 @@ export async function middleware(req: NextRequest) {
   const isAuthenticated = Boolean(token);
   const userRole = String(token?.role || "").toLowerCase();
 
-  const isAuthOnlyRoute = authOnlyRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"));
-  const isPublicRoute = publicRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"));
+  const matchesRoute = (route: string) =>
+    route === "/"
+      ? pathname === "/"
+      : pathname === route || pathname.startsWith(route + "/");
+
+  const isAuthOnlyRoute = authOnlyRoutes.some(matchesRoute);
+  const isPublicRoute = publicRoutes.some(matchesRoute);
   const adminApiPrefixes = ["/api/admin", "/api/admincanteen", "/api/staff", "/api/staffmanagement", "/api/system-notifications", "/api/transactions", "/api/test", "/api/debug"];
   const isAdminApi = adminApiPrefixes.some((prefix) => pathname.startsWith(prefix));
 
@@ -44,8 +49,8 @@ export async function middleware(req: NextRequest) {
       }
       return NextResponse.redirect(new URL(["admin", "canteen_staff", "staff"].includes(userRole) ? "/admin/dashboard" : "/customer", req.url));
     }
-    if (adminRoutes.some((route) => pathname.startsWith(route)) && !["admin", "canteen_staff", "staff"].includes(userRole)) return NextResponse.redirect(new URL("/unauthorized", req.url));
-    if (customerRoutes.some((route) => pathname.startsWith(route)) && userRole !== "customer") return NextResponse.redirect(new URL("/unauthorized", req.url));
+    if (adminRoutes.some(matchesRoute) && !["admin", "canteen_staff", "staff"].includes(userRole)) return NextResponse.redirect(new URL("/unauthorized", req.url));
+    if (customerRoutes.some(matchesRoute) && !["customer"].includes(userRole)) return NextResponse.redirect(new URL("/unauthorized", req.url));
     return NextResponse.next();
   }
 
