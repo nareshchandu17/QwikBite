@@ -48,6 +48,7 @@ export interface IOrder extends Document {
   transactionId?: string;
   paymentIntentId?: string;
   idempotencyKey?: string;
+  reservationExpiresAt?: Date;
   feedbackGiven?: boolean;
   rating?: number;
   comment?: string;
@@ -152,6 +153,7 @@ const orderSchema = new Schema<IOrder>(
     transactionId: String,
     paymentIntentId: { type: String, index: true, sparse: true },
     idempotencyKey: { type: String, index: true, sparse: true },
+    reservationExpiresAt: { type: Date, index: true },
     slot: { type: Schema.Types.ObjectId, ref: "TimeSlot", index: true },
     pickupTime: Date,
     pickupDate: {
@@ -180,6 +182,7 @@ orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ status: 1, createdAt: -1 });
 orderSchema.index({ pickupDate: 1, timeSlot: 1, status: 1 });
 orderSchema.index({ user: 1, idempotencyKey: 1 }, { unique: true, sparse: true });
+orderSchema.index({ status: 1, reservationExpiresAt: 1 });
 
 orderSchema.pre<IOrder>("save", function () {
   if (!this.orderId) {
