@@ -1,449 +1,224 @@
 import logger from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
-import { Order, OrderStatus } from "@/models/order.model";
-import "@/models/menuItem.model";
-import "@/models/user.model";
-import { syncTimeSlotUsage } from "@/lib/slot-utils";
-import { pusherServer } from "@/lib/pusher";
-import { AuditService } from "@/lib/services/auditService";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { connectDB } from "@/lib/db";
+import { Order, OrderStatus } from "@/models/order.model";
+import { SlotService } from "@/lib/services/slotService";
+import { pusherServer } from "@/lib/pusher";
+import { AuditService } from "@/lib/services/auditService";
+import { NotificationService } from "@/lib/services/notification.service";
 import mongoose from "mongoose";
-import {
-  checkRateLimit,
-  getRateLimitIdentifier,
-  RateLimitPresets,
-} from "@/lib/security/rateLimiter";
-import { sanitizeString, sanitizeObject } from "@/lib/security/sanitizer";
+import { sanitizeString } from "@/lib/security/sanitizer";
+import { checkRateLimit, getRateLimitIdentifier, RateLimitPresets } from "@/lib/security/rateLimiter";
 
-const jsonResponse = (data: unknown, status = 200) => {
-  return new NextResponse(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
+const STAFF_ROLES = new Set(["admin", "canteen_staff", "staff"]);
+const TRANSITIONS: Record<string, Set<string>> = {
+  pending: new Set(["confirmed", "cancelled"]),
+  confirmed: new Set(["preparing", "cancelled"]),
+  preparing: new Set(["ready", "cancelled"]),
+  ready: new Set(["completed"]),
+  completed: new Set(),
+  cancelled: new Set(),
 };
 
-// Valid status transitions
-const validStatusTransitions: Record<string, string[]> = {
-  pending: ["confirmed", "cancelled"],
-  confirmed: ["preparing", "cancelled"],
-  preparing: ["ready", "cancelled"],
-  ready: ["completed", "cancelled"],
-  completed: [],
-  cancelled: [],
-};
+function json(data: unknown, status = 200) {
+  return NextResponse.json(data, { status });
+}
+
+async function getStaffSession() {
+  const session = await getServerSession(authOptions);
+  const role = String(session?.user?.role || "").toLowerCase();
+  if (!session?.user?.id || !STAFF_ROLES.has(role)) return null;
+  return session;
+}
+
+async function resolveOrder(id: string) {
+  const filter = {
+    $or: [
+      { orderId: id },
+      ...(mongoose.isValidObjectId(id) ? [{ _id: id }] : []),
+    ],
+  };
+  return Order.findOne(filter);
+}
+
+async function transitionOrder(id: string, nextStatus: string, note: string | undefined, actorId: string) {
+  const order = await resolveOrder(id);
+  if (!order) return { ok: false as const, status: 404, error: "Order not found" };
+  const currentStatus = String(order.status);
+  const allowed = TRANSITIONS[currentStatus]?.has(nextStatus);
+  if (!allowed) {
+    return {
+      ok: false as const,
+      status: 409,
+      error: `Invalid status transition from ${currentStatus} to ${nextStatus}.`,
+    };
+  }
+
+  const now = new Date();
+  const updated = await Order.findOneAndUpdate(
+    { _id: order._id, status: currentStatus },
+    {
+      $set: { status: nextStatus, isCancelled: nextStatus === "cancelled" },
+      $push: {
+        statusHistory: {
+          status: nextStatus,
+          timestamp: now,
+          note: note ? sanitizeString(note) : `Status updated to ${nextStatus}`,
+          updatedBy: mongoose.isValidObjectId(actorId) ? new mongoose.Types.ObjectId(actorId) : undefined,
+        },
+      },
+    },
+    { new: true },
+  );
+
+  if (!updated) return { ok: false as const, status: 409, error: "Order changed; refresh and retry." };
+
+  if (nextStatus === "cancelled" && updated.pickupDate && updated.timeSlot && updated.loadValue) {
+    await SlotService.releaseSlot(updated.timeSlot, updated.pickupDate, updated.loadValue);
+  }
+
+  const publicOrderId = updated.orderId || String(updated._id);
+  try {
+    await pusherServer.trigger("order-" + publicOrderId.replace(/:/g, "-"), "order:update", {
+      order: updated.toObject(),
+      status: updated.status,
+      timestamp: now.toISOString(),
+    });
+    await pusherServer.trigger("admin", "admin:order_updated", updated.toObject());
+  } catch (error) {
+    logger.warn("Failed to publish order transition", error);
+  }
+
+  try {
+    await NotificationService.notifyCustomer({
+      userId: String(updated.user),
+      title: "Order Status Update",
+      message: `Order ${publicOrderId} is now ${updated.status}.`,
+      type: "order",
+    });
+  } catch (error) {
+    logger.warn("Failed to notify order owner", error);
+  }
+
+  return { ok: true as const, order: updated };
+}
 
 export async function GET(req: NextRequest) {
   try {
-    // Authentication check
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
-    }
+    const session = await getStaffSession();
+    if (!session) return json({ error: "Forbidden" }, 403);
 
-    // Authorization check - only admin and canteen staff can access
-    const userRole = (session.user as { role?: string }).role;
-    if (!["admin", "canteen_staff"].includes(userRole as any)) {
-      return jsonResponse(
-        { error: "Forbidden - Insufficient permissions" },
-        403,
-      );
-    }
-
-    // Rate limiting
-    const identifier = getRateLimitIdentifier(req as Request);
-    const rateLimitResult = await checkRateLimit(
-      identifier,
-      RateLimitPresets.STANDARD.limit,
-      RateLimitPresets.STANDARD.windowMs,
-    );
-    if (!rateLimitResult.allowed) {
-      return jsonResponse({ error: "Rate limit exceeded" }, 429);
-    }
+    const limitCheck = await checkRateLimit(getRateLimitIdentifier(req), RateLimitPresets.STANDARD.limit, RateLimitPresets.STANDARD.windowMs);
+    if (!limitCheck.allowed) return json({ error: "Rate limit exceeded" }, 429);
 
     await connectDB();
-
-    // Parse query parameters
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
     const search = searchParams.get("search");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "50");
-    const skip = (page - 1) * limit;
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
-    const sortBy = searchParams.get("sortBy") || "createdAt";
-    const sortOrder = searchParams.get("sortOrder") || "-1";
-
-    // Build query
-    const query: any = {};
-    if (status && Object.values(OrderStatus).includes(status as OrderStatus)) {
-      query.status = status;
-    }
+    const page = Math.max(1, Number(searchParams.get("page") || 1));
+    const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit") || 50)));
+    const query: Record<string, any> = {};
+    if (status && Object.values(OrderStatus).includes(status as OrderStatus)) query.status = status;
     if (search) {
-      query.$or = [
-        { orderId: { $regex: search, $options: "i" } },
-        { username: { $regex: search, $options: "i" } },
-      ];
+      const safe = search.replace(/[.*+?^{}$()|[\]\\]/g, "\\$&");
+      query.$or = [{ orderId: { $regex: safe, $options: "i" } }, { username: { $regex: safe, $options: "i" } }];
     }
-    if (startDate || endDate) {
-      query.createdAt = {};
-      if (startDate) {
-        query.createdAt.$gte = new Date(startDate);
-      }
-      if (endDate) {
-        query.createdAt.$lte = new Date(endDate);
-      }
-    }
-
-    // Build sort object
-    const sort: any = {};
-    sort[sortBy] = parseInt(sortOrder);
-
-    // Fetch orders with pagination
     const [orders, total] = await Promise.all([
-      Order.find(query)
-        .sort(sort)
-        .limit(limit)
-        .skip(skip)
-        .populate("user", "name email phone")
-        .populate("slot")
-        .lean(),
+      Order.find(query).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).populate("user", "name email phone").populate("slot").lean(),
       Order.countDocuments(query),
     ]);
 
-    // Map MongoDB _id and orderId to the 'id' field expected by the frontend
-    const mappedOrders = orders.map((order: any) => ({
+    const data = orders.map((order: any) => ({
       ...order,
-      id: order.orderId || order._id.toString(),
+      id: order.orderId || String(order._id),
       total: order.totalAmount || order.total || 0,
-      customerName: order.user?.name || order.username || "Guest",
+      customerName: order.user?.name || order.username || "Customer",
       customerEmail: order.user?.email,
       customerPhone: order.user?.phone,
-      pickupTime: order.pickupTime,
-      pickupDate: order.pickupDate,
-      timeSlot: order.timeSlot,
-      estimatedReadyTime: order.estimatedReadyTime,
     }));
 
-    return jsonResponse({
-      data: mappedOrders,
-      pagination: {
-        total,
-        page,
-        limit,
-        pages: Math.ceil(total / limit),
-        hasMore: skip + limit < total,
-      },
-    });
-  } catch (err) {
-    logger.error("Admin Orders GET Error:", err);
-    return jsonResponse(
-      { error: err instanceof Error ? err.message : "Failed to fetch orders" },
-      500,
-    );
+    return json({ data, pagination: { total, page, limit, pages: Math.ceil(total / limit), hasMore: page * limit < total } });
+  } catch (error) {
+    logger.error("Admin Orders GET Error", error);
+    return json({ error: "Failed to fetch orders" }, 500);
   }
 }
 
 export async function PATCH(req: NextRequest) {
   try {
-    // Authentication check
-    const authSession = await getServerSession(authOptions);
-    if (!authSession?.user) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
-    }
+    const session = await getStaffSession();
+    if (!session) return json({ error: "Forbidden" }, 403);
+    const limitCheck = await checkRateLimit(getRateLimitIdentifier(req), RateLimitPresets.STANDARD.limit, RateLimitPresets.STANDARD.windowMs);
+    if (!limitCheck.allowed) return json({ error: "Rate limit exceeded" }, 429);
 
-    // Authorization check
-    const userRole = (authSession.user as { role?: string }).role;
-    if (!["admin", "canteen_staff"].includes(userRole as any)) {
-      return jsonResponse(
-        { error: "Forbidden - Insufficient permissions" },
-        403,
-      );
-    }
-
-    // Rate limiting
-    const identifier = getRateLimitIdentifier(req as Request);
-    const rateLimitResult = await checkRateLimit(
-      identifier,
-      RateLimitPresets.STANDARD.limit,
-      RateLimitPresets.STANDARD.windowMs,
-    );
-    if (!rateLimitResult.allowed) {
-      return jsonResponse({ error: "Rate limit exceeded" }, 429);
-    }
+    const body = await req.json().catch(() => ({}));
+    const id = sanitizeString(String(body.id || ""));
+    const status = sanitizeString(String(body.status || "")).toLowerCase();
+    const note = body.note ? sanitizeString(String(body.note)) : undefined;
+    if (!id || !Object.values(OrderStatus).includes(status as OrderStatus)) return json({ error: "Order ID and a valid status are required" }, 400);
 
     await connectDB();
-    const body = await req.json();
+    const result = await transitionOrder(id, status, note, session.user.id);
+    if (!result.ok) return json({ error: result.error }, result.status);
 
-    // Sanitize inputs
-    const sanitizedBody = sanitizeObject(body);
-    const { id, status, note } = sanitizedBody;
-
-    if (!id || !status) {
-      return jsonResponse({ error: "Order ID and status are required" }, 400);
-    }
-
-    // Use findOne with $or to handle both orderId and _id
-    const order = await Order.findOne({
-      $or: [
-        { orderId: id },
-        ...(mongoose.Types.ObjectId.isValid(id) ? [{ _id: id }] : []),
-      ],
-    });
-
-    if (!order) {
-      return jsonResponse({ error: "Order not found" }, 404);
-    }
-
-    // Validate status transition
-    const currentStatus = order.status;
-    const allowedTransitions = validStatusTransitions[currentStatus] || [];
-    if (!allowedTransitions.includes(status)) {
-      return jsonResponse(
-        {
-          error: `Invalid status transition from ${currentStatus} to ${status}. Allowed transitions: ${allowedTransitions.join(", ")}`,
-        },
-        400,
-      );
-    }
-
-    // Update status - this triggers the pre-save hook for statusHistory
-    order.status = status as OrderStatus;
-    if (note) {
-      order.statusHistory[order.statusHistory.length - 1].note =
-        sanitizeString(note);
-    }
-    await order.save();
-
-    await syncTimeSlotUsage();
-
-    // 🚀 REAL-TIME: Emit update to specific order room and admin dashboard
-    const orderChannel = `order-${order._id.toString().replace(/:/g, "-")}`;
-    await pusherServer.trigger(orderChannel, "order:update", {
-      status: order.status,
-      orderId: order.orderId,
-      updatedOrder: order,
-    });
-    await pusherServer.trigger("admin", "admin:order_updated", order);
-
-    // Log the action (Audit Trail)
-    if (authSession) {
+    try {
       await AuditService.log({
-        action: "UPDATE",
-        entityType: "ORDER",
-        entityId: order.orderId,
-        entityName: `Order ${order.orderId}`,
-        userId: authSession.user.id,
-        userEmail: authSession.user.email!,
-        userRole: authSession.user.role,
-        changes: { status },
-        description: `Order ${order.orderId} status updated to ${status}${note ? `: ${note}` : ""}`,
-        severity: "LOW",
-        ipAddress:
-          req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown",
+        action: "UPDATE", entityType: "ORDER", entityId: result.order.orderId, entityName: "Order " + result.order.orderId,
+        userId: session.user.id, userEmail: session.user.email || "", userRole: session.user.role,
+        changes: { status }, description: "Order " + result.order.orderId + " changed to " + status, severity: "LOW",
+        ipAddress: req.headers.get("x-forwarded-for")?.split(",")[0] || "unknown",
       });
-    }
+    } catch (error) { logger.warn("Audit log failed", error); }
 
-    return jsonResponse({ data: order });
-  } catch (err) {
-    logger.error("[Admin Orders PATCH Error]", err);
-    return jsonResponse({ error: (err as Error).message }, 500);
+    return json({ data: result.order.toObject() });
+  } catch (error) {
+    logger.error("Admin Orders PATCH Error", error);
+    return json({ error: "Failed to update order" }, 500);
   }
 }
 
 export async function PUT(req: NextRequest) {
   try {
-    const authSession = await getServerSession(authOptions);
-    if (!authSession?.user) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
-    }
-
-    const userRole = (authSession.user as { role?: string }).role;
-    if (!["admin", "canteen_staff"].includes(userRole as any)) {
-      return jsonResponse(
-        { error: "Forbidden - Insufficient permissions" },
-        403,
-      );
-    }
-
-    const identifier = getRateLimitIdentifier(req as Request);
-    const rateLimitResult = await checkRateLimit(
-      identifier,
-      RateLimitPresets.STANDARD.limit,
-      RateLimitPresets.STANDARD.windowMs,
-    );
-    if (!rateLimitResult.allowed) {
-      return jsonResponse({ error: "Rate limit exceeded" }, 429);
-    }
-
+    const session = await getStaffSession();
+    if (!session) return json({ error: "Forbidden" }, 403);
     await connectDB();
-    const body = await req.json();
-    const sanitizedBody = sanitizeObject(body);
-    const { id, note } = sanitizedBody;
-
-    if (!id || !note) {
-      return jsonResponse({ error: "Order ID and note are required" }, 400);
-    }
-
-    const order = await Order.findOne({
-      $or: [
-        { orderId: id },
-        ...(mongoose.Types.ObjectId.isValid(id) ? [{ _id: id }] : []),
-      ],
-    });
-
-    if (!order) {
-      return jsonResponse({ error: "Order not found" }, 404);
-    }
-
-    order.statusHistory.push({
-      status: order.status,
-      timestamp: new Date(),
-      note: sanitizeString(note),
-      updatedBy: authSession.user.id as any,
-    });
-
+    const body = await req.json().catch(() => ({}));
+    const id = sanitizeString(String(body.id || ""));
+    const note = sanitizeString(String(body.note || ""));
+    if (!id || !note) return json({ error: "Order ID and note are required" }, 400);
+    const order = await resolveOrder(id);
+    if (!order) return json({ error: "Order not found" }, 404);
+    order.statusHistory.push({ status: order.status, timestamp: new Date(), note, updatedBy: mongoose.isValidObjectId(session.user.id) ? new mongoose.Types.ObjectId(session.user.id) : undefined });
     await order.save();
-
-    await pusherServer.trigger("admin", "admin:order_updated", order);
-
-    return jsonResponse({ data: order });
-  } catch (err) {
-    logger.error("[Admin Orders PUT Error]", err);
-    return jsonResponse({ error: (err as Error).message }, 500);
+    return json({ data: order.toObject() });
+  } catch (error) {
+    logger.error("Admin Orders PUT Error", error);
+    return json({ error: "Failed to add order note" }, 500);
   }
 }
 
 export async function POST(req: NextRequest) {
-  try {
-    // Authentication check
-    const authSession = await getServerSession(authOptions);
-    if (!authSession?.user) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
-    }
+  const session = await getStaffSession();
+  if (!session) return json({ error: "Forbidden" }, 403);
+  const body = await req.json().catch(() => ({}));
 
-    // Authorization check
-    const userRole = (authSession.user as { role?: string }).role;
-    if (!["admin", "canteen_staff"].includes(userRole as any)) {
-      return jsonResponse(
-        { error: "Forbidden - Insufficient permissions" },
-        403,
-      );
-    }
-
-    // Rate limiting
-    const identifier = getRateLimitIdentifier(req as Request);
-    const rateLimitResult = await checkRateLimit(
-      identifier,
-      RateLimitPresets.STANDARD.limit,
-      RateLimitPresets.STANDARD.windowMs,
-    );
-    if (!rateLimitResult.allowed) {
-      return jsonResponse({ error: "Rate limit exceeded" }, 429);
-    }
-
+  if (body?.bulk && Array.isArray(body.orderIds) && body.status) {
+    if (body.orderIds.length > 50) return json({ error: "Maximum 50 orders per bulk action" }, 400);
     await connectDB();
-    const body = await req.json();
-
-    // Sanitize inputs
-    const sanitizedBody = sanitizeObject(body);
-
-    // Check if this is a bulk update
-    if (
-      sanitizedBody.bulk &&
-      Array.isArray(sanitizedBody.orderIds) &&
-      sanitizedBody.status
-    ) {
-      const { orderIds, status, note } = sanitizedBody;
-
-      if (!orderIds.length || !status) {
-        return jsonResponse(
-          { error: "Order IDs and status are required for bulk update" },
-          400,
-        );
-      }
-
-      const results = [];
-      const errors = [];
-
-      for (const id of orderIds) {
-        try {
-          const order = await Order.findOne({
-            $or: [
-              { orderId: id },
-              ...(mongoose.Types.ObjectId.isValid(id) ? [{ _id: id }] : []),
-            ],
-          });
-
-          if (!order) {
-            errors.push({ id, error: "Order not found" });
-            continue;
-          }
-
-          // Validate status transition
-          const currentStatus = order.status;
-          const allowedTransitions =
-            validStatusTransitions[currentStatus] || [];
-          if (!allowedTransitions.includes(status)) {
-            errors.push({
-              id,
-              error: `Invalid status transition from ${currentStatus} to ${status}`,
-            });
-            continue;
-          }
-
-          order.status = status as OrderStatus;
-          if (note) {
-            order.statusHistory[order.statusHistory.length - 1].note =
-              sanitizeString(note);
-          }
-          await order.save();
-
-          // Emit real-time update
-          const orderChannel = `order-${order._id.toString().replace(/:/g, "-")}`;
-          await pusherServer.trigger(orderChannel, "order:update", {
-            status: order.status,
-            orderId: order.orderId,
-            updatedOrder: order,
-          });
-
-          results.push({ id, success: true, orderId: order.orderId });
-        } catch (err) {
-          errors.push({ id, error: (err as Error).message });
-        }
-      }
-
-      await syncTimeSlotUsage();
-      await pusherServer.trigger("admin", "admin:order_updated", {
-        bulk: true,
-        status,
-      });
-
-      return jsonResponse({
-        success: true,
-        results,
-        errors,
-        total: orderIds.length,
-        successCount: results.length,
-        errorCount: errors.length,
-      });
+    const status = sanitizeString(String(body.status)).toLowerCase();
+    if (!Object.values(OrderStatus).includes(status as OrderStatus)) return json({ error: "Invalid status" }, 400);
+    const results: Array<{ id: string; success: boolean; orderId?: string; error?: string }> = [];
+    for (const rawId of body.orderIds) {
+      const id = sanitizeString(String(rawId));
+      const result = await transitionOrder(id, status, body.note ? String(body.note) : undefined, session.user.id);
+      results.push(result.ok ? { id, success: true, orderId: result.order.orderId } : { id, success: false, error: result.error });
     }
-
-    // Basic creation for admin testing/manual entry
-    const order = await Order.create({
-      ...sanitizedBody,
-      user: sanitizedBody.user || sanitizedBody.userId,
-      totalAmount: sanitizedBody.totalAmount || sanitizedBody.total || 0,
-    });
-
-    await syncTimeSlotUsage();
-    await pusherServer.trigger("admin", "admin:new_order", order);
-
-    return jsonResponse(order, 201);
-  } catch (err) {
-    logger.error("[Admin Orders POST Error]", err);
-    return jsonResponse({ error: (err as Error).message }, 500);
+    return json({ success: true, results, successCount: results.filter((item) => item.success).length, errorCount: results.filter((item) => !item.success).length });
   }
+
+  return json({ error: "Direct order creation is disabled. Customer orders must use the validated checkout service." }, 410);
 }
+
+export const dynamic = "force-dynamic";
