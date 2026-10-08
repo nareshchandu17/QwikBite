@@ -1,68 +1,7 @@
 "use client";
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  ReactNode,
-  useEffect,
-  useCallback,
-  useMemo,
-} from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { usePusher } from "./PusherContext";
-import { menuItems } from "@/data/menu";
-import logger from "@/lib/logger";
-
-// Helper function to get real item image from menu
-const getRealItemImage = (order: unknown) => {
-  const o = order as {
-    itemsArray?: Array<{ imageUrl?: string; image?: string; name: string }>;
-    items?: string;
-    imageUrl?: string;
-  };
-  // Try to get image from order items first
-  if (o.itemsArray && o.itemsArray.length > 0) {
-    const firstItem = o.itemsArray[0];
-    if (firstItem.imageUrl || firstItem.image) {
-      return firstItem.imageUrl || firstItem.image;
-    }
-
-    // Try to find matching menu item
-    const menuItem = menuItems.find(
-      (item) =>
-        item.name.toLowerCase() === firstItem.name.toLowerCase() ||
-        firstItem.name.toLowerCase().includes(item.name.toLowerCase()) ||
-        item.name.toLowerCase().includes(firstItem.name.toLowerCase()),
-    );
-    if (menuItem?.image) {
-      return menuItem.image;
-    }
-  }
-
-  // Try to parse items string and find first item
-  if (typeof o.items === "string") {
-    const itemNames = o.items.split(",").map((item: string) => item.trim());
-    const firstItemName = itemNames[0];
-    if (firstItemName) {
-      // Extract quantity and name
-      const match = firstItemName.match(/(\d+)x\s*(.+)/);
-      const itemName = match ? match[2] : firstItemName;
-
-      const menuItem = menuItems.find(
-        (item) =>
-          item.name.toLowerCase() === itemName.toLowerCase() ||
-          itemName.toLowerCase().includes(item.name.toLowerCase()) ||
-          item.name.toLowerCase().includes(itemName.toLowerCase()),
-      );
-      if (menuItem?.image) {
-        return menuItem.image;
-      }
-    }
-  }
-
-  // Return existing imageUrl if available
-  return o.imageUrl;
-};
 
 export type OrderStatus = "Preparing" | "Delivered" | "Cancelled" | "Received";
 
@@ -72,16 +11,7 @@ export interface Order {
   status: OrderStatus;
   statusText?: string;
   date: string;
-  items:
-    | string
-    | Array<{
-        quantity: number;
-        name: string;
-        imageUrl?: string;
-        image?: string;
-        id?: string | number;
-        price?: number;
-      }>;
+  items: string | Array<{ quantity: number; name: string; imageUrl?: string; image?: string; id?: string | number; price?: number }>;
   price: string;
   total: number;
   imageUrl: string;
@@ -92,494 +22,158 @@ export interface Order {
   paymentMethod?: string;
   paymentStatus?: string;
   createdAt?: string;
+  updatedAt?: string;
 }
 
+interface RawOrderItem {
+  quantity: number; name: string; image?: string; imageUrl?: string; id?: string | number; price?: number;
+}
 interface RawOrder {
-  id?: string;
-  orderId?: string;
-  username: string;
-  status: string;
-  statusText?: string;
-  createdAt: string;
-  items:
-    | Array<
-        | string
-        | {
-            quantity: number;
-            name: string;
-            imageUrl?: string;
-            image?: string;
-            id?: string | number;
-            price?: number;
-          }
-      >
-    | string;
-  price: string | number;
-  total?: number;
-  totalAmount?: number;
-  originalPrice?: string | number;
-  progressStep?: number;
-  timeSlot?: string;
-  pickupDate?: string;
-  paymentMethod?: string;
-  paymentStatus?: string;
+  id?: string; orderId?: string; username?: string; status?: string; createdAt?: string; updatedAt?: string;
+  items?: RawOrderItem[] | string; price?: number | string; total?: number; totalAmount?: number;
+  timeSlot?: string; pickupDate?: string; paymentMethod?: string; paymentStatus?: string;
 }
 
-const normalizeOrderItems = (
-  items: RawOrder["items"],
-):
-  | Array<{
-      quantity: number;
-      name: string;
-      imageUrl?: string;
-      image?: string;
-      id?: string | number;
-      price?: number;
-    }>
-  | string => {
-  if (!Array.isArray(items)) return items;
-
-  return items.map((item, index) => {
-    if (typeof item === "string") {
-      const match = item.match(/(\d+)x\s*(.+)/);
-      return {
-        quantity: match ? parseInt(match[1], 10) : 1,
-        name: match ? match[2] : item,
-        id: `parsed-${index}`,
-      };
-    }
-    return {
-      quantity: item.quantity || 1,
-      name: item.name,
-      imageUrl: item.imageUrl,
-      image: item.image,
-      id: item.id,
-      price: item.price,
-    };
-  });
-};
-
+interface AddOrderInput extends Omit<Order, "id" | "date" | "statusText" | "progressStep"> {
+  itemsArray: Array<{ id: string | number; name?: string; quantity: number; price?: number; image?: string; imageUrl?: string }>;
+}
 interface OrderContextType {
   orders: Order[];
-  addOrder: (
-    order: Omit<Order, "id" | "date" | "statusText" | "progressStep"> & {
-      itemsArray?: unknown[];
-      timeSlot?: string;
-      paymentMethod?: string;
-    },
-    authToken?: string,
-  ) => Promise<string>;
+  addOrder: (order: AddOrderInput, authToken?: string) => Promise<string>;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
 }
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
-export const OrderProvider: React.FC<{ children: ReactNode }> = ({
-  children,
-}) => {
+function normalizeStatus(status?: string): OrderStatus {
+  switch (String(status || "").toLowerCase()) {
+    case "preparing": return "Preparing";
+    case "completed":
+    case "delivered":
+    case "ready": return "Delivered";
+    case "cancelled": return "Cancelled";
+    default: return "Received";
+  }
+}
+
+function normalizeItems(items: RawOrder["items"]) {
+  if (!Array.isArray(items)) return items || "";
+  return items.map((item) => ({
+    quantity: Number(item.quantity || 1),
+    name: item.name,
+    imageUrl: item.imageUrl || item.image,
+    image: item.image,
+    id: item.id,
+    price: Number(item.price || 0),
+  }));
+}
+
+function formatOrder(raw: RawOrder): Order | null {
+  const id = raw.orderId || raw.id;
+  if (!id) return null;
+  const total = Number(raw.totalAmount ?? raw.total ?? (typeof raw.price === "number" ? raw.price : parseFloat(String(raw.price || "0").replace(/[^0-9.]/g, "")) || 0));
+  const createdAt = raw.createdAt || new Date().toISOString();
+  return {
+    id: String(id),
+    username: raw.username || "Customer",
+    status: normalizeStatus(raw.status),
+    statusText: raw.status || "Order received",
+    date: new Date(createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric", timeZone: "Asia/Kolkata" }),
+    items: normalizeItems(raw.items),
+    price: "₹" + total.toFixed(2),
+    total,
+    imageUrl: Array.isArray(raw.items) ? (raw.items[0]?.imageUrl || raw.items[0]?.image || "/images/order.jpg") : "/images/order.jpg",
+    originalPrice: "₹" + total.toFixed(2),
+    progressStep: normalizeStatus(raw.status) === "Delivered" ? 3 : normalizeStatus(raw.status) === "Preparing" ? 1 : 0,
+    timeSlot: raw.timeSlot,
+    pickupDate: raw.pickupDate,
+    paymentMethod: raw.paymentMethod,
+    paymentStatus: raw.paymentStatus,
+    createdAt,
+    updatedAt: raw.updatedAt || createdAt,
+  };
+}
+
+export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   const { pusherClient } = usePusher();
 
-  // Handle real-time updates from Pusher
   useEffect(() => {
-    if (!pusherClient) return;
-
-    const handleOrderUpdate = (data: any) => {
-      const status = data.status;
-      const order = data.updatedOrder || data;
-      logger.info(
-        "Customer received real-time order update:",
-        order.id || order.orderId,
-        status,
-      );
-
-      setOrders((prev) =>
-        prev.map((o) => {
-          if (o.id === order.id || o.id === order.orderId) {
-            return {
-              ...o,
-              status: (status.charAt(0).toUpperCase() +
-                status.slice(1)) as OrderStatus,
-              statusText: `${status.charAt(0).toUpperCase() + status.slice(1)} your order`,
-              progressStep:
-                status === "preparing"
-                  ? 1
-                  : status === "ready"
-                    ? 2
-                    : status === "delivered"
-                      ? 3
-                      : 0,
-            };
-          }
-          return o;
-        }),
-      );
-    };
-
-    const subscribedChannels: string[] = [];
-
-    // Join rooms for all current orders
-    orders.forEach((order) => {
-      const channelName = `order-${order.id.replace(/:/g, "-")}`;
+    let active = true;
+    const load = async () => {
       try {
-        const channel = pusherClient.subscribe(channelName);
-        channel.bind("order:update", handleOrderUpdate);
-        subscribedChannels.push(channelName);
-      } catch (err) {
-        logger.error(`Failed to subscribe to ${channelName}:`, err);
-      }
-    });
-
-    return () => {
-      subscribedChannels.forEach((channelName) => {
-        try {
-          const channel = pusherClient.channel(channelName);
-          if (channel) {
-            channel.unbind("order:update", handleOrderUpdate);
-          }
-          pusherClient.unsubscribe(channelName);
-        } catch (err) {
-          logger.error(`Failed to unsubscribe from ${channelName}:`, err);
-        }
-      });
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pusherClient, orders.length, isInitialized]);
-
-  // Fetch orders from database on initial load
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        logger.info("[OrderContext] Fetching orders from database...");
-
-        // Use the main /api/orders endpoint which uses NextAuth
-        const response = await fetch("/api/orders", {
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        logger.info(
-          "[OrderContext] Orders API response status:",
-          response.status,
-        );
-
-        let data = null;
-
-        if (response.ok) {
-          const responseJson = await response.json();
-          // The endpoint returns { success: true, data: { orders: [], pagination: {} } } structure
-          // or sometimes just { success: true, data: [] }
-          if (responseJson.data && Array.isArray(responseJson.data.orders)) {
-            data = responseJson.data.orders;
-          } else if (Array.isArray(responseJson.data)) {
-            data = responseJson.data;
-          } else {
-            data = [];
-          }
-
-          logger.info(
-            "[OrderContext] ✅ Orders fetched successfully:",
-            Array.isArray(data) ? data.length : 0,
-            "orders",
-          );
-          logger.info("[OrderContext] Orders data:", data);
-        } else {
-          const errorText = await response.text();
-          logger.error("[OrderContext] ❌ Failed to fetch orders:", {
-            status: response.status,
-            error: errorText,
-          });
-          setIsInitialized(true);
-          return;
-        }
-
-        if (!data || data.length === 0) {
-          logger.info("[OrderContext] No orders found in database");
-          setOrders([]);
-          setIsInitialized(true);
-          return;
-        }
-
-        // Format and set orders
-        const formattedOrders = (data as RawOrder[]).map((order) => {
-          logger.info("[OrderContext] Processing order:", order);
-          const normalizedItems = normalizeOrderItems(order.items);
-          const numericTotal =
-            typeof order.total === "number"
-              ? order.total
-              : typeof order.totalAmount === "number"
-                ? order.totalAmount
-                : typeof order.price === "number"
-                  ? order.price
-                  : parseFloat(
-                      String(order.price || "0").replace(/[^0-9.]/g, ""),
-                    ) || 0;
-
-          return {
-            id: order.id || order.orderId || "",
-            username: order.username,
-            status: (order.status.charAt(0).toUpperCase() +
-              order.status.slice(1)) as OrderStatus,
-            statusText: order.statusText || "",
-            date: new Date(order.createdAt).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            }),
-            items: normalizedItems,
-            price:
-              typeof order.price === "number"
-                ? `$${order.price.toFixed(2)}`
-                : String(order.price || ""),
-            total: numericTotal,
-            imageUrl: getRealItemImage(order) || "/images/order.jpg",
-            originalPrice:
-              typeof order.originalPrice === "number"
-                ? `$${order.originalPrice.toFixed(2)}`
-                : String(order.originalPrice || order.price || ""),
-            progressStep: order.progressStep || 0,
-            timeSlot: order.timeSlot,
-            pickupDate: order.pickupDate,
-            paymentMethod: order.paymentMethod,
-            paymentStatus: order.paymentStatus,
-            createdAt: order.createdAt,
-          };
-        });
-
-        logger.info("[OrderContext] Formatted orders:", formattedOrders);
-        setOrders(formattedOrders);
-      } catch (error) {
-        logger.error("[OrderContext] ❌ Error fetching orders:", error);
+        const response = await fetch("/api/orders?limit=100", { credentials: "include", cache: "no-store" });
+        if (!response.ok) return;
+        const json = await response.json().catch(() => ({}));
+        const data = Array.isArray(json?.data?.orders) ? json.data.orders : Array.isArray(json?.data) ? json.data : [];
+        if (!active) return;
+        setOrders(data.map(formatOrder).filter(Boolean) as Order[]);
       } finally {
-        setIsInitialized(true);
+        if (active) setInitialized(true);
       }
     };
-
-    fetchOrders();
+    load();
+    return () => { active = false; };
   }, []);
 
-  // Save to localStorage whenever orders change
   useEffect(() => {
-    if (isInitialized) {
-      // Removed localStorage saving as requested
-    }
-  }, [orders, isInitialized]);
-
-  const addOrder = useCallback(
-    async (
-      order: Omit<Order, "id" | "date" | "statusText" | "progressStep"> & {
-        itemsArray?: unknown[];
-        timeSlot?: string;
-        paymentMethod?: string;
-      },
-      authToken?: string,
-    ) => {
-      logger.info(
-        "[OrderContext] addOrder called with token:",
-        authToken ? `${authToken.substring(0, 20)}...` : "No token",
-      );
-
-      // Validate order items
-      if (
-        !order.itemsArray ||
-        !Array.isArray(order.itemsArray) ||
-        order.itemsArray.length === 0
-      ) {
-        logger.error(
-          "[OrderContext] ❌ addOrder failed: itemsArray is missing or empty",
-        );
-        throw new Error("Order must contain at least one item");
-      }
-
-      const requestId = crypto.randomUUID();
-      // Parse price to number for DB
-      const numericPrice =
-        typeof order.price === "number"
-          ? order.price
-          : parseFloat(String(order.price).replace(/[^0-9.]/g, "")) || 0;
-      const newOrder: Order = {
-        ...(order as any),
-        id: requestId,
-        date: new Date().toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        }),
-        status: "Preparing",
-        statusText: "Preparing your order",
-        progressStep: 0,
-        total: order.total || numericPrice,
+    if (!pusherClient) return;
+    const handlers: Array<{ channel: string; handler: (data: any) => void }> = [];
+    orders.forEach((order) => {
+      const channel = "order-" + order.id.replace(/:/g, "-");
+      const handler = (data: any) => {
+        const updatedId = String(data?.order?.orderId || data?.order?.id || order.id);
+        if (updatedId !== order.id) return;
+        setOrders((prev) => prev.map((current) => current.id === order.id ? { ...current, ...formatOrder({ ...data.order, orderId: order.id }) } as Order : current));
       };
-
-      logger.info("[OrderContext] Attempting to save order to database:", {
-        orderId: requestId,
-        username: order.username,
-        price: numericPrice,
-        itemsCount: order.itemsArray?.length || 0,
+      pusherClient.subscribe(channel);
+      pusherClient.bind(channel, "order:update", handler);
+      handlers.push({ channel, handler });
+    });
+    return () => {
+      handlers.forEach(({ channel, handler }) => {
+        pusherClient.unbind(channel, "order:update", handler);
+        pusherClient.unsubscribe(channel);
       });
+    };
+  }, [pusherClient, orders.map((order) => order.id).join("|")]);
 
-      // Calculate pickupDate in IST
-      const istOffset = 330; // minutes
-      const now = new Date();
-      const istTime = new Date(now.getTime() + istOffset * 60000);
-      const pickupDate = istTime.toISOString().split("T")[0];
+  const addOrder = useCallback(async (order: AddOrderInput, authToken?: string) => {
+    if (!order.itemsArray?.length) throw new Error("Order must contain at least one item");
+    const key = localStorage.getItem("qwikbite-order-idempotency-key") || crypto.randomUUID();
+    localStorage.setItem("qwikbite-order-idempotency-key", key);
+    const headers: Record<string, string> = { "Content-Type": "application/json", "Idempotency-Key": key };
+    if (authToken) headers.Authorization = "Bearer " + authToken;
+    const response = await fetch("/api/orders/customer", {
+      method: "POST", credentials: "include", headers,
+      body: JSON.stringify({
+        items: order.itemsArray.map((item) => ({ id: item.id, quantity: item.quantity })),
+        timeSlot: order.timeSlot || "ASAP",
+        pickupDate: order.pickupDate,
+        paymentMethod: String(order.paymentMethod || "cod").toLowerCase(),
+      }),
+    });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(json?.error || "Failed to create order");
+    const serverOrder = json?.data || json?.order || json;
+    const formatted = formatOrder(serverOrder);
+    if (!formatted) throw new Error("Server did not return a valid order");
+    setOrders((prev) => [formatted, ...prev.filter((item) => item.id !== formatted.id)]);
+    localStorage.setItem("lastOrderId", formatted.id);
+    return formatted.id;
+  }, []);
 
-      try {
-        // Try customer orders API first (for authenticated users)
-        const headers: Record<string, string> = {
-          "Content-Type": "application/json",
-        };
+  const updateOrderStatus = useCallback((orderId: string, status: OrderStatus) => {
+    setOrders((prev) => prev.map((order) => order.id === orderId ? { ...order, status, statusText: status === "Cancelled" ? "Order Cancelled" : order.statusText } : order));
+  }, []);
 
-        // Add Authorization header if token is available
-        if (authToken) {
-          headers["Authorization"] = `Bearer ${authToken}`;
-        }
-
-        const requestBody = {
-          username: order.username,
-          items: order.itemsArray || [],
-          timeSlot:
-            order.timeSlot ||
-            (window as unknown as { selectedTimeSlot?: string }).selectedTimeSlot ||
-            "ASAP",
-          pickupDate,
-          paymentMethod: resolvedPaymentMethod,
-        
-        };
-
-        logger.info(
-          "[OrderContext] POST /api/orders/customer with body:",
-          requestBody,
-        );
-
-        const response = await fetch("/api/orders/customer", {
-          method: "POST",
-          headers: {
-            ...headers,
-            "Idempotency-Key":
-              localStorage.getItem("qwikbite-order-idempotency-key") ||
-              crypto.randomUUID(),
-          },
-          credentials: "include",
-          body: JSON.stringify(requestBody),
-        });
-
-        logger.info(
-          "[OrderContext] Customer API response status:",
-          response.status,
-        );
-
-        if (response.ok) {
-          const successData = await response.json().catch(() => ({}));
-          logger.info(
-            "[OrderContext] ✅ Order saved to database successfully:",
-            successData,
-          );
-
-          // ONLY add to local state AFTER successful database save.
-          const serverOrder = successData?.data || successData?.order || successData;
-          const serverOrderId = serverOrder?.orderId || serverOrder?.id;
-
-          if (!serverOrderId) {
-            throw new Error("Server did not return an order ID");
-          }
-
-          const persistedOrder: Order = {
-            ...newOrder,
-            ...serverOrder,
-            id: serverOrderId,
-            date: new Date(serverOrder.createdAt || Date.now()).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            }),
-            status:
-              String(serverOrder.status || "pending").charAt(0).toUpperCase() +
-              String(serverOrder.status || "pending").slice(1),
-            statusText: "Order received",
-            progressStep: 0,
-            total: Number(serverOrder.totalAmount ?? newOrder.total ?? 0),
-          };
-
-          setOrders((prev) => [
-            persistedOrder,
-            ...prev.filter((existing) => existing.id !== serverOrderId),
-          ]);
-
-          localStorage.setItem("lastOrderId", serverOrderId);
-          return serverOrderId;
-        } else if (response.status === 401) {
-          logger.info(
-            "[OrderContext] ⚠️ Authentication required - order NOT saved",
-          );
-          throw new Error("Authentication required");
-        } else {
-          const errorData = await response.json().catch(() => ({}));
-          logger.error("[OrderContext] ❌ Failed to save order to database:", {
-            status: response.status,
-            statusText: response.statusText,
-            error: errorData,
-            details: errorData.details || errorData.error || "Unknown error",
-          });
-          throw new Error(
-            errorData.details ||
-              errorData.error ||
-              `Failed to save order to database: ${response.status} ${response.statusText}`,
-          );
-        }
-      } catch (error) {
-        logger.error("❌ Error saving order to database:", error);
-        // Don&apos;t add to local state if database save failed
-        throw error;
-      }
-
-      // Return the generated ID so caller can use it for transactions, etc.
-      return uniqueId;
-    },
-    [],
-  );
-
-  const updateOrderStatus = useCallback(
-    (orderId: string, status: OrderStatus) => {
-      setOrders((prev) =>
-        prev.map((order) =>
-          order.id === orderId
-            ? {
-                ...order,
-                status,
-                statusText:
-                  status === "Cancelled" ? "Order Cancelled" : order.statusText,
-              }
-            : order,
-        ),
-      );
-    },
-    [],
-  );
-
-  const contextValue = useMemo(
-    () => ({
-      orders,
-      addOrder,
-      updateOrderStatus,
-    }),
-    [orders, addOrder, updateOrderStatus],
-  );
-
-  return (
-    <OrderContext.Provider value={contextValue}>
-      {children}
-    </OrderContext.Provider>
-  );
+  const contextValue = useMemo(() => ({ orders, addOrder, updateOrderStatus }), [orders, addOrder, updateOrderStatus]);
+  return <OrderContext.Provider value={contextValue}>{children}</OrderContext.Provider>;
 };
 
 export const useOrders = (): OrderContextType => {
   const context = useContext(OrderContext);
-  if (!context) {
-    throw new Error("useOrders must be used within an OrderProvider");
-  }
+  if (!context) throw new Error("useOrders must be used within an OrderProvider");
   return context;
 };
