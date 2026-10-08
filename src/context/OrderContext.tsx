@@ -96,7 +96,6 @@ function formatOrder(raw: RawOrder): Order | null {
 
 export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [initialized, setInitialized] = useState(false);
   const { pusherClient } = usePusher();
 
   useEffect(() => {
@@ -110,7 +109,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         if (!active) return;
         setOrders(data.map(formatOrder).filter(Boolean) as Order[]);
       } finally {
-        if (active) setInitialized(true);
+
       }
     };
     load();
