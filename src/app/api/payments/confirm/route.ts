@@ -60,6 +60,35 @@ export async function POST(request: NextRequest) {
       String(paymentIntent.metadata?.orderId || "") === order.orderId &&
       String(paymentIntent.metadata?.userId || "") === session.user.id;
 
+    if (order.status === OrderStatus.CANCELLED || (order.reservationExpiresAt && order.reservationExpiresAt.getTime() < Date.now())) {
+      if (paymentIntent.status === "succeeded") {
+        const refund = await getStripe().refunds.create({
+          payment_intent: paymentIntent.id,
+          reason: "requested_by_customer",
+          metadata: { orderId: order.orderId, reason: "reservation_expired" },
+        });
+
+        order.paymentStatus = PaymentStatus.REFUNDED;
+        order.statusHistory.push({
+          status: OrderStatus.CANCELLED,
+          timestamp: new Date(),
+          note: "Payment received after reservation expiry; refund " + refund.id,
+        });
+        await order.save();
+      }
+
+      return NextResponse.json(
+        {
+          error:
+            paymentIntent.status === "succeeded"
+              ? "Your pickup reservation expired, so the payment was refunded."
+              : "Your pickup reservation expired. Please start checkout again.",
+          code: "RESERVATION_EXPIRED",
+        },
+        { status: 409 },
+      );
+    }
+
     if (!valid) {
       return NextResponse.json(
         { error: "Payment could not be verified." },
