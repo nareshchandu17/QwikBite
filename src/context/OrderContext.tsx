@@ -137,7 +137,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         pusherClient.unsubscribe(channel);
       });
     };
-  }, [pusherClient, orders.map((order) => order.id).join("|")]);
+  }, [pusherClient, orders]);
 
   const addOrder = useCallback(async (order: AddOrderInput, authToken?: string) => {
     if (!order.itemsArray?.length) throw new Error("Order must contain at least one item");
