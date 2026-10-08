@@ -5,37 +5,81 @@ import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
   PaymentElement,
-  useStripe,
   useElements,
+  useStripe,
 } from "@stripe/react-stripe-js";
 import toast from "react-hot-toast";
 
 const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE || "",
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE ||
+    "",
 );
 
-function CheckoutForm({ clientSecret }: { clientSecret: string }) {
+function CheckoutForm({
+  clientSecret,
+  orderId,
+  paymentIntentId,
+}: {
+  clientSecret: string;
+  orderId: string;
+  paymentIntentId: string;
+}) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
     if (!stripe || !elements) return;
+
     setLoading(true);
+
     try {
-      const { error } = await stripe.confirmPayment({
+      const result = await stripe.confirmPayment({
         elements,
-        confirmParams: { return_url: window.location.href },
+        redirect: "if_required",
+        confirmParams: {
+          return_url:
+            window.location.origin +
+            "/customer/payment/success?orderId=" +
+            encodeURIComponent(orderId),
+        },
       });
-      if (error) {
-        toast.error(error.message || "Payment failed");
-      } else {
-        toast.success("Payment succeeded (redirecting)");
+
+      if (result.error) {
+        toast.error(result.error.message || "Payment failed");
+        return;
       }
-    } catch (err) {
-      console.error(err);
-      toast.error("Payment failed");
+
+      if (!result.paymentIntent || result.paymentIntent.status !== "succeeded") {
+        toast.error("Payment is not complete yet. Please finish the required authentication.");
+        return;
+      }
+
+      const confirmation = await fetch("/api/payments/confirm", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orderId,
+          paymentIntentId: result.paymentIntent.id || paymentIntentId,
+        }),
+      });
+
+      const payload = await confirmation.json().catch(() => ({}));
+
+      if (!confirmation.ok) {
+        throw new Error(payload.error || "Payment verification failed");
+      }
+
+      localStorage.setItem("lastOrderId", orderId);
+      localStorage.setItem("orderId", orderId);
+      toast.success("Payment verified successfully");
+      window.location.href = "/customer/payment/success?orderId=" + encodeURIComponent(orderId);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Payment failed");
     } finally {
       setLoading(false);
     }
@@ -44,82 +88,90 @@ function CheckoutForm({ clientSecret }: { clientSecret: string }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <PaymentElement />
-      <div className="flex justify-end">
-        <button
-          disabled={!stripe || loading}
-          className="px-4 py-2 bg-primary-600 text-white rounded"
-        >
-          {loading ? "Processing..." : "Pay now"}
-        </button>
-      </div>
+      <button
+        type="submit"
+        disabled={!stripe || !elements || loading}
+        className="rounded-lg bg-primary-600 px-4 py-2 text-white disabled:opacity-50"
+      >
+        {loading ? "Processing..." : "Pay now"}
+      </button>
     </form>
   );
 }
 
 export default function StripeCheckout({ orderId }: { orderId: string }) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentIntentId, setPaymentIntentId] = useState("");
 
   useEffect(() => {
     let mounted = true;
+
     const init = async () => {
       try {
-        const resp = await fetch("/api/payments/create-intent", {
+        const idempotencyKey =
+          localStorage.getItem("qwikbite-payment-idempotency-key") ||
+          crypto.randomUUID();
+
+        localStorage.setItem(
+          "qwikbite-payment-idempotency-key",
+          idempotencyKey,
+        );
+
+        const response = await fetch("/api/payments/create-payment-intent", {
           method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ orderId }),
           credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": idempotencyKey,
+          },
+          body: JSON.stringify({ orderId, idempotencyKey }),
         });
-        const json = await resp.json();
-        if (json?.status === "success" && json.data?.clientSecret) {
-          if (mounted) setClientSecret(json.data.clientSecret);
-        } else if (
-          json?.status === "success" &&
-          json.data?.clientSecret == null &&
-          json.data?.clientSecret === undefined &&
-          json.data.clientSecret === null
-        ) {
-          // no-op
-        } else if (
-          json?.status === "success" &&
-          json.data?.clientSecret == null &&
-          json.data.clientSecret === undefined
-        ) {
-          // no-op
-        } else if (
-          json?.status === "success" &&
-          json.data?.clientSecret === undefined
-        ) {
-          // fallback
-        } else if (
-          json?.status === "success" &&
-          json.data?.clientSecret == null
-        ) {
-          // fallback
-        } else if (json?.status === "success" && json.data?.clientSecret) {
-          if (mounted) setClientSecret(json.data.clientSecret);
-        } else if (json?.clientSecret) {
-          if (mounted) setClientSecret(json.clientSecret);
-        } else if (json?.data?.clientSecret) {
-          if (mounted) setClientSecret(json.data.clientSecret);
-        } else {
-          console.error("unexpected create-intent response", json);
+
+        const json = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(json.error || "Unable to initialize payment");
         }
-      } catch (err) {
-        console.error("create-intent failed", err);
+
+        const data = json.data || json;
+
+        if (!data.clientSecret || !data.paymentIntentId) {
+          throw new Error("Invalid payment initialization response");
+        }
+
+        if (mounted) {
+          setClientSecret(data.clientSecret);
+          setPaymentIntentId(data.paymentIntentId);
+        }
+      } catch (error) {
+        console.error("payment initialization failed", error);
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Unable to initialize payment",
+        );
       }
     };
+
     init();
+
     return () => {
       mounted = false;
     };
   }, [orderId]);
 
-  if (!clientSecret) return <div>Initializing payment...</div>;
+  if (!clientSecret) return <div>Initializing secure payment...</div>;
 
-  const options = { clientSecret };
   return (
-    <Elements stripe={stripePromise} options={options}>
-      <CheckoutForm clientSecret={clientSecret} />
+    <Elements
+      stripe={stripePromise}
+      options={{ clientSecret, appearance: { theme: "stripe" } }}
+    >
+      <CheckoutForm
+        clientSecret={clientSecret}
+        orderId={orderId}
+        paymentIntentId={paymentIntentId}
+      />
     </Elements>
   );
 }
