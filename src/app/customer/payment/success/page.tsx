@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 type Order = {
