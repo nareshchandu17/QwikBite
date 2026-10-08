@@ -158,8 +158,15 @@ export class SlotService {
           $set: {
             status: OrderStatus.CANCELLED,
             isCancelled: true,
+            reservationExpiresAt: undefined,
           },
-          $unset: { reservationExpiresAt: 1 },
+          $push: {
+            statusHistory: {
+              status: OrderStatus.CANCELLED,
+              timestamp: now,
+              note: "Online payment reservation expired",
+            },
+          },
         },
         { new: true },
       );
