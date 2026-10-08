@@ -77,7 +77,10 @@ async function handleSucceeded(paymentIntent: Stripe.PaymentIntent) {
     return;
   }
 
-  if (order.paymentStatus === PaymentStatus.PAID) return;
+  if (
+    order.paymentStatus === PaymentStatus.PAID ||
+    order.paymentStatus === PaymentStatus.REFUNDED
+  ) return;
 
   if (
     order.status === OrderStatus.CANCELLED ||
@@ -140,7 +143,10 @@ async function handleFailed(paymentIntent: Stripe.PaymentIntent, reason: string)
   const order = await Order.findOne({ orderId, user: userId });
   if (!order) return;
 
-  if (order.paymentStatus === PaymentStatus.PAID) return;
+  if (
+    order.paymentStatus === PaymentStatus.PAID ||
+    order.paymentStatus === PaymentStatus.REFUNDED
+  ) return;
 
   order.paymentIntentId = paymentIntent.id;
   order.paymentStatus = PaymentStatus.FAILED;
