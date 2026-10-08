@@ -3,6 +3,7 @@ import { MenuItem } from "@/models/menuItem.model";
 import { connectDB } from "@/lib/db";
 import mongoose from "mongoose";
 import { Order, OrderStatus, PaymentStatus } from "@/models/order.model";
+import { STANDARD_SLOTS, parseSlotToDates } from "@/lib/slot-utils";
 
 interface RawOrderItem {
   id: string;
@@ -81,6 +82,33 @@ export class SlotService {
     requestedLoad: number,
   ): Promise<(ITimeSlot & { timeSlot: string }) | null> {
     await connectDB();
+
+    const standardSlots = STANDARD_SLOTS.filter((slot) => slot !== "ASAP");
+
+    await Promise.all(
+      standardSlots.map(async (slotStr) => {
+        const { start, end } = parseSlotToDates(slotStr, date);
+        await TimeSlotModel.findOneAndUpdate(
+          { dateOnly: date, startTime: start },
+          {
+            $setOnInsert: {
+              startTime: start,
+              endTime: end,
+              dateOnly: date,
+              maxLoad: 300,
+              currentLoad: 0,
+              kitchenCapacityFactor: 1,
+              avgPrepTime: 0,
+              estimatedWaitTime: 0,
+              status: "open",
+              isActive: true,
+              isAutoClosed: false,
+            },
+          },
+          { upsert: true },
+        );
+      }),
+    );
 
     const candidates = await TimeSlotModel.find({
       dateOnly: date,
@@ -208,26 +236,6 @@ export class SlotService {
       { new: true, upsert: false },
     );
 
-    if (updatedSlot) {
-      const effectiveMax =
-        updatedSlot.maxLoad * updatedSlot.kitchenCapacityFactor;
-      updatedSlot.status =
-        updatedSlot.currentLoad >= effectiveMax
-          ? "full"
-          : updatedSlot.isActive
-            ? "open"
-            : "closed";
-
-      if (effectiveMax > 0 && updatedSlot.avgPrepTime > 0) {
-        updatedSlot.estimatedWaitTime = Math.ceil(
-          (updatedSlot.currentLoad / effectiveMax) *
-            updatedSlot.avgPrepTime,
-        );
-      }
-
-      await updatedSlot.save();
-    }
-
     return updatedSlot;
   }
 
@@ -250,17 +258,7 @@ export class SlotService {
       { new: true },
     );
 
-    if (slot) {
-      const effectiveMax =
-        slot.maxLoad * slot.kitchenCapacityFactor;
-      slot.status =
-        slot.currentLoad >= effectiveMax
-          ? "full"
-          : slot.isActive
-            ? "open"
-            : "closed";
-      await slot.save();
-    }
+
   }
 
   static validateSlotTiming(
