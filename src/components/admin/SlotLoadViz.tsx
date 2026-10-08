@@ -2,12 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 
-const slotData = [
-  { name: "12-1 PM", load: 65 },
-  { name: "1-2 PM", load: 85 },
-  { name: "2-3 PM", load: 40 },
-  { name: "3-4 PM", load: 25 },
-];
 
 const CircularProgress = ({ value }: { value: number }) => {
   const radius = 85;
