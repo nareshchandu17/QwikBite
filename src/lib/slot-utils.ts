@@ -24,128 +24,159 @@ export const STANDARD_SLOTS = [
   "5:01-5:30",
 ];
 
-/**
- * Utility to parse slot string into start/end dates
- */
+function parseTimePart(part: string) {
+  const value = part.trim();
+  const match = value.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) throw new Error("Invalid slot time");
+
+  let h = Number(match[1]);
+  const m = Number(match[2]);
+
+  if (h > 23 || m > 59) throw new Error("Invalid slot time");
+  if (h >= 1 && h < 8) h += 12;
+
+  return { h, m };
+}
+
 export function parseSlotToDates(
   slotStr: string,
   dateStr: string,
 ): { start: Date; end: Date } {
-  const [dateY, dateM, dateD] = dateStr.split("-").map(Number);
-  const start = new Date(dateY, dateM - 1, dateD);
-  const end = new Date(dateY, dateM - 1, dateD);
-
   if (slotStr === "ASAP") {
     const now = new Date();
     return { start: now, end: new Date(now.getTime() + 30 * 60000) };
   }
 
   const [startPart, endPart] = slotStr.split("-");
+  if (!startPart || !endPart) throw new Error("Invalid time slot");
 
-  const parsePart = (part: string, d: Date) => {
-    const parts = part.split(":").map(Number);
-    let h = parts[0];
-    const m = parts[1];
-    // Basic heuristic: hours 1-7 are PM, 8-12 are AM/PM (assuming school hours)
-    if (h < 8) h += 12;
-    d.setHours(h, m, 0, 0);
-  };
+  const startTime = parseTimePart(startPart);
+  const endTime = parseTimePart(endPart);
 
-  parsePart(startPart, start);
-  parsePart(endPart, end);
+  const start = new Date(
+    `${dateStr}T${String(startTime.h).padStart(2, "0")}:${String(startTime.m).padStart(2, "0")}:00+05:30`,
+  );
+  const end = new Date(
+    `${dateStr}T${String(endTime.h).padStart(2, "0")}:${String(endTime.m).padStart(2, "0")}:00+05:30`,
+  );
+
   return { start, end };
 }
 
-/**
- * Robustly syncs and recalculates slot usage based on actual orders.
- */
 export async function syncTimeSlotUsage(targetDate?: string): Promise<void> {
   await connectDB();
 
-  const istOffset = 330;
-  const now = new Date();
-  const istTime = new Date(now.getTime() + istOffset * 60000);
-  const dateStr = targetDate || istTime.toISOString().split("T")[0];
+  const dateStr =
+    targetDate ||
+    new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+    }).format(new Date());
 
-  // 1. Get all active orders for this date
   const orders = await Order.find({
     pickupDate: dateStr,
-    status: { $nin: ["cancelled", "rejected"] },
+    status: { $nin: ["cancelled", "completed"] },
   }).lean();
 
-  // 2. Aggregate load by slot string (legacy compatibility)
   const slotStats: Record<string, number> = {};
-  orders.forEach((order) => {
-    const slot = order.timeSlot;
-    if (!slot) return;
-    if (!slotStats[slot]) slotStats[slot] = 0;
-    slotStats[slot] += order.loadValue || 0;
-  });
+  for (const order of orders) {
+    if (!order.timeSlot) continue;
+    slotStats[order.timeSlot] =
+      (slotStats[order.timeSlot] || 0) + (order.loadValue || 0);
+  }
 
-  // 3. Update all slots
-  const updatePromises = STANDARD_SLOTS.map(async (slotStr) => {
-    const load = slotStats[slotStr] || 0;
-    const { start, end } = parseSlotToDates(slotStr, dateStr);
-    const maxLoad = 300;
+  const persistedSlots = await TimeSlotModel.find({ dateOnly: dateStr });
+  const byStart = new Map(
+    persistedSlots.map((slot) => [slot.startTime.getTime(), slot]),
+  );
 
-    return TimeSlotModel.findOneAndUpdate(
-      { dateOnly: dateStr, startTime: start },
-      {
-        $set: {
+  const updates = STANDARD_SLOTS.filter((slot) => slot !== "ASAP").map(
+    async (slotStr) => {
+      const { start, end } = parseSlotToDates(slotStr, dateStr);
+      const existing = byStart.get(start.getTime());
+
+      if (!existing) {
+        await TimeSlotModel.create({
+          startTime: start,
           endTime: end,
-          currentLoad: load,
-          maxLoad: maxLoad,
+          dateOnly: dateStr,
+          maxLoad: 300,
+          currentLoad: slotStats[slotStr] || 0,
+          kitchenCapacityFactor: 1,
           isActive: true,
-        },
-      },
-      { upsert: true, new: true },
-    );
-  });
+        });
+        return;
+      }
 
-  await Promise.all(updatePromises);
+      existing.currentLoad = slotStats[slotStr] || 0;
+      existing.endTime = end;
+      await existing.save();
+    },
+  );
+
+  await Promise.all(updates);
 }
 
-/**
- * FETCH: Retrieve from TimeSlot collection
- */
 export async function aggregateTimeSlots() {
   await connectDB();
 
-  const istOffset = 330;
-  const now = new Date();
-  const istTime = new Date(now.getTime() + istOffset * 60000);
-  const dateStr = istTime.toISOString().split("T")[0];
+  const dateStr = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kolkata",
+  }).format(new Date());
 
   const dbSlots = await TimeSlotModel.find({ dateOnly: dateStr })
     .sort({ startTime: 1 })
     .lean();
+
   const DEFAULT_MAX_LOAD = 300;
 
-  return STANDARD_SLOTS.map((slot) => {
-    const { start } = parseSlotToDates(slot, dateStr);
-    const dbMatch = dbSlots.find(
-      (ds) => ds.startTime.getTime() === start.getTime(),
-    );
+  const standardSlots = STANDARD_SLOTS.filter((slot) => slot !== "ASAP").map(
+    (slot) => {
+      const { start } = parseSlotToDates(slot, dateStr);
+      const dbMatch = dbSlots.find(
+        (ds) => ds.startTime.getTime() === start.getTime(),
+      );
 
-    const currentLoad = dbMatch ? dbMatch.currentLoad || 0 : 0;
-    const maxLoad = dbMatch
-      ? dbMatch.maxLoad || DEFAULT_MAX_LOAD
-      : DEFAULT_MAX_LOAD;
-    const percentage = Math.round((currentLoad / maxLoad) * 100);
+      const currentLoad = dbMatch?.currentLoad || 0;
+      const maxLoad = dbMatch?.maxLoad || DEFAULT_MAX_LOAD;
+      const effectiveMax = Math.max(
+        1,
+        maxLoad * (dbMatch?.kitchenCapacityFactor || 1),
+      );
+      const percentage = Math.min(
+        100,
+        Math.round((currentLoad / effectiveMax) * 100),
+      );
 
-    return {
-      time: slot,
-      timeSlot: slot,
-      capacity: maxLoad,
-      used: currentLoad,
-      percentage,
-      status:
-        dbMatch?.status ||
-        (currentLoad >= maxLoad
-          ? "full"
-          : currentLoad >= maxLoad * 0.7
-            ? "busy"
-            : "open"),
-    };
-  });
+      return {
+        time: slot,
+        timeSlot: slot,
+        capacity: Math.round(effectiveMax),
+        used: currentLoad,
+        percentage,
+        status:
+          dbMatch?.status ||
+          (currentLoad >= effectiveMax
+            ? "full"
+            : currentLoad >= effectiveMax * 0.7
+              ? "busy"
+              : "open"),
+      };
+    },
+  );
+
+  const firstOpen = standardSlots.find(
+    (slot) => slot.status !== "full" && slot.percentage < 100,
+  );
+
+  return [
+    {
+      time: "ASAP",
+      timeSlot: "ASAP",
+      capacity: firstOpen?.capacity || DEFAULT_MAX_LOAD,
+      used: firstOpen?.used || 0,
+      percentage: firstOpen?.percentage || 0,
+      status: firstOpen?.status || "open",
+    },
+    ...standardSlots,
+  ];
 }
