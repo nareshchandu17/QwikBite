@@ -87,7 +87,7 @@ export default function PaymentSuccessPage() {
     return () => {
       active = false;
     };
-  }, [router, searchParams]);
+  }, [router]);
 
   if (loading) {
     return (
