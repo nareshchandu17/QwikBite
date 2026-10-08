@@ -448,38 +448,16 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({
           headers["Authorization"] = `Bearer ${authToken}`;
         }
 
-        const resolvedTotal =
-          typeof (order as any).total === "number" &&
-          !Number.isNaN((order as any).total)
-            ? (order as any).total
-            : numericPrice;
-
-        const resolvedPaymentMethod = (order as any).paymentMethod
-          ? String((order as any).paymentMethod)
-          : "online";
-
         const requestBody = {
-          id: uniqueId,
-          orderId: uniqueId,
-          userId: "customer", // This should be the actual user ID from auth
           username: order.username,
-          items: order.itemsArray || [], // Use itemsArray as items
-          total: resolvedTotal,
-          price: resolvedTotal,
-          status: "preparing",
-          imageUrl: getRealItemImage(order) || "/images/order.jpg",
-          originalPrice: numericOriginalPrice,
-          statusText: "Preparing your order",
-          progressStep: 0,
+          items: order.itemsArray || [],
           timeSlot:
             order.timeSlot ||
-            (window as unknown as { selectedTimeSlot?: string })
-              .selectedTimeSlot ||
+            (window as unknown as { selectedTimeSlot?: string }).selectedTimeSlot ||
             "ASAP",
-          pickupDate: pickupDate,
+          pickupDate,
           paymentMethod: resolvedPaymentMethod,
-          paymentStatus:
-            resolvedPaymentMethod === "cod" ? "pending" : "completed",
+        
         };
 
         logger.info(
@@ -489,7 +467,12 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({
 
         const response = await fetch("/api/orders/customer", {
           method: "POST",
-          headers,
+          headers: {
+            ...headers,
+            "Idempotency-Key":
+              localStorage.getItem("qwikbite-order-idempotency-key") ||
+              crypto.randomUUID(),
+          },
           credentials: "include",
           body: JSON.stringify(requestBody),
         });
@@ -506,48 +489,38 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({
             successData,
           );
 
-          // ONLY add to local state AFTER successful database save
-          setOrders((prev) => {
-            // Check if order with this ID already exists to prevent duplicates
-            if (prev.some((o) => o.id === uniqueId)) {
-              logger.warn(
-                "[OrderContext] Order with ID already exists:",
-                uniqueId,
-              );
-              return prev;
-            }
-            return [newOrder, ...prev];
-          });
+          // ONLY add to local state AFTER successful database save.
+          const serverOrder = successData?.data || successData?.order || successData;
+          const serverOrderId = serverOrder?.orderId || serverOrder?.id;
 
-          // Simulate order progress (only for successfully saved orders)
-          const progressInterval = setInterval(() => {
-            setOrders((prev) => {
-              const updated = [...prev];
-              const orderIndex = updated.findIndex((o) => o.id === newOrder.id);
+          if (!serverOrderId) {
+            throw new Error("Server did not return an order ID");
+          }
 
-              if (orderIndex !== -1) {
-                const currentStep = updated[orderIndex].progressStep || 0;
+          const persistedOrder: Order = {
+            ...newOrder,
+            ...serverOrder,
+            id: serverOrderId,
+            date: new Date(serverOrder.createdAt || Date.now()).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            }),
+            status:
+              String(serverOrder.status || "pending").charAt(0).toUpperCase() +
+              String(serverOrder.status || "pending").slice(1),
+            statusText: "Order received",
+            progressStep: 0,
+            total: Number(serverOrder.totalAmount ?? newOrder.total ?? 0),
+          };
 
-                if (currentStep < 3) {
-                  updated[orderIndex] = {
-                    ...updated[orderIndex],
-                    progressStep: currentStep + 1,
-                  };
+          setOrders((prev) => [
+            persistedOrder,
+            ...prev.filter((existing) => existing.id !== serverOrderId),
+          ]);
 
-                  if (currentStep === 2) {
-                    updated[orderIndex] = {
-                      ...updated[orderIndex],
-                      status: "Delivered",
-                      statusText: "Delivered Successfully",
-                    };
-                    clearInterval(progressInterval);
-                  }
-                }
-              }
-
-              return updated;
-            });
-          }, 30000); // Update every 30 seconds
+          localStorage.setItem("lastOrderId", serverOrderId);
+          return serverOrderId;
         } else if (response.status === 401) {
           logger.info(
             "[OrderContext] ⚠️ Authentication required - order NOT saved",
