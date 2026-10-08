@@ -1,8 +1,5 @@
 import mongoose, { Document, Schema, Types, Model } from "mongoose";
 
-/**
- * Order Status Enum
- */
 export enum OrderStatus {
   PENDING = "pending",
   CONFIRMED = "confirmed",
@@ -12,9 +9,6 @@ export enum OrderStatus {
   CANCELLED = "cancelled",
 }
 
-/**
- * Payment Status Enum
- */
 export enum PaymentStatus {
   PENDING = "pending",
   PAID = "paid",
@@ -22,9 +16,6 @@ export enum PaymentStatus {
   REFUNDED = "refunded",
 }
 
-/**
- * Status History Entry
- */
 export interface IStatusHistory {
   status: string;
   timestamp: Date;
@@ -32,11 +23,8 @@ export interface IStatusHistory {
   updatedBy?: Types.ObjectId;
 }
 
-/**
- * Order Item Interface
- */
 export interface IOrderItem {
-  menuItem: string | Types.ObjectId; // Allow both for compatibility
+  menuItem: string | Types.ObjectId;
   name: string;
   image: string;
   quantity: number;
@@ -45,20 +33,21 @@ export interface IOrderItem {
   id?: string;
 }
 
-/**
- * Order Interface
- */
 export interface IOrder extends Document {
   orderId: string;
-  user: string | Types.ObjectId; // Allow both for compatibility
+  user: string | Types.ObjectId;
   items: IOrderItem[];
+  subtotal?: number;
+  taxAmount?: number;
   totalAmount: number;
+  currency?: string;
   status: string;
   statusHistory: IStatusHistory[];
   paymentStatus: string;
   paymentMethod?: string;
   transactionId?: string;
   paymentIntentId?: string;
+  idempotencyKey?: string;
   feedbackGiven?: boolean;
   rating?: number;
   comment?: string;
@@ -72,24 +61,24 @@ export interface IOrder extends Document {
   total?: number;
   estimatedReadyTime?: Date;
   assignedStaff?: Types.ObjectId;
+  chefMessage?: string;
   isCancelled: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
-/**
- * Order Item Schema
- */
 const orderItemSchema = new Schema<IOrderItem>(
   {
     menuItem: {
-      type: Schema.Types.Mixed, // Use Mixed to allow both ObjectId and String
+      type: Schema.Types.Mixed,
       ref: "MenuItem",
       required: true,
     },
     name: {
       type: String,
       required: true,
+      maxlength: 100,
+      trim: true,
     },
     image: {
       type: String,
@@ -99,6 +88,7 @@ const orderItemSchema = new Schema<IOrderItem>(
       type: Number,
       required: true,
       min: 1,
+      max: 50,
     },
     price: {
       type: Number,
@@ -113,39 +103,21 @@ const orderItemSchema = new Schema<IOrderItem>(
   { _id: false },
 );
 
-/**
- * Status History Schema
- */
 const statusHistorySchema = new Schema<IStatusHistory>(
   {
-    status: {
-      type: String,
-      required: true,
-    },
-    timestamp: {
-      type: Date,
-      default: Date.now,
-    },
+    status: { type: String, required: true },
+    timestamp: { type: Date, default: Date.now },
     note: String,
-    updatedBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-    },
+    updatedBy: { type: Schema.Types.ObjectId, ref: "User" },
   },
   { _id: false },
 );
 
-/**
- * Main Order Schema
- */
 const orderSchema = new Schema<IOrder>(
   {
-    orderId: {
-      type: String,
-      unique: true,
-    },
+    orderId: { type: String, unique: true, index: true },
     user: {
-      type: Schema.Types.Mixed, // Use Mixed to allow both ObjectId and String
+      type: Schema.Types.Mixed,
       ref: "User",
       required: true,
       index: true,
@@ -155,91 +127,67 @@ const orderSchema = new Schema<IOrder>(
       required: true,
       validate: [(val: unknown[]) => val.length > 0, "Order must have items"],
     },
-    totalAmount: {
-      type: Number,
-      required: true,
-      min: 0,
-    },
+    subtotal: { type: Number, min: 0 },
+    taxAmount: { type: Number, min: 0, default: 0 },
+    totalAmount: { type: Number, required: true, min: 0 },
+    currency: { type: String, default: "INR", enum: ["INR"] },
     status: {
       type: String,
       enum: Object.values(OrderStatus),
       default: OrderStatus.PENDING,
       index: true,
     },
-    statusHistory: {
-      type: [statusHistorySchema],
-      default: [],
-    },
+    statusHistory: { type: [statusHistorySchema], default: [] },
     paymentStatus: {
       type: String,
       enum: Object.values(PaymentStatus),
       default: PaymentStatus.PENDING,
       index: true,
     },
-    slot: {
-      type: Schema.Types.ObjectId,
-      ref: "TimeSlot",
-      index: true,
+    paymentMethod: {
+      type: String,
+      enum: ["cod", "cash", "stripe", "card", "upi", "wallet"],
+      default: "cod",
     },
-    pickupTime: {
-      type: Date,
-    },
+    transactionId: String,
+    paymentIntentId: { type: String, index: true, sparse: true },
+    idempotencyKey: { type: String, index: true, sparse: true },
+    slot: { type: Schema.Types.ObjectId, ref: "TimeSlot", index: true },
+    pickupTime: Date,
     pickupDate: {
-      type: String, // YYYY-MM-DD
-    },
-    timeSlot: {
       type: String,
-    },
-    loadValue: {
-      type: Number,
-      default: 0,
-    },
-    username: {
-      type: String,
-    },
-    price: {
-      type: Number, // Alias for totalAmount
-    },
-    total: {
-      type: Number, // Alias for totalAmount
-    },
-    estimatedReadyTime: {
-      type: Date,
-    },
-    assignedStaff: {
-      type: Schema.Types.ObjectId,
-      ref: "Staff",
+      match: /^\d{4}-\d{2}-\d{2}$/,
       index: true,
     },
-    isCancelled: {
-      type: Boolean,
-      default: false,
-    },
+    timeSlot: String,
+    loadValue: { type: Number, min: 0, default: 0 },
+    username: String,
+    price: { type: Number, min: 0 },
+    total: { type: Number, min: 0 },
+    estimatedReadyTime: Date,
+    assignedStaff: { type: Schema.Types.ObjectId, ref: "Staff", index: true },
+    chefMessage: { type: String, maxlength: 500, trim: true },
+    isCancelled: { type: Boolean, default: false, index: true },
   },
   {
     timestamps: true,
     versionKey: false,
-    id: false, // Disable virtual id to prevent conflict with real id field
+    id: false,
   },
 );
 
-/**
- * INDEXES
- */
 orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ status: 1, createdAt: -1 });
+orderSchema.index({ pickupDate: 1, timeSlot: 1, status: 1 });
+orderSchema.index({ user: 1, idempotencyKey: 1 }, { unique: true, sparse: true });
 
-/**
- * PRE-SAVE HOOK: Generate Order ID & Initial Status History
- */
-orderSchema.pre<IOrder>("save", async function () {
+orderSchema.pre<IOrder>("save", function () {
   if (!this.orderId) {
-    const timestamp = Date.now().toString(36);
-    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
     this.orderId = `ORD-${timestamp}-${random}`;
   }
 
-  // If status is new or changed, add to history
   if (this.isNew || this.isModified("status")) {
     this.statusHistory.push({
       status: this.status,
@@ -247,19 +195,17 @@ orderSchema.pre<IOrder>("save", async function () {
       note: this.isNew ? "Order placed" : `Status updated to ${this.status}`,
     });
   }
+
+  if (this.status === OrderStatus.CANCELLED) {
+    this.isCancelled = true;
+  }
 });
 
-/**
- * STATIC METHODS
- */
 orderSchema.statics.findActiveOrders = function () {
   return this.find({
     status: { $nin: [OrderStatus.COMPLETED, OrderStatus.CANCELLED] },
   });
 };
 
-/**
- * MODEL EXPORT
- */
 export const Order: Model<IOrder> =
   mongoose.models.Order || mongoose.model<IOrder>("Order", orderSchema);
