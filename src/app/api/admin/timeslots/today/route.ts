@@ -1,7 +1,5 @@
 import logger from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
-import { aggregateTimeSlots, syncTimeSlotUsage } from "@/lib/slot-utils";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import {
@@ -9,90 +7,58 @@ import {
   getRateLimitIdentifier,
   RateLimitPresets,
 } from "@/lib/security/rateLimiter";
+import { aggregateTimeSlots } from "@/lib/slot-utils";
+import { connectDB } from "@/lib/db";
 import { pusherServer } from "@/lib/pusher";
+
+const STAFF_ROLES = new Set(["admin", "canteen_staff", "staff"]);
 
 export async function GET(req: NextRequest) {
   try {
-    // Authentication check
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const role = String(session?.user?.role || "").toLowerCase();
+
+    if (!session?.user?.id || !STAFF_ROLES.has(role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Authorization check
-    const userRole = (session.user as { role?: string }).role;
-    if (!["admin", "canteen_staff"].includes(userRole as any)) {
-      return NextResponse.json(
-        { error: "Forbidden - Insufficient permissions" },
-        { status: 403 },
-      );
-    }
-
-    // Rate limiting
-    const identifier = getRateLimitIdentifier(req as Request);
-    const rateLimitResult = await checkRateLimit(
-      identifier,
+    const limit = await checkRateLimit(
+      getRateLimitIdentifier(req),
       RateLimitPresets.LENIENT.limit,
       RateLimitPresets.LENIENT.windowMs,
     );
-    if (!rateLimitResult.allowed) {
-      return NextResponse.json(
-        { error: "Rate limit exceeded" },
-        { status: 429 },
-      );
+    if (!limit.allowed) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
     }
 
     await connectDB();
-
-    // Ensure data is synced before fetching
-    await syncTimeSlotUsage();
-
-    const slots = await aggregateTimeSlots();
-    return NextResponse.json(slots);
+    return NextResponse.json(await aggregateTimeSlots());
   } catch (error) {
-    logger.error("[Timeslots API] Error:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
+    logger.error("[Timeslots GET] Error", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    // Authentication check
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const role = String(session?.user?.role || "").toLowerCase();
+
+    if (!session?.user?.id || !STAFF_ROLES.has(role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Authorization check
-    const userRole = (session.user as { role?: string }).role;
-    if (!["admin", "canteen_staff"].includes(userRole as any)) {
-      return NextResponse.json(
-        { error: "Forbidden - Insufficient permissions" },
-        { status: 403 },
-      );
-    }
-
-    // Rate limiting
-    const identifier = getRateLimitIdentifier(req as Request);
-    const rateLimitResult = await checkRateLimit(
-      identifier,
+    const limit = await checkRateLimit(
+      getRateLimitIdentifier(req),
       RateLimitPresets.STANDARD.limit,
       RateLimitPresets.STANDARD.windowMs,
     );
-    if (!rateLimitResult.allowed) {
-      return NextResponse.json(
-        { error: "Rate limit exceeded" },
-        { status: 429 },
-      );
+    if (!limit.allowed) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
     }
 
-    const body = await req.json();
-    const { slots: updatedSlots } = body;
-
-    if (!Array.isArray(updatedSlots)) {
+    const body = await req.json().catch(() => ({}));
+    if (!Array.isArray(body.slots)) {
       return NextResponse.json(
         { error: "Invalid input: slots must be an array" },
         { status: 400 },
@@ -101,46 +67,46 @@ export async function POST(req: NextRequest) {
 
     await connectDB();
 
-    // Update slot capacities in database
     const { TimeSlot } = await import("@/models/slot.model");
-    const istOffset = 330;
-    const now = new Date();
-    const istTime = new Date(now.getTime() + istOffset * 60000);
-    const dateStr = istTime.toISOString().split("T")[0];
+    const { parseSlotToDates } = await import("@/lib/slot-utils");
+    const dateStr = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata",
+    }).format(new Date());
 
-    const updatePromises = updatedSlots.map(async (slot: any) => {
-      const { parseSlotToDates } = await import("@/lib/slot-utils");
-      const { start } = parseSlotToDates(slot.timeSlot, dateStr);
+    for (const slot of body.slots) {
+      const timeSlot = String(slot?.timeSlot || "");
+      const capacity = Number(slot?.capacity);
 
-      return TimeSlot.findOneAndUpdate(
+      if (!timeSlot || !Number.isFinite(capacity) || capacity < 1 || capacity > 10000) {
+        return NextResponse.json(
+          { error: "Invalid slot capacity data" },
+          { status: 400 },
+        );
+      }
+
+      const { start } = parseSlotToDates(timeSlot, dateStr);
+      await TimeSlot.findOneAndUpdate(
         { dateOnly: dateStr, startTime: start },
-        {
-          $set: {
-            maxLoad: slot.capacity,
-            isActive: true,
-          },
-        },
+        { $set: { maxLoad: Math.floor(capacity), isActive: true } },
         { upsert: true, new: true },
       );
-    });
+    }
 
-    await Promise.all(updatePromises);
-
-    // Trigger real-time update via Pusher
-    await pusherServer.trigger("admin", "slot-update", {
-      slots: updatedSlots,
-      timestamp: new Date().toISOString(),
-    });
+    try {
+      await pusherServer.trigger("admin", "slot-update", {
+        action: "capacity_updated",
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.warn("[Timeslots POST] Pusher update failed", error);
+    }
 
     return NextResponse.json({
       success: true,
       message: "Slots updated successfully",
     });
   } catch (error) {
-    logger.error("[Timeslots POST API] Error:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 },
-    );
+    logger.error("[Timeslots POST] Error", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
