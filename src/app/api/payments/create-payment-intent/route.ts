@@ -95,6 +95,7 @@ export async function POST(request: NextRequest) {
           success: true,
           data: {
             clientSecret: existingIntent.client_secret,
+            paymentIntentId: existingIntent.id,
             orderId: order.orderId,
             amount: order.totalAmount,
             currency: "INR",
@@ -127,6 +128,7 @@ export async function POST(request: NextRequest) {
         success: true,
         data: {
           clientSecret: paymentIntent.client_secret,
+          paymentIntentId: paymentIntent.id,
           orderId: order.orderId,
           amount: order.totalAmount,
           currency: "INR",
