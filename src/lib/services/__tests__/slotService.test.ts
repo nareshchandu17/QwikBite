@@ -117,7 +117,18 @@ describe('SlotService', () => {
     });
 
     it('should return null if capacity is full from a single large request', async () => {
-      const result = await SlotService.reserveSlot('10:00-10:30', '2026-08-25', 10);
+      const originalGetSlotStartTime = SlotService.getSlotStartTime;
+      SlotService.getSlotStartTime = vi
+        .fn()
+        .mockReturnValue(new Date('2026-08-25T10:00:00.000Z'));
+
+      const result = await SlotService.reserveSlot(
+        '10:00-10:30',
+        '2026-08-25',
+        10,
+      );
+
+      SlotService.getSlotStartTime = originalGetSlotStartTime;
       expect(result).toBeNull();
     });
   });
