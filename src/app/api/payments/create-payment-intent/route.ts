@@ -48,14 +48,26 @@ export async function POST(request: NextRequest) {
       String(body.idempotencyKey || "") ||
       crypto.randomUUID();
 
-    let order = await Order.findOne({
-      user: session.user.id,
-      idempotencyKey,
-    });
+    let order = body.orderId
+      ? await Order.findOne({
+          orderId: String(body.orderId),
+          user: session.user.id,
+        })
+      : await Order.findOne({
+          user: session.user.id,
+          idempotencyKey,
+        });
 
     if (order?.paymentStatus === "paid") {
       return NextResponse.json(
         { error: "This order has already been paid.", orderId: order.orderId },
+        { status: 409 },
+      );
+    }
+
+    if (order && order.paymentMethod !== "stripe") {
+      return NextResponse.json(
+        { error: "This order is not configured for online payment.", code: "INVALID_PAYMENT_METHOD" },
         { status: 409 },
       );
     }
