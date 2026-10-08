@@ -185,11 +185,11 @@ describe('SlotService', () => {
       expect(load).toBe(35);
     });
 
-    it('should use default 5 mins if item not found', async () => {
+    it('should reject an order load request when an item no longer exists', async () => {
       const items = [{ id: 'missing-id', quantity: 2 }];
-      const load = await SlotService.calculateOrderLoad(items);
-      // (5 * 2) = 10
-      expect(load).toBe(10);
+      await expect(SlotService.calculateOrderLoad(items)).rejects.toThrow(
+        /not found/,
+      );
     });
   });
 });
