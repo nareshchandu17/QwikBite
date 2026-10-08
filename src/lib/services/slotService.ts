@@ -158,8 +158,8 @@ export class SlotService {
           $set: {
             status: OrderStatus.CANCELLED,
             isCancelled: true,
-            reservationExpiresAt: undefined,
           },
+          $unset: { reservationExpiresAt: 1 },
           $push: {
             statusHistory: {
               status: OrderStatus.CANCELLED,
