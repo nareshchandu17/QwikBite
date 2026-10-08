@@ -20,12 +20,12 @@ const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
 );
 
-const StripePaymentForm = ({ clientSecret }: { clientSecret: string }) => {
+const StripePaymentForm = ({\n  clientSecret,\n  orderId,\n  paymentIntentId,\n}: {\n  clientSecret: string;\n  orderId: string;\n  paymentIntentId: string;\n}) => {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
-  const [orderData, setOrderData] = useState<any>(null);
+  const [orderData, setOrderData] = useState<any>(null);\n  const [serverOrderId, setServerOrderId] = useState("");\n  const [paymentIntentId, setPaymentIntentId] = useState("");
 
   // Load order data from localStorage on component mount
   useEffect(() => {
@@ -102,48 +102,33 @@ const StripePaymentForm = ({ clientSecret }: { clientSecret: string }) => {
         if (result.paymentIntent.status === "succeeded") {
           toast.success("Payment successful!");
 
-          // Create order in our system
-          const paymentData = {
-            ...orderData,
-            payment: "card",
-            paymentIntentId: result.paymentIntent.id,
-          };
-
           try {
-            const orderResponse = await fetch("/api/orders/customer", {
+            const confirmResponse = await fetch("/api/payments/confirm", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(paymentData),
               credentials: "include",
+              body: JSON.stringify({
+                orderId,
+                paymentIntentId: result.paymentIntent.id,
+              }),
             });
 
-            const orderResult = await orderResponse.json();
+            const confirmation = await confirmResponse.json();
 
-            if (orderResponse.ok) {
-              // Store order ID for redirection
-              const orderId =
-                orderResult.orderId ||
-                orderResult.id ||
-                orderResult.data?.orderId;
-
-              if (!orderId) {
-                throw new Error("No order ID returned from server");
-              }
-
-              localStorage.setItem("orderId", orderId);
-              localStorage.setItem("lastOrderId", orderId);
-
-              // Small delay to ensure order is saved before navigation
-              await new Promise((resolve) => setTimeout(resolve, 500));
-
-              // Redirect to payment success page
-              router.push("/customer/payment/success");
-            } else {
-              throw new Error(orderResult.error || "Failed to create order");
+            if (!confirmResponse.ok) {
+              throw new Error(
+                confirmation.error || "Payment verification failed",
+              );
             }
+
+            localStorage.setItem("orderId", orderId);
+            localStorage.setItem("lastOrderId", orderId);
+            localStorage.removeItem("orderData");
+            localStorage.removeItem("qwikbite-payment-idempotency-key");
+            router.push("/customer/payment/success");
           } catch (error) {
             toast.error(
-              "Payment succeeded but order creation failed. Please contact support.",
+              "Payment succeeded, but server verification failed. Your payment is safe; please retry verification from your orders page.",
             );
           }
         }
@@ -254,7 +239,7 @@ const StripePaymentForm = ({ clientSecret }: { clientSecret: string }) => {
                   </p>
                 </div>
                 <span className="font-medium text-gray-900 dark:text-white">
-                  ?{(item.price * item.quantity).toFixed(2)}
+                  ₹{(item.price * item.quantity).toFixed(2)}
                 </span>
               </div>
             ))}
@@ -265,7 +250,7 @@ const StripePaymentForm = ({ clientSecret }: { clientSecret: string }) => {
           <div className="flex justify-between text-lg font-semibold">
             <span className="text-gray-900 dark:text-white">Total</span>
             <span className="text-amber-600 dark:text-amber-400">
-              ${orderData.total.toFixed(2)}
+              ₹{orderData.total.toFixed(2)}
             </span>
           </div>
 
@@ -307,7 +292,7 @@ const StripePaymentForm = ({ clientSecret }: { clientSecret: string }) => {
             Processing Payment...
           </>
         ) : (
-          `Pay $${orderData.total.toFixed(2)}`
+          `Pay ₹${orderData.total.toFixed(2)}`
         )}
       </motion.button>
     </form>
@@ -327,29 +312,48 @@ export default function StripePaymentPage() {
         const parsedData = JSON.parse(storedOrderData);
         setOrderData(parsedData);
 
-        // Calculate total in cents for payment intent
-        const total = parsedData.total;
-        const totalInCents = Math.round(total * 100);
+        const idempotencyKey =
+          localStorage.getItem("qwikbite-payment-idempotency-key") ||
+          crypto.randomUUID();
 
-        // Create PaymentIntent
+        localStorage.setItem(
+          "qwikbite-payment-idempotency-key",
+          idempotencyKey,
+        );
+
         fetch("/api/payments/create-payment-intent", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "Idempotency-Key": idempotencyKey,
+          },
+          credentials: "include",
           body: JSON.stringify({
-            amount: totalInCents,
-            currency: "usd",
+            items: parsedData.items,
+            timeSlot: parsedData.timeSlot,
+            pickupDate: parsedData.pickupDate,
+            idempotencyKey,
           }),
         })
-          .then((res) => res.json())
+          .then(async (res) => {
+            const data = await res.json();
+            if (!res.ok) {
+              throw new Error(data.error || "Failed to initialize payment");
+            }
+            return data;
+          })
           .then((data) => {
-            if (data.clientSecret) {
-              setClientSecret(data.clientSecret);
+            const payload = data.data || data;
+            if (payload.clientSecret && payload.orderId && payload.paymentIntentId) {
+              setClientSecret(payload.clientSecret);
+              setServerOrderId(payload.orderId);
+              setPaymentIntentId(payload.paymentIntentId);
             } else {
-              toast.error("Failed to initialize payment. Please try again.");
+              throw new Error("Payment session was not initialized correctly");
             }
           })
           .catch((error) => {
-            toast.error("Failed to initialize payment. Please try again.");
+            toast.error(error instanceof Error ? error.message : "Failed to initialize payment.");
           });
       } catch (error) {
         toast.error("Failed to load order data. Please try again.");
@@ -470,7 +474,7 @@ export default function StripePaymentPage() {
 
           {clientSecret ? (
             <Elements stripe={stripePromise}>
-              <StripePaymentForm clientSecret={clientSecret} />
+              <StripePaymentForm\n                clientSecret={clientSecret}\n                orderId={serverOrderId}\n                paymentIntentId={paymentIntentId}\n              />
             </Elements>
           ) : (
             <motion.div
