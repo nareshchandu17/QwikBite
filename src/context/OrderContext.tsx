@@ -394,25 +394,15 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({
         throw new Error("Order must contain at least one item");
       }
 
-      // Generate truly unique ID: timestamp + random + nano-precision
-      const timestamp = Date.now();
-      const random = Math.floor(Math.random() * 10000);
-      const uniqueId = `ORD-${timestamp}-${random}`;
-
+      const requestId = crypto.randomUUID();
       // Parse price to number for DB
       const numericPrice =
         typeof order.price === "number"
           ? order.price
           : parseFloat(String(order.price).replace(/[^0-9.]/g, "")) || 0;
-      const numericOriginalPrice = order.originalPrice
-        ? typeof order.originalPrice === "number"
-          ? order.originalPrice
-          : parseFloat(String(order.originalPrice).replace(/[^0-9.]/g, ""))
-        : numericPrice;
-
       const newOrder: Order = {
         ...(order as any),
-        id: uniqueId,
+        id: requestId,
         date: new Date().toLocaleDateString("en-US", {
           year: "numeric",
           month: "short",
@@ -425,7 +415,7 @@ export const OrderProvider: React.FC<{ children: ReactNode }> = ({
       };
 
       logger.info("[OrderContext] Attempting to save order to database:", {
-        orderId: uniqueId,
+        orderId: requestId,
         username: order.username,
         price: numericPrice,
         itemsCount: order.itemsArray?.length || 0,
