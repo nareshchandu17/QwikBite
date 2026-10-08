@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { CheckCircle2, ArrowRight, Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 type Order = {
@@ -32,6 +32,7 @@ function displayPaymentMethod(method?: string) {
 
 export default function PaymentSuccessPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -40,7 +41,9 @@ export default function PaymentSuccessPage() {
 
     const loadOrder = async () => {
       const orderId =
-        localStorage.getItem("lastOrderId") || localStorage.getItem("orderId");
+        searchParams.get("orderId") ||
+        localStorage.getItem("lastOrderId") ||
+        localStorage.getItem("orderId");
 
       if (!orderId || orderId.startsWith("#")) {
         toast.error("No confirmed order was found.");
@@ -83,7 +86,7 @@ export default function PaymentSuccessPage() {
     return () => {
       active = false;
     };
-  }, [router]);
+  }, [router, searchParams]);
 
   if (loading) {
     return (
