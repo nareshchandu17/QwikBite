@@ -25,12 +25,10 @@ type StoredOrderData = {
 };
 
 function StripePaymentForm({
-  clientSecret,
   orderId,
   paymentIntentId,
   orderData,
 }: {
-  clientSecret: string;
   orderId: string;
   paymentIntentId: string;
   orderData: StoredOrderData;
@@ -304,7 +302,6 @@ export default function StripePaymentPage() {
             }}
           >
             <StripePaymentForm
-              clientSecret={clientSecret}
               orderId={serverOrderId}
               paymentIntentId={paymentIntentId}
               orderData={orderData}
