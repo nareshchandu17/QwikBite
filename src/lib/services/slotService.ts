@@ -124,6 +124,31 @@ export class SlotService {
 
     const startTime = this.getSlotStartTime(time, date);
 
+    // Lazily materialize a slot so first-time booking works even before an
+    // admin sync job has created today's slot documents.
+    const endTime = time.includes("-")
+      ? this.getSlotStartTime(time.split("-").slice(1).join("-"), date)
+      : new Date(startTime.getTime() + 30 * 60 * 1000);
+
+    await TimeSlotModel.findOneAndUpdate(
+      { dateOnly: date, startTime },
+      {
+        $setOnInsert: {
+          endTime,
+          dateOnly: date,
+          maxLoad: 300,
+          currentLoad: 0,
+          kitchenCapacityFactor: 1,
+          avgPrepTime: 0,
+          estimatedWaitTime: 0,
+          status: "open",
+          isActive: true,
+          isAutoClosed: false,
+        },
+      },
+      { upsert: true, new: false },
+    );
+
     const updatedSlot = await TimeSlotModel.findOneAndUpdate(
       {
         dateOnly: date,
@@ -198,6 +223,7 @@ export class SlotService {
   static validateSlotTiming(
     timeSlot: string,
     prepTime: number,
+    dateStr?: string,
   ): { valid: boolean; error?: string } {
     if (!timeSlot) {
       return { valid: false, error: "Pickup time slot is required." };
@@ -208,9 +234,11 @@ export class SlotService {
     let slotStartTime: Date;
     try {
       const now = new Date();
-      const istDate = new Intl.DateTimeFormat("en-CA", {
-        timeZone: "Asia/Kolkata",
-      }).format(now);
+      const istDate =
+        dateStr ||
+        new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Kolkata",
+        }).format(now);
       slotStartTime = this.getSlotStartTime(timeSlot, istDate);
     } catch {
       return { valid: false, error: "Invalid time slot format." };
