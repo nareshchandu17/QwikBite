@@ -4,6 +4,7 @@ import Stripe from "stripe";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { Order } from "@/models/order.model";
+import { SlotService } from "@/lib/services/slotService";
 import {
   createOrderForUser,
   OrderServiceError,
@@ -43,6 +44,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}));
+
+    await SlotService.releaseExpiredReservations();
+
     const idempotencyKey =
       request.headers.get("idempotency-key") ||
       String(body.idempotencyKey || "") ||
@@ -61,6 +65,21 @@ export async function POST(request: NextRequest) {
     if (order?.paymentStatus === "paid") {
       return NextResponse.json(
         { error: "This order has already been paid.", orderId: order.orderId },
+        { status: 409 },
+      );
+    }
+
+    if (order && order.status === "cancelled") {
+      return NextResponse.json(
+        { error: "This reservation has expired or was cancelled. Please start checkout again.", code: "RESERVATION_EXPIRED" },
+        { status: 409 },
+      );
+    }
+
+    if (order?.reservationExpiresAt && order.reservationExpiresAt.getTime() < Date.now()) {
+      await SlotService.releaseExpiredReservations();
+      return NextResponse.json(
+        { error: "This payment reservation expired. Please start checkout again.", code: "RESERVATION_EXPIRED" },
         { status: 409 },
       );
     }
