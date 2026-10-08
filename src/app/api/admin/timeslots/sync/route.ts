@@ -1,31 +1,32 @@
 import logger from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { syncTimeSlotUsage, aggregateTimeSlots } from "@/lib/slot-utils";
 
-export async function POST(req: NextRequest) {
+const STAFF_ROLES = new Set(["admin", "canteen_staff", "staff"]);
+
+export async function POST(_req: NextRequest) {
   try {
-    logger.info("[Manual Sync] Starting manual time slot sync...");
+    const session = await getServerSession(authOptions);
+    const role = String(session?.user?.role || "").toLowerCase();
 
-    // Force sync
-    const syncResult = await syncTimeSlotUsage();
-    logger.info("[Manual Sync] Sync result:", syncResult);
+    if (!session?.user?.id || !STAFF_ROLES.has(role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
-    // Get updated slots
+    await syncTimeSlotUsage();
     const slots = await aggregateTimeSlots();
 
     return NextResponse.json({
       success: true,
       message: "Time slots synced successfully",
-      syncResult,
       slots,
     });
   } catch (error) {
     logger.error("[Manual Sync Error]", error);
     return NextResponse.json(
-      {
-        error: "Failed to sync time slots",
-        details: (error as Error).message,
-      },
+      { error: "Failed to sync time slots" },
       { status: 500 },
     );
   }
