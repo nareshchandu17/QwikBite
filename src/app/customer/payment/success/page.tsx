@@ -40,7 +40,9 @@ export default function PaymentSuccessPage() {
 
     const loadOrder = async () => {
       const orderId =
-        searchParams.get("orderId") ||
+        (typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("orderId")
+          : null) ||
         localStorage.getItem("lastOrderId") ||
         localStorage.getItem("orderId");
 
