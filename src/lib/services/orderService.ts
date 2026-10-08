@@ -186,7 +186,7 @@ export async function createOrderForUser(input: CreateOrderInput) {
   const taxAmount = roundMoney(subtotal * TAX_RATE);
   const totalAmount = roundMoney(subtotal + taxAmount);
 
-  const timing = SlotService.validateSlotTiming(input.timeSlot, loadValue);
+  const timing = SlotService.validateSlotTiming(input.timeSlot, loadValue, pickupDate);
   if (!timing.valid) {
     throw new OrderServiceError(
       timing.error || "Invalid pickup slot.",
