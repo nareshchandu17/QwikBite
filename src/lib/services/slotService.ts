@@ -2,6 +2,7 @@ import { TimeSlot as TimeSlotModel, ITimeSlot } from "@/models/slot.model";
 import { MenuItem } from "@/models/menuItem.model";
 import { connectDB } from "@/lib/db";
 import mongoose from "mongoose";
+import { Order, OrderStatus, PaymentStatus } from "@/models/order.model";
 
 interface RawOrderItem {
   id: string;
@@ -111,12 +112,54 @@ export class SlotService {
     return null;
   }
 
+  static async releaseExpiredReservations(): Promise<number> {
+    await connectDB();
+
+    const now = new Date();
+    let released = 0;
+
+    for (let i = 0; i < 100; i += 1) {
+      const expired = await Order.findOneAndUpdate(
+        {
+          status: OrderStatus.PENDING,
+          paymentMethod: "stripe",
+          paymentStatus: PaymentStatus.PENDING,
+          reservationExpiresAt: { $lt: now },
+        },
+        {
+          $set: {
+            status: OrderStatus.CANCELLED,
+            isCancelled: true,
+          },
+          $unset: { reservationExpiresAt: 1 },
+        },
+        { new: true },
+      );
+
+      if (!expired) break;
+
+      if (expired.pickupDate && expired.timeSlot && expired.loadValue) {
+        await this.releaseSlot(
+          expired.timeSlot,
+          expired.pickupDate,
+          expired.loadValue,
+        );
+      }
+
+      released += 1;
+    }
+
+    return released;
+  }
+
   static async reserveSlot(
     time: string,
     date: string,
     requestedLoad: number,
   ): Promise<ITimeSlot | null> {
     await connectDB();
+
+    await this.releaseExpiredReservations();
 
     if (!Number.isFinite(requestedLoad) || requestedLoad <= 0) {
       throw new Error("Invalid requested load");
