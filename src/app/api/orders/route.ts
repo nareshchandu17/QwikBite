@@ -1,59 +1,77 @@
-import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
+import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { Order, OrderStatus, PaymentStatus } from "@/models/order.model";
-import mongoose from "mongoose";
-import { syncTimeSlotUsage } from "@/lib/slot-utils";
-import { pusherServer } from "@/lib/pusher";
-import { cache } from "@/lib/cache";
+import { connectDB } from "@/lib/db";
+import { Order } from "@/models/order.model";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import logger from "@/lib/logger";
-import RateLimiter from "@/lib/middleware/rateLimiter";
-
-// Initialize Rate Limiter: 10 orders per 15 minutes per IP
-const orderLimiter = RateLimiter.getInstance(10, 15 * 60 * 1000);
+import {
+  checkRateLimit,
+  getRateLimitIdentifier,
+  RateLimitPresets,
+} from "@/lib/security/rateLimiter";
+import {
+  createOrderForUser,
+  OrderServiceError,
+} from "@/lib/services/orderService";
+import { cache } from "@/lib/cache";
+import { pusherServer } from "@/lib/pusher";
+import { NotificationService } from "@/lib/services/notification.service";
 
 export async function GET(req: NextRequest) {
   try {
     await connectDB();
-
     const session = await getServerSession(authOptions);
-    if (!session || !session.user?.id) {
+
+    if (!session?.user?.id) {
       return errorResponse("Unauthorized", 401, "UNAUTHORIZED");
     }
 
-    const url = new URL(req.url);
-    const page = Number(url.searchParams.get("page") || "1");
-    const limit = Math.min(Number(url.searchParams.get("limit") || "20"), 100);
+    const page = Math.max(
+      1,
+      Number(req.nextUrl.searchParams.get("page") || 1),
+    );
+    const limit = Math.min(
+      100,
+      Math.max(1, Number(req.nextUrl.searchParams.get("limit") || 20)),
+    );
     const skip = (page - 1) * limit;
 
-    const orders = await Order.find({ user: session.user.id })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    // Map MongoDB _id and orderId to the 'id' field expected by the frontend
-    const mappedOrders = orders.map((order) => ({
-      ...order,
-      id: order.orderId || (order as any)._id.toString(),
-    }));
+    const [orders, total] = await Promise.all([
+      Order.find({ user: session.user.id })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Order.countDocuments({ user: session.user.id }),
+    ]);
 
     return successResponse({
-      orders: mappedOrders,
-      pagination: { page, limit },
+      orders: orders.map((order) => ({
+        ...order,
+        id: order.orderId || String(order._id),
+      })),
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      },
     });
-  } catch (err) {
-    logger.error("Failed to fetch orders", err);
+  } catch (error) {
+    logger.error("Failed to fetch orders", error);
     return errorResponse("Failed to fetch orders", 500);
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    // 🛡️ 1. Rate Limiting
-    const rateLimit = orderLimiter.isAllowed(req);
+    const rateLimit = await checkRateLimit(
+      getRateLimitIdentifier(req),
+      RateLimitPresets.ORDER.limit,
+      RateLimitPresets.ORDER.windowMs,
+    );
+
     if (!rateLimit.allowed) {
       return errorResponse(
         "Too many order attempts. Please try again later.",
@@ -62,112 +80,70 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    await connectDB();
-    const body = await req.json().catch(() => ({}));
-    const { items, total, timeSlot, paymentStatus: bodyPaymentStatus } = body;
-
     const session = await getServerSession(authOptions);
-    if (!session || !session.user?.id) {
+    if (!session?.user?.id) {
       return errorResponse("Unauthorized", 401, "UNAUTHORIZED");
     }
 
-    // 2. Input Validation
-    if (!Array.isArray(items) || items.length === 0) {
+    const body = await req.json().catch(() => ({}));
+    const paymentMethod = String(body.paymentMethod || "cod").toLowerCase();
+
+    if (!["cod", "cash"].includes(paymentMethod)) {
       return errorResponse(
-        "Order must contain at least one item",
-        400,
-        "INVALID_INPUT",
+        "Online payments must use the secure payment-intent flow.",
+        402,
+        "PAYMENT_AUTHORIZATION_REQUIRED",
       );
     }
 
-    const { SlotService } = await import("@/lib/services/slotService");
-    const orderLoad = await SlotService.calculateOrderLoad(items);
+    const idempotencyKey =
+      req.headers.get("idempotency-key") ||
+      String(body.idempotencyKey || "") ||
+      crypto.randomUUID();
 
-    const timingValidation = SlotService.validateSlotTiming(
-      timeSlot,
-      orderLoad,
-    );
-    if (!timingValidation.valid) {
-      return errorResponse(
-        timingValidation.error || "Invalid slot timing",
-        400,
-        "INVALID_SLOT",
-      );
-    }
+    const result = await createOrderForUser({
+      userId: session.user.id,
+      items: Array.isArray(body.items) ? body.items : [],
+      timeSlot: String(body.timeSlot || ""),
+      pickupDate: body.pickupDate,
+      paymentMethod: paymentMethod as "cod" | "cash",
+      idempotencyKey,
+      username: session.user.name || session.user.email || "Customer",
+    });
 
-    // 3. Resource Allocation
-    const todayStr = new Date().toISOString().split("T")[0];
-    const reservedSlot = await SlotService.reserveSlot(
-      timeSlot,
-      todayStr,
-      orderLoad,
-    );
-    if (!reservedSlot) {
-      return errorResponse("Time slot is full", 409, "SLOT_FULL");
-    }
-
-    try {
-      const order = await Order.create({
-        user: session.user.id,
-        items: items.map((item: any) => ({
-          menuItem: item.id || item.menuItem,
-          name: item.name,
-          image: item.image || item.imageUrl || "/placeholder-food.jpg",
-          quantity: item.quantity,
-          price: item.price,
-          prepTime: item.prepTime || 5,
-        })),
-        totalAmount: Number(total || 0),
-        pickupTime: timeSlot ? new Date(`${todayStr}T${timeSlot}`) : undefined,
-        timeSlot: timeSlot,
-        pickupDate: todayStr,
-        loadValue: orderLoad,
-        status: OrderStatus.PENDING,
-        paymentStatus:
-          bodyPaymentStatus === "paid"
-            ? PaymentStatus.PAID
-            : PaymentStatus.PENDING,
-      });
-
-      logger.info(`New Order Created: ${order.orderId}`, {
-        userId: session.user.id,
-      });
-
-      // 4. Notifications & Cache Busting
-      try {
-        const { NotificationService } =
-          await import("@/lib/services/notification.service");
-        await NotificationService.notifyAdmin({
-          title: 'New Order',
-          message: `New order ${order.orderId} received`,
-          type: 'order'
-        });
-      } catch (notifErr) {
-        logger.error("[Orders POST] Notification error:", notifErr);
-      }
-
-      // Invalidate cache
+    if (!result.reused) {
       cache.del("slots:available");
 
-      // Trigger real-time slot update via Pusher
       try {
-        await pusherServer.trigger("admin", "slot-update", {
-          action: "order_created",
-          orderId: order.orderId,
-          timeSlot: order.timeSlot,
-          timestamp: new Date().toISOString(),
-        });
-      } catch (pusherErr) {
-        logger.error("[Orders POST] Pusher error:", pusherErr);
+        await Promise.all([
+          NotificationService.notifyAdmin({
+            title: "New Order",
+            message: `New order ${result.order.orderId} received`,
+            type: "order",
+          }),
+          pusherServer.trigger("admin", "order:new", {
+            order: result.order,
+            timestamp: new Date().toISOString(),
+          }),
+          pusherServer.trigger("admin", "slot-update", {
+            action: "order_created",
+            orderId: result.order.orderId,
+            timeSlot: result.order.timeSlot,
+            timestamp: new Date().toISOString(),
+          }),
+        ]);
+      } catch (notificationError) {
+        logger.warn("Order real-time notification failed", notificationError);
       }
-
-      return successResponse(order, 201);
-    } catch (orderError: any) {
-      await SlotService.releaseSlot(timeSlot, todayStr, orderLoad);
-      throw orderError;
     }
-  } catch (err) {
-    logger.error("Order creation failed", err);
+
+    return successResponse(result.order, result.reused ? 200 : 201);
+  } catch (error) {
+    if (error instanceof OrderServiceError) {
+      return errorResponse(error.message, error.status, error.code);
+    }
+
+    logger.error("Order creation failed", error);
     return errorResponse("Failed to create order", 500);
   }
 }
