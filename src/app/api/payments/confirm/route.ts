@@ -60,6 +60,13 @@ export async function POST(request: NextRequest) {
       String(paymentIntent.metadata?.orderId || "") === order.orderId &&
       String(paymentIntent.metadata?.userId || "") === session.user.id;
 
+    if (order.paymentStatus === PaymentStatus.REFUNDED) {
+      return NextResponse.json(
+        { error: "This payment has already been refunded.", code: "PAYMENT_REFUNDED" },
+        { status: 409 },
+      );
+    }
+
     if (order.status === OrderStatus.CANCELLED || (order.reservationExpiresAt && order.reservationExpiresAt.getTime() < Date.now())) {
       if (paymentIntent.status === "succeeded") {
         const refund = await getStripe().refunds.create({
