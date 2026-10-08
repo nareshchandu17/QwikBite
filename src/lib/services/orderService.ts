@@ -32,6 +32,7 @@ type CreateOrderInput = {
 };
 
 const TAX_RATE = 0.05;
+const ONLINE_RESERVATION_MINUTES = 10;
 const ALLOWED_PAYMENT_METHODS = new Set([
   "cod",
   "cash",
@@ -249,6 +250,10 @@ export async function createOrderForUser(input: CreateOrderInput) {
       username: input.username,
       idempotencyKey,
       isCancelled: false,
+      reservationExpiresAt:
+        paymentMethod === "stripe"
+          ? new Date(Date.now() + ONLINE_RESERVATION_MINUTES * 60 * 1000)
+          : undefined,
     });
 
     await order.save();
