@@ -236,41 +236,26 @@ export default function OrderSummaryPage() {
     const calculatedTotals = calculateTotals(cart);
     setTotals(calculatedTotals);
 
-    // Initialize or get existing order number
+    // Generate a non-authoritative checkout reference for the UI only.
     const currentOrderNumber = OrderNumberManager.getCurrentOrderNumber();
     setOrderNumber(currentOrderNumber);
   }, [cart, calculateTotals]);
 
   // Handle payment process
-  const handlePayment = useCallback(async () => {
+  const handlePayment = useCallback(() => {
     if (!isAuthenticated || !user) {
-      toast.error("Please sign in to continue with payment");
-      router.push("/auth/signin");
+      toast.error("Please sign in to continue with checkout");
+      router.push("/signin");
       return;
     }
 
     if (!timeSlot) {
-      toast.error(
-        "Please select a pickup time slot before proceeding to payment",
-      );
+      toast.error("Please select a pickup time slot before checkout");
       setShowTimeSlotModal(true);
       return;
     }
 
-    setIsLoading(true);
-    try {
-      // Here you would typically make an API call to process the payment
-      // For now, we'll just simulate a successful payment
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      toast.success("Payment successful!");
-      // Redirect to order confirmation or home page
-      router.push("/order-confirmation");
-    } catch (error) {
-      toast.error("Payment failed. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+    router.push("/customer/payment");
   }, [isAuthenticated, user, router, timeSlot, setShowTimeSlotModal]);
 
   // Format currency
@@ -364,10 +349,10 @@ export default function OrderSummaryPage() {
                     </div>
                     <div>
                       <p className="text-white font-semibold">
-                        Order Confirmed
+                        Checkout Ready
                       </p>
                       <p className="text-amber-100 text-sm">
-                        Ready for payment processing
+                        Review complete — continue to secure checkout
                       </p>
                     </div>
                   </div>
@@ -384,7 +369,7 @@ export default function OrderSummaryPage() {
                 <div className="grid grid-cols-3 gap-4 mb-6">
                   <div className="text-center p-4 bg-amber-50 rounded-xl border border-amber-200">
                     <p className="text-amber-600 text-xs font-medium mb-1">
-                      Order Number
+                      Checkout Reference
                     </p>
                     <p className="text-amber-900 font-bold text-lg">
                       {orderNumber}
