@@ -17,11 +17,9 @@ const stripePromise = loadStripe(
 );
 
 function CheckoutForm({
-  clientSecret,
   orderId,
   paymentIntentId,
 }: {
-  clientSecret: string;
   orderId: string;
   paymentIntentId: string;
 }) {
@@ -168,7 +166,6 @@ export default function StripeCheckout({ orderId }: { orderId: string }) {
       options={{ clientSecret, appearance: { theme: "stripe" } }}
     >
       <CheckoutForm
-        clientSecret={clientSecret}
         orderId={orderId}
         paymentIntentId={paymentIntentId}
       />
