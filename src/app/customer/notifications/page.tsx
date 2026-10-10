@@ -105,10 +105,6 @@ const NotificationsPage = () => {
     if (isConnected) void fetchNotifications(false);
   }, [isConnected, fetchNotifications]);
 
-  useEffect(() => {
-    if (isConnected) void fetchNotifications();
-  }, [isConnected, fetchNotifications]);
-
   // Subscribe using the authenticated session, even when the inbox is empty.
   useEffect(() => {
     const userId = session?.user?.id;
@@ -130,17 +126,26 @@ const NotificationsPage = () => {
         icon: notification.icon || "🔔",
         data: notification.data || notification.metadata,
       };
-      if (!item.id) return;
+      if (!item.id || seenIds.current.has(item.id)) return;
+      seenIds.current.add(item.id);
       setNotifications((prev) => [item, ...prev.filter((n) => n.id !== item.id)].slice(0, 100));
+      if (!item.isRead) setUnreadTotal((count) => count + 1);
       toast.info(item.title);
     };
-    const handleNotificationUpdate = (data: { notificationId: string; isRead: boolean }) => {
+    const handleNotificationUpdate = (data: { notificationId: string; isRead: boolean; unreadCount?: number }) => {
       setNotifications((prev) => prev.map((n) => n.id === data.notificationId ? { ...n, isRead: data.isRead } : n));
+      if (typeof data.unreadCount === "number") setUnreadTotal(data.unreadCount);
+      else void fetchNotifications(false);
     };
-    const handleNotificationDeleted = (data: { notificationId: string }) => {
+    const handleNotificationDeleted = (data: { notificationId: string; unreadCount?: number }) => {
       setNotifications((prev) => prev.filter((n) => n.id !== data.notificationId));
+      if (typeof data.unreadCount === "number") setUnreadTotal(data.unreadCount);
+      else void fetchNotifications(false);
     };
-    const handleAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    const handleAllRead = () => {
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadTotal(0);
+    };
 
     channel.bind("new_notification", handleNewNotification);
     channel.bind("notification_updated", handleNotificationUpdate);
@@ -153,7 +158,7 @@ const NotificationsPage = () => {
       channel.unbind("notifications_all_read", handleAllRead);
       pusherClient.unsubscribe(channelName);
     };
-  }, [pusherClient, isConnected, session?.user?.id]);
+  }, [pusherClient, isConnected, session?.user?.id, fetchNotifications]);
 
   const filteredNotifications = notifications.filter((notification) => {
     if (activeTab === "all") return true;
