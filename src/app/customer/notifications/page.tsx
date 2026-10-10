@@ -130,7 +130,6 @@ const NotificationsPage = () => {
       seenIds.current.add(item.id);
       setNotifications((prev) => [item, ...prev.filter((n) => n.id !== item.id)].slice(0, 100));
       if (!item.isRead) setUnreadTotal((count) => count + 1);
-      toast.info(item.title);
     };
     const handleNotificationUpdate = (data: { notificationId: string; isRead: boolean; unreadCount?: number }) => {
       setNotifications((prev) => prev.map((n) => n.id === data.notificationId ? { ...n, isRead: data.isRead } : n));
