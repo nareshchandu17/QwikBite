@@ -19,12 +19,13 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     });
     if (!deleted) return NextResponse.json({ error: "Notification not found" }, { status: 404 });
 
+    const unreadCount = await Notification.countDocuments({ user: new mongoose.Types.ObjectId(user.id), isRead: false });
     try {
-      await pusherServer.trigger(getUserChannel(user.id), "notification_deleted", { notificationId: params.id });
+      await pusherServer.trigger(getUserChannel(user.id), "notification_deleted", { notificationId: params.id, unreadCount });
     } catch {
       // MongoDB is authoritative; other active clients reconcile against history on reconnect.
     }
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, unreadCount });
   } catch {
     return NextResponse.json({ error: "Failed to delete notification" }, { status: 500 });
   }

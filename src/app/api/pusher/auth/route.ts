@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const form = await req.formData();
     const socketId = String(form.get("socket_id") || "");
     const channelName = String(form.get("channel_name") || "");
-    if (!/^\\d+\\.\\d+$/.test(socketId) || !channelName) {
+    if (!/^\d+\.\d+$/.test(socketId) || !channelName) {
       return NextResponse.json({ error: "Invalid Pusher authorization request" }, { status: 400 });
     }
 

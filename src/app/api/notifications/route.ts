@@ -54,8 +54,13 @@ export async function PATCH(req: NextRequest) {
       { $set: { isRead: Boolean(body.isRead ?? body.read) } }, { new: true },
     );
     if (!notification) return NextResponse.json({ error: "Notification not found" }, { status: 404 });
-    await pusherServer.trigger(getUserChannel(user.id), "notification_updated", { notificationId, isRead: notification.isRead });
-    return NextResponse.json({ data: notification });
+    const unreadCount = await Notification.countDocuments({ user: new mongoose.Types.ObjectId(user.id), isRead: false });
+    try {
+      await pusherServer.trigger(getUserChannel(user.id), "notification_updated", { notificationId, isRead: notification.isRead, unreadCount });
+    } catch {
+      // Persistence is authoritative; clients reconcile against MongoDB on reconnect.
+    }
+    return NextResponse.json({ data: notification, unreadCount });
   } catch (error) {
     logger.error("[Notifications PATCH] Failed", error);
     return NextResponse.json({ error: "Failed to update notification" }, { status: 500 });
@@ -73,8 +78,13 @@ export async function DELETE(req: NextRequest) {
     if (!notificationId || !mongoose.Types.ObjectId.isValid(notificationId)) return NextResponse.json({ error: "Valid notification ID required" }, { status: 400 });
     const deleted = await Notification.findOneAndDelete({ _id: notificationId, user: new mongoose.Types.ObjectId(user.id) });
     if (!deleted) return NextResponse.json({ error: "Notification not found" }, { status: 404 });
-    await pusherServer.trigger(getUserChannel(user.id), "notification_deleted", { notificationId });
-    return NextResponse.json({ success: true });
+    const unreadCount = await Notification.countDocuments({ user: new mongoose.Types.ObjectId(user.id), isRead: false });
+    try {
+      await pusherServer.trigger(getUserChannel(user.id), "notification_deleted", { notificationId, unreadCount });
+    } catch {
+      // The delete is durable; clients reconcile history on reconnect.
+    }
+    return NextResponse.json({ success: true, unreadCount });
   } catch (error) {
     logger.error("[Notifications DELETE] Failed", error);
     return NextResponse.json({ error: "Failed to delete notification" }, { status: 500 });

@@ -12,8 +12,12 @@ export async function POST(req: NextRequest) {
     if (!mongoose.Types.ObjectId.isValid(user.id)) return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     await connectToDatabase();
     await Notification.updateMany({ user: new mongoose.Types.ObjectId(user.id), isRead: false }, { $set: { isRead: true } });
-    await pusherServer.trigger(getUserChannel(user.id), "notifications_all_read", { timestamp: new Date().toISOString() });
-    return NextResponse.json({ success: true });
+    try {
+      await pusherServer.trigger(getUserChannel(user.id), "notifications_all_read", { unreadCount: 0, timestamp: new Date().toISOString() });
+    } catch {
+      // MongoDB remains the source of truth if live delivery is unavailable.
+    }
+    return NextResponse.json({ success: true, unreadCount: 0 });
   } catch {
     return NextResponse.json({ error: "Failed to mark notifications as read" }, { status: 500 });
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bell, Check, CheckCheck, Clock, Package, CreditCard, MessageSquare, Tag, AlertCircle, X, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -47,11 +47,13 @@ export default function CustomerNotifications() {
   const { pusherClient, isConnected } = usePusher();
   const userId = session?.user?.id || null;
   const [notifications, setNotifications] = useState<CustomerNotification[]>([]);
+  const [unreadTotal, setUnreadTotal] = useState(0);
+  const seenIds = useRef(new Set<string>());
   const [showPanel, setShowPanel] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [markingAll, setMarkingAll] = useState(false);
-  const unreadCount = useMemo(() => notifications.filter((n) => !n.isRead).length, [notifications]);
+  const unreadCount = unreadTotal;
 
   const fetchNotifications = useCallback(async (showLoader = true) => {
     if (!userId) {
@@ -67,7 +69,10 @@ export default function CustomerNotifications() {
       if (!response.ok) throw new Error(response.status === 401 ? "Sign in to view notifications" : "Unable to load notifications");
       const payload = await response.json();
       const rows = Array.isArray(payload.data) ? payload.data : [];
-      setNotifications(rows.map((row: any) => normalizeNotification(row, userId)).filter(Boolean).slice(0, 50) as CustomerNotification[]);
+      const normalized = rows.map((row: any) => normalizeNotification(row, userId)).filter(Boolean).slice(0, 50) as CustomerNotification[];
+      normalized.forEach((item) => seenIds.current.add(item.id));
+      setNotifications(normalized);
+      setUnreadTotal(Number(payload.pagination?.unreadCount ?? normalized.filter((item) => !item.isRead).length));
     } catch (error) {
       if (showLoader) toast.error(error instanceof Error ? error.message : "Unable to load notifications");
     } finally {
@@ -92,16 +97,23 @@ export default function CustomerNotifications() {
     const onNew = (raw: any) => {
       const notification = normalizeNotification(raw, userId);
       if (!notification) return;
+      if (seenIds.current.has(notification.id)) return;
+      seenIds.current.add(notification.id);
       setNotifications((prev) => [notification, ...prev.filter((item) => item.id !== notification.id)].slice(0, 50));
+      if (!notification.isRead) setUnreadTotal((count) => count + 1);
       toast.info(notification.title, { description: notification.message });
     };
-    const onUpdated = (event: { notificationId: string; isRead: boolean }) => {
+    const onUpdated = (event: { notificationId: string; isRead: boolean; unreadCount?: number }) => {
       setNotifications((prev) => prev.map((item) => item.id === event.notificationId ? { ...item, isRead: event.isRead } : item));
+      if (typeof event.unreadCount === "number") setUnreadTotal(event.unreadCount);
+      else void fetchNotifications(false);
     };
-    const onDeleted = (event: { notificationId: string }) => {
+    const onDeleted = (event: { notificationId: string; unreadCount?: number }) => {
       setNotifications((prev) => prev.filter((item) => item.id !== event.notificationId));
+      if (typeof event.unreadCount === "number") setUnreadTotal(event.unreadCount);
+      else void fetchNotifications(false);
     };
-    const onAllRead = () => setNotifications((prev) => prev.map((item) => ({ ...item, isRead: true })));
+    const onAllRead = () => { setNotifications((prev) => prev.map((item) => ({ ...item, isRead: true }))); setUnreadTotal(0); };
 
     channel.bind("new_notification", onNew);
     channel.bind("notification_updated", onUpdated);
@@ -114,7 +126,7 @@ export default function CustomerNotifications() {
       channel.unbind("notifications_all_read", onAllRead);
       pusherClient.unsubscribe(channelName);
     };
-  }, [pusherClient, isConnected, userId]);
+  }, [pusherClient, isConnected, userId, fetchNotifications]);
 
   const markAsRead = async (notification: CustomerNotification) => {
     if (notification.isRead || busyId) return;
@@ -127,6 +139,7 @@ export default function CustomerNotifications() {
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Could not mark notification as read");
       setNotifications((prev) => prev.map((item) => item.id === notification.id ? { ...item, isRead: true } : item));
+      if (typeof payload.unreadCount === "number") setUnreadTotal(payload.unreadCount);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not update notification");
     } finally {
@@ -142,6 +155,7 @@ export default function CustomerNotifications() {
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Could not mark notifications as read");
       setNotifications((prev) => prev.map((item) => ({ ...item, isRead: true })));
+      setUnreadTotal(Number(payload.unreadCount ?? 0));
       toast.success("All notifications marked as read");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not update notifications");
@@ -159,6 +173,7 @@ export default function CustomerNotifications() {
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Could not delete notification");
       setNotifications((prev) => prev.filter((item) => item.id !== notification.id));
+      if (typeof payload.unreadCount === "number") setUnreadTotal(payload.unreadCount);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not delete notification");
     } finally {
