@@ -5,7 +5,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectDB } from "@/lib/db";
 import { Order, OrderStatus } from "@/models/order.model";
 import { SlotService } from "@/lib/services/slotService";
-import { pusherServer } from "@/lib/pusher";
+import { pusherServer, getOrderChannel, ADMIN_CHANNEL } from "@/lib/pusher";
 import { AuditService } from "@/lib/services/auditService";
 import { NotificationService } from "@/lib/services/notification.service";
 import mongoose from "mongoose";
@@ -81,12 +81,12 @@ async function transitionOrder(id: string, nextStatus: string, note: string | un
 
   const publicOrderId = updated.orderId || String(updated._id);
   try {
-    await pusherServer.trigger("order-" + publicOrderId.replace(/:/g, "-"), "order:update", {
+    await pusherServer.trigger(getOrderChannel(publicOrderId), "order:update", {
       order: updated.toObject(),
       status: updated.status,
       timestamp: now.toISOString(),
     });
-    await pusherServer.trigger("admin", "admin:order_updated", updated.toObject());
+    await pusherServer.trigger(ADMIN_CHANNEL, "admin:order_updated", updated.toObject());
   } catch (error) {
     logger.warn("Failed to publish order transition", error);
   }
