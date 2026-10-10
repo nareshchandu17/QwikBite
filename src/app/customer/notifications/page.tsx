@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Bell,
   X,
@@ -41,17 +41,19 @@ interface Notification {
 
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadTotal, setUnreadTotal] = useState(0);
+  const seenIds = useRef(new Set<string>());
   const [activeTab, setActiveTab] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
   const { pusherClient, isConnected } = usePusher();
   const { data: session } = useSession();
   const router = useRouter();
-  const unreadCount = notifications.filter((notification) => !notification.isRead).length;
+  const unreadCount = unreadTotal;
 
   // Fetch notifications from database
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async (showLoader = true) => {
     try {
-      setIsLoading(true);
+      if (showLoader) setIsLoading(true);
 
       const res = await fetch("/api/notifications", {
         method: "GET",
@@ -85,7 +87,9 @@ const NotificationsPage = () => {
           }))
         : [];
 
+      list.forEach((item) => seenIds.current.add(item.id));
       setNotifications(list);
+      setUnreadTotal(Number(data.pagination?.unreadCount ?? list.filter((item) => !item.isRead).length));
       setIsLoading(false);
     } catch (error) {
       setIsLoading(false);
@@ -96,6 +100,10 @@ const NotificationsPage = () => {
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
+
+  useEffect(() => {
+    if (isConnected) void fetchNotifications(false);
+  }, [isConnected, fetchNotifications]);
 
   useEffect(() => {
     if (isConnected) void fetchNotifications();
@@ -164,11 +172,12 @@ const NotificationsPage = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isRead: true }),
       });
-
+      const payload = await response.json().catch(() => ({}));
       if (response.ok) {
         setNotifications((prev) =>
           prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
         );
+        if (typeof payload.unreadCount === "number") setUnreadTotal(payload.unreadCount);
 
         // Pusher doesn't emit from client by default, handled via REST above
       }
@@ -190,6 +199,7 @@ const NotificationsPage = () => {
 
       if (response.ok) {
         setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadTotal(0);
         toast.success("All notifications marked as read");
 
         // Pusher doesn't emit from client by default, handled via REST above
@@ -207,8 +217,10 @@ const NotificationsPage = () => {
         headers: { "Content-Type": "application/json" },
       });
 
+      const payload = await response.json().catch(() => ({}));
       if (response.ok) {
         setNotifications((prev) => prev.filter((n) => n.id !== id));
+        if (typeof payload.unreadCount === "number") setUnreadTotal(payload.unreadCount);
         toast.success("Notification deleted");
 
         // Pusher doesn't emit from client by default, handled via REST above

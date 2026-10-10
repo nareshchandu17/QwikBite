@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, Check, CheckCheck, Clock, Package, CreditCard, MessageSquare, Tag, AlertCircle, X, ExternalLink, Loader2 } from "lucide-react";
+import { Bell, Check, Clock, Package, CreditCard, MessageSquare, Tag, AlertCircle, X, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { usePusher } from "@/context/PusherContext";
 import { useSession } from "next-auth/react";
