@@ -10,6 +10,7 @@ export enum NotificationType {
   SYSTEM = "system",
   ADMIN = "admin",
   FEEDBACK = "feedback",
+  ALERT = "alert",
 }
 
 /**

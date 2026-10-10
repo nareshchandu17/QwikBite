@@ -9,7 +9,7 @@ import { sanitizeObject, sanitizeString } from "@/lib/security/sanitizer";
 
 const ALLOWED_TYPES = new Set(["order", "payment", "menu", "offer", "feedback", "system", "alert"]);
 const ALLOWED_PRIORITIES = new Set(["low", "normal", "high"]);
-const STAFF_ROLES = new Set(["admin", "canteen_staff"]);
+const STAFF_ROLES = new Set(["admin", "canteen_staff", "staff"]);
 
 async function authorize(req: NextRequest) {
   const session = await getServerSession(authOptions);

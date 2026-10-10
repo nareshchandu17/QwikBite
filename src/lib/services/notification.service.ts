@@ -20,6 +20,7 @@ function normalizeType(type: NotificationPayload["type"]) {
   if (type === "order") return NotificationType.ORDER_UPDATE;
   if (type === "payment") return NotificationType.PAYMENT;
   if (type === "feedback") return NotificationType.FEEDBACK;
+  if (type === "alert") return NotificationType.ALERT;
   if (type === "menu" || type === "offer") return NotificationType.PROMOTION;
   return NotificationType.SYSTEM;
 }
