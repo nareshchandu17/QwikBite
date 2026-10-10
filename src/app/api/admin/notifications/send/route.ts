@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "A valid userId, title, message, type and priority are required" }, { status: 400 });
     }
 
-    const customer = await User.findById(userId).select("_id role").lean();
+    const customer = (await User.findById(userId).select("_id role").lean()) as unknown as { role?: string } | null;
     if (!customer || String(customer.role || "").toLowerCase() !== "customer") {
       return NextResponse.json({ error: "Customer not found" }, { status: 404 });
     }
