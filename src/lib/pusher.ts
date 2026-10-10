@@ -12,6 +12,8 @@ export const pusherServer = new PusherServer({
 
 let pusherClientInstance: PusherClient | null = null;
 
+// Client instance is a singleton so views share one connection. Private-channel
+// subscriptions must authenticate against our session/ownership-checking route.
 export const getPusherClient = () => {
   if (typeof window === "undefined") return null;
 
