@@ -5,7 +5,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectDB } from "@/lib/db";
 import { Order, OrderStatus } from "@/models/order.model";
 import { syncTimeSlotUsage } from "@/lib/slot-utils";
-import { pusherServer } from "@/lib/pusher";
+import { pusherServer, getOrderChannel } from "@/lib/pusher";
 import { NotificationService } from "@/lib/services/notification.service";
 import mongoose from "mongoose";
 
@@ -81,7 +81,7 @@ export async function PUT(
 
     try {
       await pusherServer.trigger(
-        `order-${publicOrderId.replace(/:/g, "-")}`,
+        getOrderChannel(publicOrderId),
         "order:update",
         {
           order: order.toObject(),
