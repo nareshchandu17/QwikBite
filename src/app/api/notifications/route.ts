@@ -1,180 +1,82 @@
 import logger from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
-import { Notification } from "@/lib/models";
-import { getToken } from "next-auth/jwt";
-import mongoose from "mongoose";
-
+import { Notification } from "@/models/notification.model";
 import { getAuthenticatedUser } from "@/lib/auth-helper";
+import mongoose from "mongoose";
+import { pusherServer, getUserChannel } from "@/lib/pusher";
 
-// GET /api/notifications - Get user's notifications
 export async function GET(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
-
-    if (!user?.id) {
-      logger.info("[Notifications GET] Unauthorized");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = user.id;
+    if (!user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!mongoose.Types.ObjectId.isValid(user.id)) return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     await connectToDatabase();
-    logger.info("[Notifications GET] Fetching for user:", userId);
-
     const url = new URL(req.url);
-    const page = Number(url.searchParams.get("page") || "1");
-    const limit = Math.min(Number(url.searchParams.get("limit") || "20"), 200);
-    const skip = (page - 1) * limit;
-
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return NextResponse.json({ error: "Invalid userId" }, { status: 400 });
-    }
-
-    const notifications = await Notification.find({ userId })
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean();
-
-    const total = await Notification.countDocuments({ userId });
-
-    logger.info(
-      "[Notifications GET] ✅ Found",
-      notifications.length,
-      "notifications",
-    );
-    return NextResponse.json(
-      {
-        data: notifications,
-        pagination: { page, limit, total, pages: Math.ceil(total / limit) },
-      },
-      { status: 200 },
-    );
-  } catch (error: unknown) {
-    logger.error("[Notifications GET] ❌ Error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch notifications" },
-      { status: 500 },
-    );
+    const page = Math.max(1, Number(url.searchParams.get("page") || 1));
+    const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit") || 20)));
+    const filter = { user: new mongoose.Types.ObjectId(user.id) };
+    const [rows, total, unreadCount] = await Promise.all([
+      Notification.find(filter).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit).lean(),
+      Notification.countDocuments(filter),
+      Notification.countDocuments({ ...filter, isRead: false }),
+    ]);
+    const data = rows.map((n: any) => ({
+      id: String(n._id), _id: String(n._id), userId: String(n.user),
+      title: n.title, message: n.message, type: n.type === "order_update" ? "order" : n.type,
+      priority: n.priority, icon: n.icon || "🔔", isRead: Boolean(n.isRead),
+      createdAt: n.createdAt, timestamp: n.createdAt, ctaLink: n.deepLink, data: n.metadata,
+    }));
+    return NextResponse.json({ data, pagination: { page, limit, total, pages: Math.ceil(total / limit), unreadCount } });
+  } catch (error) {
+    logger.error("[Notifications GET] Failed", error);
+    return NextResponse.json({ error: "Failed to fetch notifications" }, { status: 500 });
   }
 }
 
-// POST /api/notifications - Create a new notification
 export async function POST(req: NextRequest) {
-  try {
-    const user = await getAuthenticatedUser(req);
-
-    if (!user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = user.id;
-
-    await connectToDatabase();
-
-    const body = await req.json();
-    const { title, message, type, read = false } = body;
-
-    if (!title || !message) {
-      return NextResponse.json(
-        { error: "title and message required" },
-        { status: 400 },
-      );
-    }
-
-    const notification = await Notification.create({
-      userId,
-      title,
-      message,
-      type: type || "info",
-      read,
-      createdAt: new Date(),
-    });
-
-    logger.info(
-      "[Notifications POST] ✅ Created notification for user:",
-      userId,
-    );
-    return NextResponse.json({ data: notification }, { status: 201 });
-  } catch (error: unknown) {
-    logger.error("[Notifications POST] ❌ Error:", error);
-    return NextResponse.json(
-      { error: "Failed to create notification" },
-      { status: 500 },
-    );
-  }
+  // Clients cannot forge notifications. They are created by trusted server workflows.
+  return NextResponse.json({ error: "Notifications can only be created by trusted server workflows" }, { status: 405 });
 }
 
-// PATCH /api/notifications - Mark notifications as read
 export async function PATCH(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
-
-    if (!user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = user.id;
-
+    if (!user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!mongoose.Types.ObjectId.isValid(user.id)) return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     await connectToDatabase();
-
     const url = new URL(req.url);
     const notificationId = url.searchParams.get("id");
-    const { read } = await req.json();
-
-    if (!notificationId) {
-      return NextResponse.json(
-        { error: "Notification ID required" },
-        { status: 400 },
-      );
-    }
-
+    const body = await req.json().catch(() => ({}));
+    if (!notificationId || !mongoose.Types.ObjectId.isValid(notificationId)) return NextResponse.json({ error: "Valid notification ID required" }, { status: 400 });
     const notification = await Notification.findOneAndUpdate(
-      { _id: notificationId, userId },
-      { read },
-      { new: true },
+      { _id: notificationId, user: new mongoose.Types.ObjectId(user.id) },
+      { $set: { isRead: Boolean(body.isRead ?? body.read) } }, { new: true },
     );
-
-    if (!notification) {
-      return NextResponse.json(
-        { error: "Notification not found" },
-        { status: 404 },
-      );
-    }
-
-    logger.info(
-      "[Notifications PATCH] ✅ Updated notification:",
-      notificationId,
-    );
-    return NextResponse.json({ data: notification }, { status: 200 });
-  } catch (error: unknown) {
-    logger.error("[Notifications PATCH] ❌ Error:", error);
-    return NextResponse.json(
-      { error: "Failed to update notification" },
-      { status: 500 },
-    );
+    if (!notification) return NextResponse.json({ error: "Notification not found" }, { status: 404 });
+    await pusherServer.trigger(getUserChannel(user.id), "notification_updated", { notificationId, isRead: notification.isRead });
+    return NextResponse.json({ data: notification });
+  } catch (error) {
+    logger.error("[Notifications PATCH] Failed", error);
+    return NextResponse.json({ error: "Failed to update notification" }, { status: 500 });
   }
 }
-// DELETE /api/notifications - Delete notification
+
 export async function DELETE(req: NextRequest) {
   try {
     const user = await getAuthenticatedUser(req);
     if (!user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!mongoose.Types.ObjectId.isValid(user.id)) return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     await connectToDatabase();
-    
     const url = new URL(req.url);
-    // Parse ID from either search params or path
-    let notificationId = url.searchParams.get("id");
-    const pathParts = url.pathname.split('/');
-    if (!notificationId && pathParts.length > 0 && pathParts[pathParts.length - 1] !== 'notifications') {
-      notificationId = pathParts[pathParts.length - 1];
-    }
-    
-    if (!notificationId) return NextResponse.json({ error: "Notification ID required" }, { status: 400 });
-    
-    await Notification.findOneAndDelete({ _id: notificationId, userId: user.id });
-    return NextResponse.json({ success: true }, { status: 200 });
+    const notificationId = url.searchParams.get("id");
+    if (!notificationId || !mongoose.Types.ObjectId.isValid(notificationId)) return NextResponse.json({ error: "Valid notification ID required" }, { status: 400 });
+    const deleted = await Notification.findOneAndDelete({ _id: notificationId, user: new mongoose.Types.ObjectId(user.id) });
+    if (!deleted) return NextResponse.json({ error: "Notification not found" }, { status: 404 });
+    await pusherServer.trigger(getUserChannel(user.id), "notification_deleted", { notificationId });
+    return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
+    logger.error("[Notifications DELETE] Failed", error);
+    return NextResponse.json({ error: "Failed to delete notification" }, { status: 500 });
   }
 }
