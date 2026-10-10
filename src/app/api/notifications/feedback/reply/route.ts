@@ -1,60 +1,11 @@
-import logger from "@/lib/logger";
-/**
- * POST /api/notifications/feedback/reply
- *
- * Called when admin replies to customer feedback
- * Notifies customer about the admin's reply
- */
+import { NextResponse } from "next/server";
 
-import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
-import NotificationService from "@/lib/services/notification.service";
-import mongoose from "mongoose";
-
-export async function POST(req: NextRequest) {
-  try {
-    await connectDB();
-
-    const { feedbackId, userId, replyMessage } = await req.json();
-
-    if (!feedbackId || !userId || !replyMessage) {
-      return NextResponse.json(
-        { error: "feedbackId, userId, and replyMessage are required" },
-        { status: 400 },
-      );
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return NextResponse.json({ error: "Invalid userId" }, { status: 400 });
-    }
-
-    // Send notification to customer
-    await NotificationService.notifyCustomer({
-      userId,
-      title: "💬 Admin Reply to Your Feedback",
-      message:
-        replyMessage.substring(0, 100) +
-        (replyMessage.length > 100 ? "..." : ""),
-      type: "feedback",
-      priority: "high",
-      icon: "💬",
-      data: {
-        feedbackId,
-        replyMessage,
-        timestamp: new Date().toISOString(),
-      },
-      ctaLink: `/customer/feedback/${feedbackId}`,
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: "Feedback reply notification sent to customer",
-    });
-  } catch (error) {
-    logger.error("[Feedback Notification API] ❌ Error:", error);
-    return NextResponse.json(
-      { error: "Failed to send notification" },
-      { status: 500 },
-    );
-  }
+// This legacy endpoint accepted arbitrary feedbackId/userId values and could
+// send notifications without authenticating the caller or checking the feedback.
+// The authenticated feedback reply workflow now persists and dispatches the event.
+export async function POST() {
+  return NextResponse.json(
+    { error: "Disabled. Feedback notifications are sent by the authenticated feedback reply workflow." },
+    { status: 410 },
+  );
 }
