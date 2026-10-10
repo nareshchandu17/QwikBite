@@ -43,6 +43,9 @@ const NotificationsPage = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadTotal, setUnreadTotal] = useState(0);
   const seenIds = useRef(new Set<string>());
+  const currentPageRef = useRef(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
   const { pusherClient, isConnected } = usePusher();
@@ -50,12 +53,18 @@ const NotificationsPage = () => {
   const router = useRouter();
   const unreadCount = unreadTotal;
 
-  // Fetch notifications from database
-  const fetchNotifications = useCallback(async (showLoader = true) => {
-    try {
-      if (showLoader) setIsLoading(true);
+  // Fetch durable notification history. MongoDB is the source of truth when reconnecting.
+  const fetchNotifications = useCallback(async (
+    showLoader = true,
+    pageNumber = 1,
+    append = false,
+    merge = false,
+  ) => {
+    if (showLoader) setIsLoading(true);
+    if (append) setIsLoadingMore(true);
 
-      const res = await fetch("/api/notifications", {
+    try {
+      const res = await fetch(`/api/notifications?page=${pageNumber}&limit=20`, {
         method: "GET",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -63,38 +72,60 @@ const NotificationsPage = () => {
       });
 
       if (!res.ok) {
-        if (res.status === 401) {
-        }
-        setIsLoading(false);
+        if (res.status !== 401) toast.error("Unable to load notification history");
         return;
       }
 
       const data = await res.json();
-
       const list: Notification[] = Array.isArray(data.data)
         ? data.data.map((n: any) => ({
-            id: n._id?.toString() || n.id || "",
-            userId: n.userId?.toString() || n.user?.toString() || "",
+            id: String(n._id || n.id || ""),
+            userId: String(n.userId || n.user || ""),
             type: n.type === "order_update" ? "order" : n.type === "promotion" ? "offer" : n.type === "admin" ? "feedback" : n.type || "system",
             title: n.title || "",
             message: n.message || "",
-            isRead: !!n.isRead,
+            isRead: Boolean(n.isRead),
             timestamp: n.createdAt ? new Date(n.createdAt) : new Date(),
             ctaLink: n.ctaLink || n.deepLink,
             priority: n.priority || "normal",
             icon: n.icon || "",
             data: n.data || n.metadata,
-          }))
+          })).filter((item: Notification) => Boolean(item.id))
         : [];
 
       list.forEach((item) => seenIds.current.add(item.id));
-      setNotifications(list);
+      const mergeUniqueAndSort = (first: Notification[], second: Notification[]) => {
+        const byId = new Map<string, Notification>();
+        [...first, ...second].forEach((item) => {
+          const existing = byId.get(item.id);
+          byId.set(item.id, existing ? { ...existing, ...item } : item);
+        });
+        return [...byId.values()].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      };
+
+      if (append || merge) {
+        setNotifications((prev) => mergeUniqueAndSort(append ? prev : list, append ? list : prev));
+      } else {
+        setNotifications(list);
+        currentPageRef.current = 1;
+      }
+
+      if (append) currentPageRef.current = pageNumber;
+      const pageToCompare = merge ? currentPageRef.current : pageNumber;
+      setHasMore(pageToCompare < Number(data.pagination?.pages || 0));
       setUnreadTotal(Number(data.pagination?.unreadCount ?? list.filter((item) => !item.isRead).length));
-      setIsLoading(false);
     } catch (error) {
-      setIsLoading(false);
+      if (showLoader) toast.error("Unable to load notification history");
+    } finally {
+      if (showLoader) setIsLoading(false);
+      if (append) setIsLoadingMore(false);
     }
   }, []);
+
+  const loadMoreNotifications = useCallback(() => {
+    if (isLoadingMore || !hasMore) return;
+    void fetchNotifications(false, currentPageRef.current + 1, true);
+  }, [fetchNotifications, hasMore, isLoadingMore]);
 
   // Initial load + reconcile durable history after a live connection is restored.
   useEffect(() => {
@@ -102,7 +133,7 @@ const NotificationsPage = () => {
   }, [fetchNotifications]);
 
   useEffect(() => {
-    if (isConnected) void fetchNotifications(false);
+    if (isConnected) void fetchNotifications(false, 1, false, true);
   }, [isConnected, fetchNotifications]);
 
   // Subscribe using the authenticated session, even when the inbox is empty.
@@ -518,6 +549,18 @@ const NotificationsPage = () => {
                 </motion.div>
               ))}
             </AnimatePresence>
+          )}
+          {hasMore && (
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="outline"
+                onClick={loadMoreNotifications}
+                disabled={isLoadingMore}
+                className="border-slate-200 dark:border-slate-700"
+              >
+                {isLoadingMore ? "Loading older notifications…" : "Load older notifications"}
+              </Button>
+            </div>
           )}
         </div>
       </div>
