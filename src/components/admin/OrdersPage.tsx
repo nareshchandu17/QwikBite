@@ -5,6 +5,7 @@ import LiveOrdersQueue from "./LiveOrdersQueue";
 import { Order, OrderStatus } from "@/types";
 
 import { toast } from "sonner";
+import { usePusher } from "@/context/PusherContext";
 
 const OrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -17,6 +18,9 @@ const OrdersPage: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [enableBulkActions, setEnableBulkActions] = useState(false);
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
+  const { pusherClient, isConnected: pusherConnected } = usePusher();
+
+  useEffect(() => setIsConnected(pusherConnected), [pusherConnected]);
 
   const fetchOrders = useCallback(
     async (isLoadMore = false) => {
@@ -74,44 +78,33 @@ const OrdersPage: React.FC = () => {
     return () => clearInterval(interval);
   }, [isConnected, fetchOrders]);
 
-  // Listen for real-time updates
+  // Receive live order changes from the authenticated admin channel.
   useEffect(() => {
-    const handleConnect = () => {
-      setIsConnected(true);
+    if (!pusherClient || !pusherConnected) return;
+    const channelName = "private-admin";
+    const channel = pusherClient.subscribe(channelName);
+    const upsertOrder = (event: any) => {
+      const raw = event?.order || event;
+      const id = String(raw?.orderId || raw?.id || raw?._id || "");
+      if (!id) return;
+      const normalized = { ...raw, id, total: Number(raw.totalAmount ?? raw.total ?? 0) };
+      setOrders((prev) => {
+        const exists = prev.some((item: any) => item.id === id || item._id === raw._id);
+        return exists ? prev.map((item: any) => item.id === id || item._id === raw._id ? { ...item, ...normalized } : item) : [normalized, ...prev];
+      });
     };
-
-    const handleDisconnect = () => {
-      setIsConnected(false);
+    const onNewOrder = (event: any) => {
+      upsertOrder(event);
+      toast.info("New order received");
     };
-
-    const handleNewOrder = (newOrder: Order) => {
-      toast.info(`New Order received!`);
-      setOrders((prev) => [newOrder, ...prev]);
-    };
-
-    const handleOrderUpdate = (updatedOrder: Order) => {
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.id === updatedOrder.id ||
-          (o as any)._id === (updatedOrder as any)._id
-            ? updatedOrder
-            : o,
-        ),
-      );
-    };
-
-    // websocketClient.on("connect", handleConnect);
-    // websocketClient.on("disconnect", handleDisconnect);
-    // websocketClient.on("admin:new_order", handleNewOrder);
-    // websocketClient.on("admin:order_updated", handleOrderUpdate);
-
+    channel.bind("admin:order_updated", upsertOrder);
+    channel.bind("order:new", onNewOrder);
     return () => {
-      // websocketClient.off("connect", handleConnect);
-      // websocketClient.off("disconnect", handleDisconnect);
-      // websocketClient.off("admin:new_order", handleNewOrder);
-      // websocketClient.off("admin:order_updated", handleOrderUpdate);
+      channel.unbind("admin:order_updated", upsertOrder);
+      channel.unbind("order:new", onNewOrder);
+      pusherClient.unsubscribe(channelName);
     };
-  }, []);
+  }, [pusherClient, pusherConnected]);
 
   const handleUpdateStatus = async (id: string, status: OrderStatus) => {
     try {
@@ -126,6 +119,9 @@ const OrdersPage: React.FC = () => {
         throw new Error(errorData.error || "Failed to update status");
       }
 
+      const payload = await res.json().catch(() => ({}));
+      const updated = payload?.data;
+      if (updated) setOrders((prev) => prev.map((o: any) => o.id === id || o.orderId === id || o._id === updated._id ? { ...o, ...updated, id: updated.orderId || id } : o));
       toast.success(`Order marked as ${status}`);
     } catch (err: unknown) {
       toast.error((err as any).message || "Failed to update status");
