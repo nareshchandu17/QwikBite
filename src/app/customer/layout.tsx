@@ -8,6 +8,7 @@ import { AuthModal } from "@/components/auth/AuthModal";
 import { AuthModalProvider } from "@/context/AuthModalContext";
 import { OrderProvider } from "@/context/OrderContext";
 import QwikBiteAssistant from "@/components/customer/QwikBiteAssistant";
+import CustomerNotifications from "@/components/customer/CustomerNotifications";
 import { Toaster } from "sonner";
 
 export default function CustomerLayout({
@@ -22,6 +23,7 @@ export default function CustomerLayout({
           <FavoritesProvider>
             <OrderProvider>
               <AppLayout>{children}</AppLayout>
+              <CustomerNotifications />
               <QwikBiteAssistant />
             </OrderProvider>
           </FavoritesProvider>

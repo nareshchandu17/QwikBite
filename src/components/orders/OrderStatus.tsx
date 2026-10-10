@@ -68,8 +68,20 @@ export default function OrderStatus({ order }: OrderStatusProps) {
         <div className="flex-1">
           <Card className="rounded-2xl shadow-sm border border-gray-200 w-full transition-all duration-300 hover:shadow-[0_0_15px_rgba(255,191,0,0.5)]">
             <CardContent className="p-6">
-              <h2 className="text-2xl font-bold mb-2">Order Picked Up!</h2>
-              <p className="text-gray-500 mb-6">Enjoy your meal!</p>
+              <h2 className="text-2xl font-bold mb-2">
+                {order.status === "COMPLETED"
+                  ? "Order Picked Up!"
+                  : order.status === "CANCELLED"
+                    ? "Order Cancelled"
+                    : "Your Order is on the way"}
+              </h2>
+              <p className="text-gray-500 mb-6">
+                {order.status === "COMPLETED"
+                  ? "Enjoy your meal!"
+                  : order.status === "CANCELLED"
+                    ? "This order will not be prepared."
+                    : "Track your order progress in real time."}
+              </p>
 
               <div className="space-y-6 border-l-2 border-gray-200 pl-6">
                 {statusStages.map((stage, index) => {
@@ -151,8 +163,7 @@ export default function OrderStatus({ order }: OrderStatusProps) {
                   ))}
                 </p>
                 <p>
-                  <strong>Amount</strong> <br />${total.toFixed(2)} (Paid with
-                  Card)
+                  <strong>Amount</strong> <br />₹{total.toFixed(2)} ({order.status === "CANCELLED" ? "Not charged" : "Paid / pending"})
                 </p>
                 <p>
                   <strong>Ordered At</strong> <br />
@@ -179,7 +190,7 @@ export default function OrderStatus({ order }: OrderStatusProps) {
 
       {/* Footer */}
       <footer className="mt-10 text-sm text-gray-500 flex flex-col items-center gap-1">
-        <p>© 2024 CanteenApp. All rights reserved.</p>
+        <p>© 2026 QwikBite. All rights reserved.</p>
         <div className="flex gap-3">
           <a href="#" className="hover:text-gray-800">
             Help

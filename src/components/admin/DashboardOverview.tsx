@@ -1,233 +1,83 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import KpiCard from "./KpiCard";
 import LiveOrdersQueue from "./LiveOrdersQueue";
 import { Order, OrderStatus } from "@/types/order";
 import SlotLoadViz from "./SlotLoadViz";
-import {
-  Clock,
-  Utensils,
-  Clock3,
-  TrendingUp,
-  ChefHat,
-  Zap,
-} from "lucide-react";
-
-// Mock data for slot load
-const slotLoadData = [
-  { hour: "8 AM", load: 20 },
-  { hour: "9 AM", load: 45 },
-  { hour: "10 AM", load: 65 },
-  { hour: "11 AM", load: 80 },
-  { hour: "12 PM", load: 90, current: true },
-  { hour: "1 PM", load: 85 },
-  { hour: "2 PM", load: 70 },
-  { hour: "3 PM", load: 50 },
-  { hour: "4 PM", load: 30 },
-];
+import { Clock, Utensils, Clock3, TrendingUp, ChefHat, Zap } from "lucide-react";
 
 interface DashboardOverviewProps {
   orders: Order[];
   onUpdateStatus: (orderId: string, newStatus: OrderStatus) => void;
 }
 
-const DashboardOverview: React.FC<DashboardOverviewProps> = ({
-  orders,
-  onUpdateStatus,
-}) => {
-  const [activeTab, setActiveTab] = useState<string>("overview");
-  const [slots, setSlots] = useState<any[]>([]);
-  const totalOrders = orders.length;
-  const revenue = orders.reduce((sum, order) => {
-    return (
-      sum +
-      (order.items?.reduce(
-        (orderSum, item) => orderSum + item.price * item.quantity,
-        0,
-      ) || 0)
-    );
-  }, 0);
+type Analytics = {
+  insights?: { totalOrders?: number; totalRevenue?: number; avgOrderValue?: string; busiestTime?: string; studentFavorites?: string; };
+  peakHours?: Array<{ hour: string; orders: number }>
+};
 
+const DashboardOverview: React.FC<DashboardOverviewProps> = ({ orders, onUpdateStatus }) => {
+  const [activeTab, setActiveTab] = useState("overview");
+  const [slots, setSlots] = useState<any[]>([]);
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
 
-  // Fetch slots data
-  useEffect(() => {
-    const fetchSlots = async () => {
-      try {
-        const response = await fetch("/api/admin/timeslots/today");
-        if (response.ok) {
-          const slotsData = await response.json();
-          setSlots(slotsData);
-        }
-      } catch (error) {}
-    };
-
-    fetchSlots();
-    // Refresh slots every 30 seconds
-    const interval = setInterval(fetchSlots, 30000);
-
-    // Set up WebSocket for real-time updates
-    // const socket = getSocket();
-    // socket.on("timeslot:update", (updatedSlots: any[]) => {
-    //   setSlots(updatedSlots);
-    // });
-
-    return () => {
-      clearInterval(interval);
-      // socket.off("timeslot:update");
-    };
+  const fetchDashboardData = useCallback(async () => {
+    const [slotResponse, analyticsResponse] = await Promise.all([
+      fetch("/api/admin/timeslots/today", { credentials: "include", cache: "no-store" }),
+      fetch("/api/admin/analytics?days=1", { credentials: "include", cache: "no-store" }),
+    ]);
+    if (slotResponse.ok) setSlots(await slotResponse.json());
+    if (analyticsResponse.ok) setAnalytics(await analyticsResponse.json());
   }, []);
+
+  useEffect(() => {
+    fetchDashboardData().catch(() => undefined);
+    const interval = setInterval(() => fetchDashboardData().catch(() => undefined), 30000);
+    return () => clearInterval(interval);
+  }, [fetchDashboardData]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
+  const formatTime = (date: Date) => date.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Asia/Kolkata" });
+  const updateOrderStatus = useCallback((orderId: string, status: OrderStatus) => onUpdateStatus(orderId, status), [onUpdateStatus]);
 
-  const updateOrderStatus = useCallback(
-    (orderId: string, newStatus: OrderStatus) => {
-      onUpdateStatus(orderId, newStatus);
-    },
-    [onUpdateStatus],
-  );
-
-  // Calculate peak hour and top dish from real data
-  const peakHour =
-    slots.length > 0
-      ? slots.reduce((max: any, slot: any) =>
-          slot.percentage > max.percentage ? slot : max,
-        ).timeSlot
-      : "1-2 PM";
-
-  const topDish =
-    orders.length > 0
-      ? (orders as any[]).reduce(
-          (most: any, order: any) => {
-            const topItem = (order.items || []).reduce(
-              (popular: any, item: any) =>
-                (item.quantity || 0) > (popular.quantity || 0) ? item : popular,
-              order.items?.[0] || {},
-            );
-            return topItem;
-          },
-          { name: "Veggie Burger" },
-        ).name || "Veggie Burger"
-      : "Veggie Burger";
-
-  const avgPrepTime =
-    orders.length > 0
-      ? Math.round(
-          orders.reduce((sum, order) => sum + (order.estimatedTime || 15), 0) /
-            orders.length,
-        )
-      : 12;
-
-  // Calculate active orders by status
-  const activeOrders = orders.filter((order) => {
-    const status = order.status?.toLowerCase();
-    return (
-      status === "received" ||
-      status === "preparing" ||
-      status === "ready" ||
-      status === "pending" ||
-      status === "confirmed" ||
-      status === "almost_ready"
-    );
-  });
-
-  if (activeOrders.length === 0 && orders.length > 0) {
-  }
+  const activeOrders = orders.filter((order) => ["pending","confirmed","preparing","ready","received","almost_ready"].includes(String(order.status || "").toLowerCase()));
+  const totalOrders = analytics?.insights?.totalOrders ?? orders.length;
+  const revenue = analytics?.insights?.totalRevenue ?? 0;
+  const avgOrderValue = analytics?.insights?.avgOrderValue || "₹0";
+  const topDish = analytics?.insights?.studentFavorites || "No data";
+  const peakHour = analytics?.insights?.busiestTime || "No data";
+  const liveCapacity = slots.reduce((max, slot) => Math.max(max, Number(slot.percentage || 0)), 0);
 
   return (
     <div className="space-y-8">
-      {/* Header with greeting and time */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-amber-400">
-            Good Morning, Admin!
-          </h1>
-          <p className="text-gray-400">
-            Here&apos;s what&apos;s happening with your canteen today
-          </p>
+          <h1 className="text-2xl font-bold text-amber-400">Canteen Operations</h1>
+          <p className="text-gray-400">Live operational data from QwikBite.</p>
         </div>
-        <div className="mt-4 md:mt-0 flex items-center space-x-2 bg-gray-800/50 px-4 py-2 rounded-lg">
-          <Clock3 className="h-5 w-5 text-amber-500" />
-          <span className="text-white font-medium">
-            {formatTime(currentTime)}
-          </span>
+        <div className="mt-4 flex items-center space-x-2 rounded-lg bg-gray-800/50 px-4 py-2 md:mt-0">
+          <Clock3 className="h-5 w-5 text-amber-500" /><span className="font-medium text-white">{formatTime(currentTime)}</span>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-        <KpiCard
-          title="Total Orders Today"
-          value={totalOrders.toString()}
-          change="+5%"
-          icon={<Utensils className="h-5 w-5" />}
-          onClick={() => setActiveTab("Orders")}
-        />
-        <KpiCard
-          title="Revenue Today"
-          value={`₹${revenue.toLocaleString()}`}
-          change="+8%"
-          isCurrency={true}
-          icon={<TrendingUp className="h-5 w-5" />}
-          onClick={() => setActiveTab("Payments")}
-        />
-        <KpiCard
-          title="Live Queue Load"
-          value={`${activeOrders.length} / 50`}
-          change="Medium"
-          icon={<Clock className="h-5 w-5" />}
-          onClick={() => setActiveTab("Orders")}
-        />
-        <KpiCard
-          title="Avg. Prep Time"
-          value={`${avgPrepTime}m ${avgPrepTime % 60 !== 0 ? (avgPrepTime % 60) + "s" : ""}`}
-          change="-2%"
-          icon={<Clock3 className="h-5 w-5" />}
-          onClick={() => setActiveTab("Analytics & Insights")}
-        />
-        <KpiCard
-          title="Top Dish"
-          value={
-            topDish.length > 15 ? topDish.substring(0, 15) + "..." : topDish
-          }
-          change="Popular"
-          icon={<ChefHat className="h-5 w-5" />}
-          onClick={() => setActiveTab("Menu Management")}
-        />
-        <KpiCard
-          title="Peak Hour"
-          value={peakHour}
-          change="Now"
-          icon={<Zap className="h-5 w-5" />}
-          onClick={() => setActiveTab("Analytics & Insights")}
-        />
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <KpiCard title="Orders Today" value={String(totalOrders)} change="Live" icon={<Utensils className="h-5 w-5" />} onClick={() => setActiveTab("Orders")} />
+        <KpiCard title="Paid Revenue Today" value={`₹${Number(revenue).toLocaleString("en-IN")}`} change="Verified" isCurrency icon={<TrendingUp className="h-5 w-5" />} onClick={() => setActiveTab("Payments")} />
+        <KpiCard title="Live Queue" value={String(activeOrders.length)} change={liveCapacity + "% max slot load"} icon={<Clock className="h-5 w-5" />} onClick={() => setActiveTab("Orders")} />
+        <KpiCard title="Avg. Order Value" value={avgOrderValue} change="Paid orders" icon={<Clock3 className="h-5 w-5" />} onClick={() => setActiveTab("Analytics & Insights")} />
+        <KpiCard title="Top Dish" value={topDish.length > 15 ? topDish.slice(0,15) + "…" : topDish} change="From orders" icon={<ChefHat className="h-5 w-5" />} onClick={() => setActiveTab("Menu Management")} />
+        <KpiCard title="Busiest Hour" value={peakHour} change="Historical" icon={<Zap className="h-5 w-5" />} onClick={() => setActiveTab("Analytics & Insights")} />
       </div>
 
-      {/* Main Content Area */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Live Orders Queue */}
-        <div className="lg:col-span-2">
-          <LiveOrdersQueue
-            orders={activeOrders}
-            onUpdateStatus={updateOrderStatus}
-          />
-        </div>
-
-        <div>
-          <SlotLoadViz slots={slots} />
-        </div>
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        <div className="lg:col-span-2"><LiveOrdersQueue orders={activeOrders} onUpdateStatus={updateOrderStatus} /></div>
+        <div><SlotLoadViz slots={slots} /></div>
       </div>
     </div>
   );

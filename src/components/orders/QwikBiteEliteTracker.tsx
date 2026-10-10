@@ -179,11 +179,12 @@ export default function QwikBiteEliteTracker({
     if (!pusherClient || !isOpen || !liveOrder?.id) return;
 
     // Join order-specific channel
-    const channelName = `order-${liveOrder.id.replace(/:/g, "-")}`;
+    const channelName = `private-order-${liveOrder.id.replace(/:/g, "-")}`;
     const channel = pusherClient.subscribe(channelName);
 
     // Listen for order status updates
-    const handleOrderUpdate = (updatedOrder: any) => {
+    const handleOrderUpdate = (event: any) => {
+      const updatedOrder = event?.order || event;
       if (
         updatedOrder.id === liveOrder.id ||
         updatedOrder._id === liveOrder.id

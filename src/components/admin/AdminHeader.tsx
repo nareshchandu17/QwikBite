@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { NotificationIcon, ChevronDownIcon } from "./icons";
 import { useAuth } from "@/context/AuthContext";
+import { useNotifications } from "@/lib/hooks/useNotifications";
 
 interface HeaderProps {
   title?: string;
@@ -11,236 +12,174 @@ interface HeaderProps {
   activeTab?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ title, subtitle, setActiveTab }) => {
-  const [hasNewNotification, setHasNewNotification] = useState(true);
+export default function AdminHeader({
+  title,
+  subtitle,
+  setActiveTab,
+}: HeaderProps) {
+  const { user, logout } = useAuth();
+  const { notifications } = useNotifications(user?.id || null, 1, 20);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setHasNewNotification(true);
-      setTimeout(() => setHasNewNotification(false), 3000); // pulse for 3 seconds
-    }, 15000); // new notification every 15 seconds
-    return () => clearInterval(interval);
-  }, []);
-
-  // Mock Notifications
-  const notifications = [
-    {
-      id: 1,
-      text: "New Order #2024 received",
-      time: "Just now",
-      tab: "Orders",
-      type: "order",
-    },
-    {
-      id: 2,
-      text: "Potato stock running low",
-      time: "5 mins ago",
-      tab: "Inventory & Stock Alerts",
-      type: "alert",
-    },
-    {
-      id: 3,
-      text: "New feedback from Priya",
-      time: "1 hour ago",
-      tab: "Customer Feedback",
-      type: "info",
-    },
-  ];
-
-  const handleNotifClick = (tab: string) => {
-    if (setActiveTab) setActiveTab(tab);
-    setIsNotifOpen(false);
-    setHasNewNotification(false);
+  const unread = notifications.filter((item: any) => !item.read);
+  const markAllRead = async () => {
+    await Promise.all(
+      unread.map((item: any) =>
+        fetch("/api/notifications?id=" + encodeURIComponent(String(item._id || item.id)), {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ read: true }),
+        }).catch(() => undefined),
+      ),
+    );
+    window.location.reload();
   };
 
-  const { logout } = useAuth();
-
   const handleLogout = async () => {
-    if (confirm("Are you sure you want to log out?")) {
-      try {
-        await logout();
-        // The logout function will handle the redirection
-      } catch (error) {
-        // Fallback redirection in case of error
-        window.location.href = "/signin";
-      }
+    if (!window.confirm("Are you sure you want to log out?")) return;
+    try {
+      await logout();
+    } catch {
+      window.location.href = "/signin";
     }
   };
 
   return (
-    <header className="flex-shrink-0 p-4 pr-8 flex items-center justify-between relative z-50">
+    <header className="relative z-50 flex flex-shrink-0 items-center justify-between p-4 pr-8">
       <div className="space-y-1">
-        {title && (
-          <h1 className="text-2xl font-bold text-amber-700">{title}</h1>
-        )}
+        {title && <h1 className="text-2xl font-bold text-amber-700">{title}</h1>}
         {subtitle && <p className="text-sm text-amber-500">{subtitle}</p>}
       </div>
+
       <div className="flex items-center gap-6">
-        {/* Notification Bell */}
         <div className="relative">
           <button
+            type="button"
             onClick={() => {
-              setIsNotifOpen(!isNotifOpen);
+              setIsNotifOpen((open) => !open);
               setIsProfileOpen(false);
             }}
-            className={`relative p-2 rounded-full transition-all duration-300 ${isNotifOpen ? "bg-white/10 text-white" : "text-[#9ca3af] hover:text-white hover:bg-white/5"}`}
+            className="relative rounded-full p-2 text-[#9ca3af] transition hover:bg-white/5 hover:text-white"
+            aria-label="Notifications"
           >
-            <NotificationIcon className="w-6 h-6" />
-            {hasNewNotification && (
-              <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#F09819] opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#F09819]"></span>
+            <NotificationIcon className="h-6 w-6" />
+            {unread.length > 0 && (
+              <span className="absolute right-1 top-1 flex h-2.5 w-2.5">
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#F09819]" />
               </span>
             )}
           </button>
 
-          {/* Notification Dropdown */}
           {isNotifOpen && (
-            <div className="absolute right-0 top-full mt-4 w-80 bg-[rgba(20,20,20,0.8)] backdrop-blur-[24px] border border-[rgba(255,255,255,0.08)] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] rounded-2xl border border-white/10 shadow-2xl animate-fade-in-up overflow-hidden">
-              <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
+            <div className="absolute right-0 top-full mt-4 w-80 overflow-hidden rounded-2xl border border-white/10 bg-[rgba(20,20,20,0.94)] shadow-2xl backdrop-blur-[24px]">
+              <div className="flex items-center justify-between border-b border-white/10 p-4">
                 <h3 className="font-bold text-white">Notifications</h3>
-                <button
-                  onClick={() => setHasNewNotification(false)}
-                  className="text-xs text-[#FF512F] hover:text-white transition-colors"
-                >
-                  Mark all read
-                </button>
-              </div>
-              <div className="max-h-64 overflow-y-auto custom-scrollbar">
-                {notifications.map((notif) => (
-                  <div
-                    key={notif.id}
-                    onClick={() =>
-                      notif.tab && setActiveTab && setActiveTab(notif.tab)
-                    }
-                    className="p-4 border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors group"
+                {unread.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={markAllRead}
+                    className="text-xs text-[#F09819] hover:text-white"
                   >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`w-2 h-2 mt-1.5 rounded-full flex-shrink-0 ${notif.type === "alert" ? "bg-[#FF3D00]" : notif.type === "order" ? "bg-[#4CAF50]" : "bg-[#FF512F]"}`}
-                      ></div>
-                      <div>
-                        <p className="text-sm text-white font-medium leading-tight group-hover:text-[#F09819] transition-colors">
-                          {notif.text}
-                        </p>
-                        <p className="text-xs text-[#9ca3af] mt-1">
-                          {notif.time}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    Mark all read
+                  </button>
+                )}
               </div>
-              <div className="p-3 text-center bg-white/5 hover:bg-white/10 transition-colors cursor-pointer border-t border-white/10">
-                <span className="text-xs font-bold text-neutral">
-                  View All History
-                </span>
+
+              <div className="max-h-80 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <p className="p-6 text-center text-sm text-gray-500">
+                    No notifications yet.
+                  </p>
+                ) : (
+                  notifications.map((notification: any) => (
+                    <button
+                      type="button"
+                      key={String(notification._id || notification.id)}
+                      onClick={() => {
+                        setIsNotifOpen(false);
+                        if (notification.tab && setActiveTab) {
+                          setActiveTab(notification.tab);
+                        }
+                      }}
+                      className="block w-full border-b border-white/5 p-4 text-left transition hover:bg-white/5"
+                    >
+                      <div className="flex items-start gap-3">
+                        <span
+                          className={
+                            "mt-1.5 h-2 w-2 flex-shrink-0 rounded-full " +
+                            (notification.read
+                              ? "bg-gray-600"
+                              : "bg-[#F09819]")
+                          }
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-white">
+                            {notification.title || "Notification"}
+                          </p>
+                          <p className="mt-1 text-xs leading-5 text-gray-400">
+                            {notification.message || ""}
+                          </p>
+                          {notification.createdAt && (
+                            <p className="mt-1 text-[10px] text-gray-600">
+                              {new Date(notification.createdAt).toLocaleString("en-IN", {
+                                timeZone: "Asia/Kolkata",
+                              })}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                )}
               </div>
             </div>
           )}
         </div>
 
-        {/* Profile Dropdown */}
         <div className="relative">
           <button
+            type="button"
             onClick={() => {
-              setIsProfileOpen(!isProfileOpen);
+              setIsProfileOpen((open) => !open);
               setIsNotifOpen(false);
             }}
-            className={`flex items-center gap-3 p-1.5 rounded-full border border-transparent transition-all duration-300 ${isProfileOpen ? "bg-white/10 border-white/10" : "hover:bg-white/5"}`}
+            className="flex items-center gap-3 rounded-xl px-2 py-1.5 text-white transition hover:bg-white/5"
           >
-            <img
-              src="https://picsum.photos/id/237/200/200"
-              alt="Admin Avatar"
-              className="w-9 h-9 rounded-full border-2 border-[#FF512F] object-cover"
-            />
-            <div className="pr-2 hidden md:block text-left">
-              <p className="font-bold text-sm text-white leading-none">Admin</p>
-              <p className="text-[10px] text-[#9ca3af] mt-0.5 font-medium">
-                Superuser
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-amber-500 font-bold text-slate-950">
+              {(user?.name || "A").charAt(0).toUpperCase()}
+            </div>
+            <div className="hidden text-left sm:block">
+              <p className="text-sm font-semibold">{user?.name || "Admin"}</p>
+              <p className="text-xs text-gray-500">
+                {user?.role || "staff"}
               </p>
             </div>
-            <ChevronDownIcon
-              className={`w-4 h-4 text-[#9ca3af] transition-transform duration-300 ${isProfileOpen ? "rotate-180" : ""} hidden md:block`}
-            />
+            <ChevronDownIcon className="h-4 w-4 text-gray-500" />
           </button>
 
           {isProfileOpen && (
-            <div className="absolute right-0 top-full mt-4 w-48 bg-[rgba(20,20,20,0.8)] backdrop-blur-[24px] border border-[rgba(255,255,255,0.08)] shadow-[0_8px_32px_0_rgba(0,0,0,0.3)] rounded-2xl border border-white/10 shadow-2xl animate-fade-in-up overflow-hidden">
-              <div className="py-2">
-                <button
-                  onClick={() => {
-                    setActiveTab?.("Settings");
-                    setIsProfileOpen(false);
-                  }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-[#9ca3af] hover:text-white hover:bg-white/10 transition-colors flex items-center gap-2"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                  Settings
-                </button>
-                <button className="w-full text-left px-4 py-2.5 text-sm text-[#9ca3af] hover:text-white hover:bg-white/10 transition-colors flex items-center gap-2">
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"
-                    />
-                  </svg>
-                  Help & Support
-                </button>
-                <div className="h-px bg-white/10 my-1"></div>
-                <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-4 py-2.5 text-sm text-[#FF3D00] hover:bg-[#FF3D00]/10 transition-colors flex items-center gap-2 font-bold"
-                >
-                  <svg
-                    className="w-4 h-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                    />
-                  </svg>
-                  Log Out
-                </button>
+            <div className="absolute right-0 top-full mt-3 w-64 rounded-2xl border border-white/10 bg-[rgba(20,20,20,0.96)] p-2 shadow-2xl">
+              <div className="border-b border-white/10 px-3 py-3">
+                <p className="text-sm font-semibold text-white">
+                  {user?.name || "Admin"}
+                </p>
+                <p className="mt-1 truncate text-xs text-gray-500">
+                  {user?.email || ""}
+                </p>
               </div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="mt-1 w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-red-400 transition hover:bg-red-500/10"
+              >
+                Log out
+              </button>
             </div>
           )}
         </div>
       </div>
     </header>
   );
-};
-
-export default Header;
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Bell,
   X,
@@ -21,8 +21,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { usePusher } from "@/context/PusherContext";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-type NotificationType = "order" | "offer" | "feedback" | "system";
+type NotificationType = "order" | "offer" | "feedback" | "system" | "payment" | "alert";
 
 interface Notification {
   id: string;
@@ -40,17 +41,30 @@ interface Notification {
 
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadTotal, setUnreadTotal] = useState(0);
+  const seenIds = useRef(new Set<string>());
+  const currentPageRef = useRef(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
-  const { pusherClient } = usePusher();
+  const { pusherClient, isConnected } = usePusher();
+  const { data: session } = useSession();
   const router = useRouter();
+  const unreadCount = unreadTotal;
 
-  // Fetch notifications from database
-  const fetchNotifications = useCallback(async () => {
+  // Fetch durable notification history. MongoDB is the source of truth when reconnecting.
+  const fetchNotifications = useCallback(async (
+    showLoader = true,
+    pageNumber = 1,
+    append = false,
+    merge = false,
+  ) => {
+    if (showLoader) setIsLoading(true);
+    if (append) setIsLoadingMore(true);
+
     try {
-      setIsLoading(true);
-
-      const res = await fetch("/api/notifications", {
+      const res = await fetch(`/api/notifications?page=${pageNumber}&limit=20`, {
         method: "GET",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -58,117 +72,123 @@ const NotificationsPage = () => {
       });
 
       if (!res.ok) {
-        if (res.status === 401) {
-        }
-        setIsLoading(false);
+        if (res.status !== 401) toast.error("Unable to load notification history");
         return;
       }
 
       const data = await res.json();
-
       const list: Notification[] = Array.isArray(data.data)
         ? data.data.map((n: any) => ({
-            id: n._id?.toString() || n.id || "",
-            userId: n.userId?.toString() || "",
-            type: n.type || "system",
+            id: String(n._id || n.id || ""),
+            userId: String(n.userId || n.user || ""),
+            type: n.type === "order_update" ? "order" : n.type === "promotion" ? "offer" : n.type === "admin" ? "feedback" : n.type || "system",
             title: n.title || "",
             message: n.message || "",
-            isRead: !!n.isRead,
+            isRead: Boolean(n.isRead),
             timestamp: n.createdAt ? new Date(n.createdAt) : new Date(),
-            ctaLink: n.ctaLink,
+            ctaLink: n.ctaLink || n.deepLink,
             priority: n.priority || "normal",
             icon: n.icon || "",
-            data: n.data,
-          }))
+            data: n.data || n.metadata,
+          })).filter((item: Notification) => Boolean(item.id))
         : [];
 
-      setNotifications(list);
-      setIsLoading(false);
+      list.forEach((item) => seenIds.current.add(item.id));
+      const mergeUniqueAndSort = (first: Notification[], second: Notification[]) => {
+        const byId = new Map<string, Notification>();
+        [...first, ...second].forEach((item) => {
+          const existing = byId.get(item.id);
+          byId.set(item.id, existing ? { ...existing, ...item } : item);
+        });
+        return [...byId.values()].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+      };
+
+      if (append || merge) {
+        setNotifications((prev) => mergeUniqueAndSort(append ? prev : list, append ? list : prev));
+      } else {
+        setNotifications(list);
+        currentPageRef.current = 1;
+      }
+
+      if (append) currentPageRef.current = pageNumber;
+      const pageToCompare = merge ? currentPageRef.current : pageNumber;
+      setHasMore(pageToCompare < Number(data.pagination?.pages || 0));
+      setUnreadTotal(Number(data.pagination?.unreadCount ?? list.filter((item) => !item.isRead).length));
     } catch (error) {
-      setIsLoading(false);
+      if (showLoader) toast.error("Unable to load notification history");
+    } finally {
+      if (showLoader) setIsLoading(false);
+      if (append) setIsLoadingMore(false);
     }
   }, []);
 
-  // Initial load
+  const loadMoreNotifications = useCallback(() => {
+    if (isLoadingMore || !hasMore) return;
+    void fetchNotifications(false, currentPageRef.current + 1, true);
+  }, [fetchNotifications, hasMore, isLoadingMore]);
+
+  // Initial load + reconcile durable history after a live connection is restored.
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Real-time Pusher listener for new notifications
   useEffect(() => {
-    if (!pusherClient) return;
+    if (isConnected) void fetchNotifications(false, 1, false, true);
+  }, [isConnected, fetchNotifications]);
 
-    // We can subscribe to the user channel if we have a userId
-    const userId = notifications.length > 0 ? notifications[0].userId : "";
-    let userChannel: any = null;
+  // Subscribe using the authenticated session, even when the inbox is empty.
+  useEffect(() => {
+    const userId = session?.user?.id;
+    if (!pusherClient || !isConnected || !userId) return;
 
-    if (userId) {
-      userChannel = pusherClient.subscribe(`user-${userId}`);
-    }
-
-    const handleNewNotification = (notification: Notification) => {
-      setNotifications((prev) => [notification, ...prev]);
-      toast.info(notification.title);
-    };
-
-    const handleNotificationUpdate = (data: {
-      notificationId: string;
-      isRead: boolean;
-    }) => {
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === data.notificationId ? { ...n, isRead: data.isRead } : n,
-        ),
-      );
-    };
-
-    const handleNotificationDeleted = (notificationId: string) => {
-      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
-    };
-
-    // Listen for order status updates and create notifications
-    const handleOrderUpdate = ({
-      status,
-      order,
-    }: {
-      status: string;
-      order: any;
-    }) => {
-      const orderNotification: Notification = {
-        id: `order-${order.id}-${Date.now()}`,
-        userId: order.userId || "",
-        type: "order",
-        title: `Order ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-        message: `Your order #${order.id} is now ${status}`,
-        isRead: false,
-        timestamp: new Date(),
-        priority: status === "delivered" ? "high" : "normal",
-        icon: "shopping-bag",
-        data: { orderId: order.id, status },
+    const channelName = `private-user-${userId}`;
+    const channel = pusherClient.subscribe(channelName);
+    const handleNewNotification = (notification: any) => {
+      const item: Notification = {
+        id: String(notification.id || notification._id || ""),
+        userId: String(notification.userId || userId),
+        type: notification.type === "menu" ? "offer" : notification.type || "system",
+        title: notification.title || "Notification",
+        message: notification.message || "",
+        isRead: Boolean(notification.isRead),
+        timestamp: new Date(notification.timestamp || notification.createdAt || Date.now()),
+        ctaLink: notification.ctaLink || notification.deepLink,
+        priority: notification.priority || "normal",
+        icon: notification.icon || "🔔",
+        data: notification.data || notification.metadata,
       };
-
-      setNotifications((prev) => [orderNotification, ...prev]);
-      toast.info(`Order ${status.charAt(0).toUpperCase() + status.slice(1)}`);
+      if (!item.id || seenIds.current.has(item.id)) return;
+      seenIds.current.add(item.id);
+      setNotifications((prev) => [item, ...prev.filter((n) => n.id !== item.id)].slice(0, 100));
+      if (!item.isRead) setUnreadTotal((count) => count + 1);
+    };
+    const handleNotificationUpdate = (data: { notificationId: string; isRead: boolean; unreadCount?: number }) => {
+      setNotifications((prev) => prev.map((n) => n.id === data.notificationId ? { ...n, isRead: data.isRead } : n));
+      if (typeof data.unreadCount === "number") setUnreadTotal(data.unreadCount);
+      else void fetchNotifications(false);
+    };
+    const handleNotificationDeleted = (data: { notificationId: string; unreadCount?: number }) => {
+      setNotifications((prev) => prev.filter((n) => n.id !== data.notificationId));
+      if (typeof data.unreadCount === "number") setUnreadTotal(data.unreadCount);
+      else void fetchNotifications(false);
+    };
+    const handleAllRead = () => {
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadTotal(0);
     };
 
-    if (userChannel) {
-      userChannel.bind("new_notification", handleNewNotification);
-      userChannel.bind("notification_updated", handleNotificationUpdate);
-      userChannel.bind("notification_deleted", handleNotificationDeleted);
-      userChannel.bind("order_status", handleOrderUpdate);
-    }
-
+    channel.bind("new_notification", handleNewNotification);
+    channel.bind("notification_updated", handleNotificationUpdate);
+    channel.bind("notification_deleted", handleNotificationDeleted);
+    channel.bind("notifications_all_read", handleAllRead);
     return () => {
-      if (userChannel) {
-        userChannel.unbind("new_notification", handleNewNotification);
-        userChannel.unbind("notification_updated", handleNotificationUpdate);
-        userChannel.unbind("notification_deleted", handleNotificationDeleted);
-        userChannel.unbind("order_status", handleOrderUpdate);
-        if (userId) pusherClient.unsubscribe(`user-${userId}`);
-      }
+      channel.unbind("new_notification", handleNewNotification);
+      channel.unbind("notification_updated", handleNotificationUpdate);
+      channel.unbind("notification_deleted", handleNotificationDeleted);
+      channel.unbind("notifications_all_read", handleAllRead);
+      pusherClient.unsubscribe(channelName);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pusherClient, notifications.length > 0 ? notifications[0].userId : ""]);
+  }, [pusherClient, isConnected, session?.user?.id, fetchNotifications]);
 
   const filteredNotifications = notifications.filter((notification) => {
     if (activeTab === "all") return true;
@@ -187,11 +207,12 @@ const NotificationsPage = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ isRead: true }),
       });
-
+      const payload = await response.json().catch(() => ({}));
       if (response.ok) {
         setNotifications((prev) =>
           prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
         );
+        if (typeof payload.unreadCount === "number") setUnreadTotal(payload.unreadCount);
 
         // Pusher doesn't emit from client by default, handled via REST above
       }
@@ -213,6 +234,7 @@ const NotificationsPage = () => {
 
       if (response.ok) {
         setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      setUnreadTotal(0);
         toast.success("All notifications marked as read");
 
         // Pusher doesn't emit from client by default, handled via REST above
@@ -230,8 +252,10 @@ const NotificationsPage = () => {
         headers: { "Content-Type": "application/json" },
       });
 
+      const payload = await response.json().catch(() => ({}));
       if (response.ok) {
         setNotifications((prev) => prev.filter((n) => n.id !== id));
+        if (typeof payload.unreadCount === "number") setUnreadTotal(payload.unreadCount);
         toast.success("Notification deleted");
 
         // Pusher doesn't emit from client by default, handled via REST above
@@ -250,7 +274,10 @@ const NotificationsPage = () => {
       case "feedback":
         return "Feedback";
       case "system":
+      case "alert":
         return "System";
+      case "payment":
+        return "Payment";
       default:
         return "";
     }
@@ -265,7 +292,10 @@ const NotificationsPage = () => {
       case "feedback":
         return <MessageSquare className="h-5 w-5 text-blue-500" />;
       case "system":
+      case "alert":
         return <AlertCircle className="h-5 w-5 text-purple-500" />;
+      case "payment":
+        return <ShoppingBag className="h-5 w-5 text-emerald-500" />;
       default:
         return <Bell className="h-5 w-5 text-gray-500" />;
     }
@@ -341,7 +371,7 @@ const NotificationsPage = () => {
                 Notifications
               </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Stay updated with your canteen activities
+                Stay updated with your canteen activities · {unreadCount} unread
               </p>
             </div>
           </div>
@@ -519,6 +549,18 @@ const NotificationsPage = () => {
                 </motion.div>
               ))}
             </AnimatePresence>
+          )}
+          {hasMore && (
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="outline"
+                onClick={loadMoreNotifications}
+                disabled={isLoadingMore}
+                className="border-slate-200 dark:border-slate-700"
+              >
+                {isLoadingMore ? "Loading older notifications…" : "Load older notifications"}
+              </Button>
+            </div>
           )}
         </div>
       </div>

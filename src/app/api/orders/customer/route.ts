@@ -1,130 +1,112 @@
 import logger from "@/lib/logger";
-import { NextRequest, NextResponse } from "next/server";
-import { connectDB } from "@/lib/db";
-import { Order, OrderStatus, PaymentStatus } from "@/models/order.model";
-import { getServerSession } from "next-auth/next";
+import { NextRequest } from "next/server";
+import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import {
+  createOrderForUser,
+  OrderServiceError,
+} from "@/lib/services/orderService";
+import { errorResponse, successResponse } from "@/lib/api-response";
+import { cache } from "@/lib/cache";
+import { pusherServer } from "@/lib/pusher";
+import { NotificationService } from "@/lib/services/notification.service";
+import { Order } from "@/models/order.model";
 
-const jsonResponse = (data: unknown, status = 200) => {
-  return new NextResponse(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-};
-
-// GET - Fetch customer orders
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
-
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
+      return errorResponse("Unauthorized", 401, "UNAUTHORIZED");
     }
 
-    const userId = session.user.id;
-    const { searchParams } = new URL(request.url);
-    const status = searchParams.get("status");
+    const query: Record<string, string> = { user: session.user.id };
+    const status = new URL(request.url).searchParams.get("status");
+    if (status) query.status = status;
 
-    const query: any = { user: userId };
-    if (status) {
-      query.status = status;
-    }
+    const orders = await Order.find(query)
+      .sort({ createdAt: -1 })
+      .lean();
 
-    const orders = await Order.find(query).sort({ createdAt: -1 }).lean();
-
-    return jsonResponse(orders);
+    return successResponse(orders);
   } catch (error) {
     logger.error("[Customer Orders GET] Error:", error);
-    return jsonResponse({ error: "Failed to fetch orders" }, 500);
+    return errorResponse("Failed to fetch orders", 500);
   }
 }
 
-// POST - Create customer order
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
-
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return jsonResponse({ error: "Unauthorized" }, 401);
+      return errorResponse("Unauthorized", 401, "UNAUTHORIZED");
     }
 
-    const body = await request.json();
-    const { orderId, items, price, total, timeSlot, paymentMethod, username } =
-      body;
+    const body = await request.json().catch(() => ({}));
+    const paymentMethod = String(body.paymentMethod || "cod").toLowerCase();
 
-    const generatedOrderId = orderId || `ORD-${Date.now()}`;
+    if (!["cod", "cash"].includes(paymentMethod)) {
+      return errorResponse(
+        "Online payment must be initialized through the secure payment-intent flow.",
+        402,
+        "PAYMENT_AUTHORIZATION_REQUIRED",
+      );
+    }
 
-    const numericTotal =
-      typeof total === "number"
-        ? total
-        : typeof price === "number"
-          ? price
-          : parseFloat(String(total ?? price ?? 0).replace(/[^0-9.]/g, "")) ||
-            0;
+    const idempotencyKey =
+      request.headers.get("idempotency-key") ||
+      String(body.idempotencyKey || "") ||
+      crypto.randomUUID();
 
-    // Map fields to consolidated model
-    const newOrder = await Order.create({
-      orderId: generatedOrderId,
-      user: session.user.id,
-      items: Array.isArray(items)
-        ? items.map((item: any) => ({
-            menuItem: item.menuItem || item.id,
-            name: item.name,
-            quantity: item.quantity,
-            price: item.price,
-            prepTime: item.prepTime || 5,
-          }))
-        : [],
-      totalAmount: numericTotal,
-      total: numericTotal,
-      price: numericTotal,
-      status: OrderStatus.PENDING,
-      paymentStatus:
-        paymentMethod === "cod" || paymentMethod === "cash"
-          ? PaymentStatus.PENDING
-          : PaymentStatus.PAID,
-      paymentMethod: paymentMethod || "online",
-      pickupTime: timeSlot ? new Date() : undefined, // Placeholder for now, should be parsed correctly
-      timeSlot: timeSlot || undefined,
+    const result = await createOrderForUser({
+      userId: session.user.id,
+      items: Array.isArray(body.items) ? body.items : [],
+      timeSlot: String(body.timeSlot || ""),
+      pickupDate: body.pickupDate,
+      paymentMethod: paymentMethod as "cod" | "cash",
+      idempotencyKey,
       username:
-        username || session.user.name || session.user.email || "Customer",
+        body.username ||
+        session.user.name ||
+        session.user.email ||
+        "Customer",
     });
 
-    logger.info(`✅ Customer Order Created: ${newOrder.orderId}`);
+    if (!result.reused) {
+      cache.del("slots:available");
 
-    // Notify Admins in Real-time and Store in DB
-    try {
-      const { NotificationService } =
-        await import("@/lib/services/notification.service");
-      await NotificationService.notifyAdmin({
-        title: 'New Order',
-        message: `New order ${newOrder.orderId} received`,
-        type: 'order'
-      });
-    } catch (notifErr) {
-      logger.error("[Customer Orders POST] Notification error:", notifErr);
+      try {
+        await Promise.all([
+          NotificationService.notifyAdmin({
+            title: "New Order",
+            message: `New order ${result.order.orderId} received`,
+            type: "order",
+          }),
+          pusherServer.trigger("admin", "order:new", {
+            order: result.order,
+            timestamp: new Date().toISOString(),
+          }),
+          pusherServer.trigger("admin", "slot-update", {
+            action: "order_created",
+            orderId: result.order.orderId,
+            timeSlot: result.order.timeSlot,
+            timestamp: new Date().toISOString(),
+          }),
+        ]);
+      } catch (notificationError) {
+        logger.warn(
+          "[Customer Orders POST] Real-time notification failed",
+          notificationError,
+        );
+      }
     }
 
-    return jsonResponse(newOrder, 201);
+    return successResponse(result.order, result.reused ? 200 : 201);
   } catch (error) {
-    logger.error("❌ [Customer Orders POST] Detailed Error:", {
-      message: error instanceof Error ? error.message : String(error),
-      name: error instanceof Error ? error.name : "UnknownError",
-      code: (error as any).code,
-      keyPattern: (error as any).keyPattern,
-      keyValue: (error as any).keyValue,
-      stack: error instanceof Error ? error.stack : undefined,
-    });
+    if (error instanceof OrderServiceError) {
+      return errorResponse(error.message, error.status, error.code);
+    }
 
-    return jsonResponse(
-      {
-        error: "Failed to create order",
-        details: error instanceof Error ? error.message : String(error),
-        code: (error as any).code,
-      },
-      500,
-    );
+    logger.error("[Customer Orders POST] Error:", error);
+    return errorResponse("Failed to create order", 500);
   }
 }

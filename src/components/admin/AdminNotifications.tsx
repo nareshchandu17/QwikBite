@@ -85,7 +85,7 @@ export default function AdminNotifications() {
     };
 
     // Subscribe to admin channel
-    const adminChannel = pusherClient.subscribe("admin");
+    const adminChannel = pusherClient.subscribe("private-admin");
 
     // Listen for admin notifications
     adminChannel.bind("admin_notification", handleAdminNotification);
@@ -100,7 +100,7 @@ export default function AdminNotifications() {
       adminChannel.unbind("order_notification", handleAdminNotification);
       adminChannel.unbind("payment_notification", handleAdminNotification);
       adminChannel.unbind("feedback_notification", handleAdminNotification);
-      pusherClient.unsubscribe("admin");
+      pusherClient.unsubscribe("private-admin");
     };
   }, [pusherClient, isConnected]);
 

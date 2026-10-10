@@ -1,95 +1,117 @@
 import logger from "@/lib/logger";
-/**
- * PUT /api/orders/[id]/status
- *
- * Updates order status and notifies customer
- */
-
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectDB } from "@/lib/db";
-import { Order } from "@/lib/models/Order";
-import { getAuthCookie, verifyToken } from "@/lib/auth";
+import { Order, OrderStatus } from "@/models/order.model";
+import { syncTimeSlotUsage } from "@/lib/slot-utils";
+import { pusherServer, getOrderChannel } from "@/lib/pusher";
+import { NotificationService } from "@/lib/services/notification.service";
 import mongoose from "mongoose";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
+const STAFF_ROLES = new Set(["admin", "canteen_staff", "staff"]);
 
-const jsonResponse = (data: unknown, status = 200) => {
-  return new NextResponse(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...corsHeaders },
-  });
+const TRANSITIONS: Record<string, Set<string>> = {
+  [OrderStatus.PENDING]: new Set([OrderStatus.CONFIRMED, OrderStatus.CANCELLED]),
+  [OrderStatus.CONFIRMED]: new Set([OrderStatus.PREPARING, OrderStatus.CANCELLED]),
+  [OrderStatus.PREPARING]: new Set([OrderStatus.READY, OrderStatus.CANCELLED]),
+  [OrderStatus.READY]: new Set([OrderStatus.COMPLETED]),
+  [OrderStatus.COMPLETED]: new Set(),
+  [OrderStatus.CANCELLED]: new Set(),
 };
-
-export async function OPTIONS() {
-  return new NextResponse(null, { status: 204, headers: corsHeaders });
-}
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } },
 ) {
   try {
+    if (!mongoose.isValidObjectId(params.id)) {
+      return NextResponse.json({ error: "Invalid order ID" }, { status: 400 });
+    }
+
+    const session = await getServerSession(authOptions);
+    const role = String(session?.user?.role || "").toLowerCase();
+
+    if (!session?.user?.id || !STAFF_ROLES.has(role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     await connectDB();
 
-    const { id } = params;
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-      return jsonResponse({ error: "Invalid order ID" }, 400);
-    }
-
-    // Verify admin/staff role
-    const token = getAuthCookie(req);
-    if (!token) return jsonResponse({ error: "Unauthorized" }, 401);
-
-    const decoded = verifyToken(token);
-    if (!decoded?.id) return jsonResponse({ error: "Invalid token" }, 401);
-
     const body = await req.json().catch(() => ({}));
-    const { status, message } = body;
+    const nextStatus = String(body.status || "").toLowerCase();
 
-    if (!status) {
-      return jsonResponse({ error: "status is required" }, 400);
+    if (!Object.values(OrderStatus).includes(nextStatus as OrderStatus)) {
+      return NextResponse.json({ error: "Invalid order status" }, { status: 400 });
     }
 
-    // Update order status
-    const order = await Order.findByIdAndUpdate(
-      id,
-      { status, updatedAt: new Date() },
-      { new: true },
-    );
-
+    const order = await Order.findById(params.id);
     if (!order) {
-      return jsonResponse({ error: "Order not found" }, 404);
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    logger.info(`✅ Order status updated to: ${status}`);
+    if (order.status === nextStatus) {
+      return NextResponse.json({ order: order.toObject() }, { status: 200 });
+    }
 
-    // Send customer notification about order status
+    if (!TRANSITIONS[order.status]?.has(nextStatus)) {
+      return NextResponse.json(
+        { error: `Invalid status transition: ${order.status} → ${nextStatus}` },
+        { status: 409 },
+      );
+    }
+
+    order.status = nextStatus;
+    order.statusHistory.push({
+      status: nextStatus,
+      timestamp: new Date(),
+      note: body.message || `Status updated to ${nextStatus}`,
+      updatedBy: mongoose.isValidObjectId(session.user.id)
+        ? new mongoose.Types.ObjectId(session.user.id)
+        : undefined,
+    });
+
+    await order.save();
+
+    if (order.pickupDate) {
+      await syncTimeSlotUsage(order.pickupDate);
+    }
+
+    const publicOrderId = order.orderId || String(order._id);
+
     try {
-      await fetch(
-        `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/notifications/order/status`,
+      await pusherServer.trigger(
+        getOrderChannel(publicOrderId),
+        "order:update",
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderId: order.id,
-            userId: order.user?.toString() || "",
-            status,
-            message: message || `Your order is now ${status}`,
-          }),
+          order: order.toObject(),
+          status: order.status,
+          timestamp: new Date().toISOString(),
         },
       );
-      logger.info("✅ Customer notification sent for order status update");
-    } catch (notifError) {
-      logger.warn("⚠️ Failed to send customer notification:", notifError);
+    } catch (error) {
+      logger.warn("Order status Pusher event failed", error);
     }
 
-    return jsonResponse({ order }, 200);
-  } catch (err) {
-    logger.error("PUT /api/orders/[id]/status error:", err);
-    return jsonResponse({ error: "Failed to update order status" }, 500);
+    try {
+      await NotificationService.notifyCustomer({
+        userId: String(order.user),
+        title: "Order Status Update",
+        message: `Order ${publicOrderId} is now ${order.status}.`,
+        type: "order",
+        ctaLink: "/customer/order/status",
+        data: { orderId: publicOrderId, status: order.status },
+      });
+    } catch (error) {
+      logger.warn("Order notification failed", error);
+    }
+
+    return NextResponse.json({ order: order.toObject() }, { status: 200 });
+  } catch (error) {
+    logger.error("PUT /api/orders/[id]/status error", error);
+    return NextResponse.json(
+      { error: "Failed to update order status" },
+      { status: 500 },
+    );
   }
 }
