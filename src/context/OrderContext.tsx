@@ -120,7 +120,7 @@ export const OrderProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!pusherClient) return;
     const handlers: Array<{ channel: string; handler: (data: any) => void }> = [];
     orders.forEach((order) => {
-      const channel = "order-" + order.id.replace(/:/g, "-");
+      const channel = "private-order-" + order.id.replace(/:/g, "-");
       const handler = (data: any) => {
         const updatedId = String(data?.order?.orderId || data?.order?.id || order.id);
         if (updatedId !== order.id) return;
