@@ -9,7 +9,7 @@ export interface NotificationPayload {
   userId: string;
   title: string;
   message: string;
-  type: "order" | "payment" | "menu" | "feedback" | "system" | "alert";
+  type: "order" | "payment" | "menu" | "offer" | "feedback" | "system" | "alert";
   priority?: "low" | "normal" | "high";
   icon?: string;
   ctaLink?: string;
@@ -20,7 +20,7 @@ function normalizeType(type: NotificationPayload["type"]) {
   if (type === "order") return NotificationType.ORDER_UPDATE;
   if (type === "payment") return NotificationType.PAYMENT;
   if (type === "feedback") return NotificationType.FEEDBACK;
-  if (type === "menu") return NotificationType.PROMOTION;
+  if (type === "menu" || type === "offer") return NotificationType.PROMOTION;
   return NotificationType.SYSTEM;
 }
 
@@ -30,7 +30,7 @@ function normalizePriority(priority?: NotificationPayload["priority"]) {
   return NotificationPriority.NORMAL;
 }
 
-function toClientNotification(notification: any, payload?: NotificationPayload) {
+function toClientNotification(notification: any, payload?: Pick<NotificationPayload, "type" | "icon" | "data" | "ctaLink">) {
   return {
     id: String(notification._id),
     userId: String(notification.user),
@@ -82,17 +82,46 @@ export class NotificationService {
   }
 
   static async notifyAllCustomers(payload: Omit<NotificationPayload, "userId">) {
-    // Broadcast is realtime-only because a broadcast cannot be persisted as a personal notification
-    // without enumerating the intended recipients. Use notifyCustomer for user-targeted delivery.
     try {
-      await pusherServer.trigger("broadcast", "new_notification", {
-        title: payload.title, message: payload.message, type: payload.type,
-        priority: normalizePriority(payload.priority), icon: payload.icon,
-        ctaLink: payload.ctaLink, data: payload.data, timestamp: new Date().toISOString(),
-      });
+      await connectDB();
+      const recipients = await User.find({ role: "customer" }).select("_id").lean();
+      if (recipients.length === 0) return true;
+
+      // Persist one record per recipient so broadcasts remain in each student's history
+      // even if their browser is closed or their realtime connection is unavailable.
+      const notifications = await Notification.insertMany(recipients.map((recipient: any) => ({
+        user: recipient._id,
+        title: payload.title,
+        message: payload.message,
+        type: normalizeType(payload.type),
+        priority: normalizePriority(payload.priority),
+        icon: payload.icon,
+        deepLink: payload.ctaLink,
+        metadata: payload.data,
+        isRead: false,
+      })));
+
+      // Use private per-user channels; never rely on a public broadcast for student inbox delivery.
+      for (let offset = 0; offset < notifications.length; offset += 20) {
+        const batch = notifications.slice(offset, offset + 20);
+        await Promise.all(batch.map(async (notification: any) => {
+          try {
+            await pusherServer.trigger(
+              getUserChannel(String(notification.user)),
+              "new_notification",
+              toClientNotification(notification, payload),
+            );
+          } catch (error) {
+            logger.warn("[NotificationService] Broadcast notification persisted but live delivery failed", {
+              userId: String(notification.user),
+              error,
+            });
+          }
+        }));
+      }
       return true;
     } catch (error) {
-      logger.error("[NotificationService] Broadcast failed", error);
+      logger.error("[NotificationService] Failed to persist customer broadcast", error);
       return false;
     }
   }
