@@ -3,6 +3,7 @@ import { pusherServer, getUserChannel, ADMIN_CHANNEL } from "@/lib/pusher";
 import { connectDB } from "@/lib/db";
 import { Notification, NotificationType, NotificationPriority } from "@/models/notification.model";
 import mongoose from "mongoose";
+import { User } from "@/models/user.model";
 
 export interface NotificationPayload {
   userId: string;
@@ -99,16 +100,34 @@ export class NotificationService {
   static async notifyAdmin(payload: Omit<NotificationPayload, "userId"> & { adminIds?: string[] }) {
     try {
       const { adminIds, ...data } = payload;
+      await connectDB();
+      const recipients = adminIds?.length
+        ? await User.find({ _id: { $in: adminIds.filter((id) => mongoose.Types.ObjectId.isValid(id)) } }).select("_id").lean()
+        : await User.find({ role: { $in: ["admin", "canteen_staff", "staff"] } }).select("_id").lean();
       const clientPayload = {
         title: data.title, message: data.message, type: data.type,
         priority: normalizePriority(data.priority), icon: data.icon || "🔔",
         data: data.data, ctaLink: data.ctaLink, timestamp: new Date().toISOString(),
       };
-      if (adminIds?.length) {
-        await Promise.all(adminIds.map((id) => pusherServer.trigger(getUserChannel(id), "new_notification", clientPayload)));
-      } else {
-        await pusherServer.trigger(ADMIN_CHANNEL, "admin_notification", clientPayload);
-      }
+      await Promise.all(recipients.map(async (recipient: any) => {
+        const userId = String(recipient._id);
+        const notification = await Notification.create({
+          user: new mongoose.Types.ObjectId(userId),
+          title: data.title,
+          message: data.message,
+          type: normalizeType(data.type),
+          priority: normalizePriority(data.priority),
+          icon: data.icon,
+          deepLink: data.ctaLink,
+          metadata: data.data,
+          isRead: false,
+        });
+        await pusherServer.trigger(getUserChannel(userId), "new_notification", {
+          ...clientPayload, id: String(notification._id), userId,
+          isRead: false, timestamp: notification.createdAt,
+        });
+      }));
+      await pusherServer.trigger(ADMIN_CHANNEL, "admin_notification", clientPayload);
       return true;
     } catch (error) {
       logger.error("[NotificationService] Failed to notify admin", error);
