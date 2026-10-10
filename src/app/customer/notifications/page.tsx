@@ -21,6 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { usePusher } from "@/context/PusherContext";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 type NotificationType = "order" | "offer" | "feedback" | "system";
 
@@ -42,7 +43,8 @@ const NotificationsPage = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activeTab, setActiveTab] = useState("all");
   const [isLoading, setIsLoading] = useState(true);
-  const { pusherClient } = usePusher();
+  const { pusherClient, isConnected } = usePusher();
+  const { data: session } = useSession();
   const router = useRouter();
 
   // Fetch notifications from database
@@ -69,16 +71,16 @@ const NotificationsPage = () => {
       const list: Notification[] = Array.isArray(data.data)
         ? data.data.map((n: any) => ({
             id: n._id?.toString() || n.id || "",
-            userId: n.userId?.toString() || "",
+            userId: n.userId?.toString() || n.user?.toString() || "",
             type: n.type || "system",
             title: n.title || "",
             message: n.message || "",
             isRead: !!n.isRead,
             timestamp: n.createdAt ? new Date(n.createdAt) : new Date(),
-            ctaLink: n.ctaLink,
+            ctaLink: n.ctaLink || n.deepLink,
             priority: n.priority || "normal",
             icon: n.icon || "",
-            data: n.data,
+            data: n.data || n.metadata,
           }))
         : [];
 
@@ -94,81 +96,51 @@ const NotificationsPage = () => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Real-time Pusher listener for new notifications
+  // Subscribe using the authenticated session, even when the inbox is empty.
   useEffect(() => {
-    if (!pusherClient) return;
+    const userId = session?.user?.id;
+    if (!pusherClient || !isConnected || !userId) return;
 
-    // We can subscribe to the user channel if we have a userId
-    const userId = notifications.length > 0 ? notifications[0].userId : "";
-    let userChannel: any = null;
-
-    if (userId) {
-      userChannel = pusherClient.subscribe(`user-${userId}`);
-    }
-
-    const handleNewNotification = (notification: Notification) => {
-      setNotifications((prev) => [notification, ...prev]);
-      toast.info(notification.title);
-    };
-
-    const handleNotificationUpdate = (data: {
-      notificationId: string;
-      isRead: boolean;
-    }) => {
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === data.notificationId ? { ...n, isRead: data.isRead } : n,
-        ),
-      );
-    };
-
-    const handleNotificationDeleted = (notificationId: string) => {
-      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
-    };
-
-    // Listen for order status updates and create notifications
-    const handleOrderUpdate = ({
-      status,
-      order,
-    }: {
-      status: string;
-      order: any;
-    }) => {
-      const orderNotification: Notification = {
-        id: `order-${order.id}-${Date.now()}`,
-        userId: order.userId || "",
-        type: "order",
-        title: `Order ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-        message: `Your order #${order.id} is now ${status}`,
-        isRead: false,
-        timestamp: new Date(),
-        priority: status === "delivered" ? "high" : "normal",
-        icon: "shopping-bag",
-        data: { orderId: order.id, status },
+    const channelName = `private-user-${userId}`;
+    const channel = pusherClient.subscribe(channelName);
+    const handleNewNotification = (notification: any) => {
+      const item: Notification = {
+        id: String(notification.id || notification._id || ""),
+        userId: String(notification.userId || userId),
+        type: notification.type || "system",
+        title: notification.title || "Notification",
+        message: notification.message || "",
+        isRead: Boolean(notification.isRead),
+        timestamp: new Date(notification.timestamp || notification.createdAt || Date.now()),
+        ctaLink: notification.ctaLink || notification.deepLink,
+        priority: notification.priority || "normal",
+        icon: notification.icon || "🔔",
+        data: notification.data || notification.metadata,
       };
-
-      setNotifications((prev) => [orderNotification, ...prev]);
-      toast.info(`Order ${status.charAt(0).toUpperCase() + status.slice(1)}`);
+      if (!item.id) return;
+      setNotifications((prev) => [item, ...prev.filter((n) => n.id !== item.id)].slice(0, 100));
+      toast.info(item.title);
     };
+    const handleNotificationUpdate = (data: { notificationId: string; isRead: boolean }) => {
+      setNotifications((prev) => prev.map((n) => n.id === data.notificationId ? { ...n, isRead: data.isRead } : n));
+    };
+    const handleNotificationDeleted = (data: { notificationId: string }) => {
+      setNotifications((prev) => prev.filter((n) => n.id !== data.notificationId));
+    };
+    const handleAllRead = () => setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
 
-    if (userChannel) {
-      userChannel.bind("new_notification", handleNewNotification);
-      userChannel.bind("notification_updated", handleNotificationUpdate);
-      userChannel.bind("notification_deleted", handleNotificationDeleted);
-      userChannel.bind("order_status", handleOrderUpdate);
-    }
-
+    channel.bind("new_notification", handleNewNotification);
+    channel.bind("notification_updated", handleNotificationUpdate);
+    channel.bind("notification_deleted", handleNotificationDeleted);
+    channel.bind("notifications_all_read", handleAllRead);
     return () => {
-      if (userChannel) {
-        userChannel.unbind("new_notification", handleNewNotification);
-        userChannel.unbind("notification_updated", handleNotificationUpdate);
-        userChannel.unbind("notification_deleted", handleNotificationDeleted);
-        userChannel.unbind("order_status", handleOrderUpdate);
-        if (userId) pusherClient.unsubscribe(`user-${userId}`);
-      }
+      channel.unbind("new_notification", handleNewNotification);
+      channel.unbind("notification_updated", handleNotificationUpdate);
+      channel.unbind("notification_deleted", handleNotificationDeleted);
+      channel.unbind("notifications_all_read", handleAllRead);
+      pusherClient.unsubscribe(channelName);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pusherClient, notifications.length > 0 ? notifications[0].userId : ""]);
+  }, [pusherClient, isConnected, session?.user?.id]);
 
   const filteredNotifications = notifications.filter((notification) => {
     if (activeTab === "all") return true;
