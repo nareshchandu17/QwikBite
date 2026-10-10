@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import { usePusher } from "@/context/PusherContext";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-type NotificationType = "order" | "offer" | "feedback" | "system";
+type NotificationType = "order" | "offer" | "feedback" | "system" | "payment" | "alert";
 
 interface Notification {
   id: string;
