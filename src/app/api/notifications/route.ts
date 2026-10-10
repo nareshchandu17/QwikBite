@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     ]);
     const data = rows.map((n: any) => ({
       id: String(n._id), _id: String(n._id), userId: String(n.user),
-      title: n.title, message: n.message, type: n.type === "order_update" ? "order" : n.type,
+      title: n.title, message: n.message, type: n.type === "order_update" ? "order" : n.type === "promotion" ? "offer" : n.type === "admin" ? "feedback" : n.type,
       priority: n.priority, icon: n.icon || "🔔", isRead: Boolean(n.isRead),
       createdAt: n.createdAt, timestamp: n.createdAt, ctaLink: n.deepLink, data: n.metadata,
     }));

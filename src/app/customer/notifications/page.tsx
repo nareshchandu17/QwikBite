@@ -46,6 +46,7 @@ const NotificationsPage = () => {
   const { pusherClient, isConnected } = usePusher();
   const { data: session } = useSession();
   const router = useRouter();
+  const unreadCount = notifications.filter((notification) => !notification.isRead).length;
 
   // Fetch notifications from database
   const fetchNotifications = useCallback(async () => {
@@ -72,7 +73,7 @@ const NotificationsPage = () => {
         ? data.data.map((n: any) => ({
             id: n._id?.toString() || n.id || "",
             userId: n.userId?.toString() || n.user?.toString() || "",
-            type: n.type || "system",
+            type: n.type === "order_update" ? "order" : n.type === "promotion" ? "offer" : n.type === "admin" ? "feedback" : n.type || "system",
             title: n.title || "",
             message: n.message || "",
             isRead: !!n.isRead,
@@ -91,10 +92,14 @@ const NotificationsPage = () => {
     }
   }, []);
 
-  // Initial load
+  // Initial load + reconcile durable history after a live connection is restored.
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
+
+  useEffect(() => {
+    if (isConnected) void fetchNotifications();
+  }, [isConnected, fetchNotifications]);
 
   // Subscribe using the authenticated session, even when the inbox is empty.
   useEffect(() => {
@@ -107,7 +112,7 @@ const NotificationsPage = () => {
       const item: Notification = {
         id: String(notification.id || notification._id || ""),
         userId: String(notification.userId || userId),
-        type: notification.type || "system",
+        type: notification.type === "menu" ? "offer" : notification.type || "system",
         title: notification.title || "Notification",
         message: notification.message || "",
         isRead: Boolean(notification.isRead),
@@ -222,7 +227,10 @@ const NotificationsPage = () => {
       case "feedback":
         return "Feedback";
       case "system":
+      case "alert":
         return "System";
+      case "payment":
+        return "Payment";
       default:
         return "";
     }
@@ -237,7 +245,10 @@ const NotificationsPage = () => {
       case "feedback":
         return <MessageSquare className="h-5 w-5 text-blue-500" />;
       case "system":
+      case "alert":
         return <AlertCircle className="h-5 w-5 text-purple-500" />;
+      case "payment":
+        return <ShoppingBag className="h-5 w-5 text-emerald-500" />;
       default:
         return <Bell className="h-5 w-5 text-gray-500" />;
     }
@@ -313,7 +324,7 @@ const NotificationsPage = () => {
                 Notifications
               </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Stay updated with your canteen activities
+                Stay updated with your canteen activities · {unreadCount} unread
               </p>
             </div>
           </div>
