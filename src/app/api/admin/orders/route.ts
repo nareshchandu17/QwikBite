@@ -97,6 +97,8 @@ async function transitionOrder(id: string, nextStatus: string, note: string | un
       title: "Order Status Update",
       message: `Order ${publicOrderId} is now ${updated.status}.`,
       type: "order",
+      ctaLink: "/customer/order/status",
+      data: { orderId: publicOrderId, status: updated.status },
     });
   } catch (error) {
     logger.warn("Failed to notify order owner", error);

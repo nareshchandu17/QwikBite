@@ -2,6 +2,7 @@ import logger from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { User } from "@/models/user.model";
 import { connectDB } from "@/lib/db";
 import NotificationService, { type NotificationPayload } from "@/lib/services/notification.service";
 import { checkRateLimit, getRateLimitIdentifier, RateLimitPresets } from "@/lib/security/rateLimiter";
@@ -58,6 +59,11 @@ export async function POST(req: NextRequest) {
     const payload = parsePayload(body);
     if (!userId || !payload) {
       return NextResponse.json({ error: "A valid userId, title, message, type and priority are required" }, { status: 400 });
+    }
+
+    const customer = await User.findById(userId).select("_id role").lean();
+    if (!customer || String(customer.role || "").toLowerCase() !== "customer") {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 });
     }
 
     const notification = await NotificationService.notifyCustomer({ ...payload, userId });

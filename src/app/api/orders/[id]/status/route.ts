@@ -99,6 +99,8 @@ export async function PUT(
         title: "Order Status Update",
         message: `Order ${publicOrderId} is now ${order.status}.`,
         type: "order",
+        ctaLink: "/customer/order/status",
+        data: { orderId: publicOrderId, status: order.status },
       });
     } catch (error) {
       logger.warn("Order notification failed", error);
