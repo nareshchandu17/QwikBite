@@ -51,7 +51,7 @@ function parsePayload(body: any): Omit<NotificationPayload, "userId"> | null {
 export async function POST(req: NextRequest) {
   try {
     const auth = await authorize(req);
-    if (auth.error) return auth.error;
+    if ("error" in auth) return auth.error;
     await connectDB();
     const body = await req.json().catch(() => ({}));
     const userId = sanitizeString(String(body.userId || ""));
@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const auth = await authorize(req);
-    if (auth.error) return auth.error;
+    if ("error" in auth) return auth.error;
     await connectDB();
     const body = await req.json().catch(() => ({}));
     const payload = parsePayload(body);
